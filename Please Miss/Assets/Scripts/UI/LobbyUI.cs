@@ -15,6 +15,10 @@ public class LobbyUI : MonoBehaviour
     [SerializeField] private GameObject countdownPanel;
     [SerializeField] private TMP_Text countdownText;
 
+    [Header("Warning")]
+    [SerializeField] private GameObject noSniperWarning;
+    [SerializeField] private GameObject multiSniperWarning;
+
     [Header("HUD")]
     [SerializeField] private LobbyHudUI hudUI;
 
@@ -94,6 +98,15 @@ public class LobbyUI : MonoBehaviour
     {
         if (countdownPanel != null)
             countdownPanel.SetActive(false);
+    }
+
+    public void SetWarning(int type)
+    {
+        if (noSniperWarning != null)
+            noSniperWarning.SetActive(type == 1);
+
+        if (multiSniperWarning != null)
+            multiSniperWarning.SetActive(type == 2);
     }
 
     public void LeaveLobby()

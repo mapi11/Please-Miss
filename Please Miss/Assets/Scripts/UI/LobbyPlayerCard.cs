@@ -1,6 +1,7 @@
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 public class LobbyPlayerCard : MonoBehaviour
@@ -11,9 +12,20 @@ public class LobbyPlayerCard : MonoBehaviour
     [SerializeField] private TMP_Dropdown roleDropdown;
     [SerializeField] private Button readyButton;
     [SerializeField] private TMP_Text readyButtonText;
+    [SerializeField] private GameObject cardBlock;
+    [SerializeField] private Image outlineImage;
+    [SerializeField] private Image outlineReady;
 
-    [Header("Config")]
-    [SerializeField] private LobbyRoleConfig roleConfig;
+    [Header("Card Colors")]
+    [SerializeField] private Color localCardColor = new Color32(0x20, 0x96, 0xF3, 0xFF);
+    [SerializeField] private Color otherCardColor = new Color32(0x2E, 0x2E, 0x2E, 0xFF);
+    [SerializeField] private Color readyColor = new Color32(0x1E, 0xCC, 0x00, 0xFF);
+    [SerializeField] private Color notReadyColor = new Color32(0xCC, 0x04, 0x00, 0xFF);
+
+    [Header("Role Icons")]
+    [SerializeField] private Image roleIcon;
+    [SerializeField] private Sprite runnerIcon;
+    [SerializeField] private Sprite sniperIcon;
 
     private ulong clientId;
     private bool isLocalCard;
@@ -44,8 +56,12 @@ public class LobbyPlayerCard : MonoBehaviour
 
         if (roleDropdown != null)
         {
-            if (roleConfig != null)
-                roleConfig.PopulateDropdown(roleDropdown);
+            roleDropdown.ClearOptions();
+            roleDropdown.AddOptions(new System.Collections.Generic.List<string>
+            {
+                PlayerRole.Runner.ToString(),
+                PlayerRole.Sniper.ToString()
+            });
 
             roleDropdown.onValueChanged.RemoveAllListeners();
             roleDropdown.interactable = isLocalCard;
@@ -82,6 +98,27 @@ public class LobbyPlayerCard : MonoBehaviour
         if (colorComponent != null)
             colorComponent.OnColorUpdated += OnColorUpdated;
 
+        if (cardBlock != null)
+            cardBlock.SetActive(!isLocalCard);
+
+        if (outlineImage != null)
+            outlineImage.color = isLocalCard ? localCardColor : otherCardColor;
+
+        if (!isLocalCard)
+        {
+            if (roleDropdown != null)
+            {
+                var et = roleDropdown.GetComponent<EventTrigger>();
+                if (et != null) et.enabled = false;
+            }
+
+            if (readyButton != null)
+            {
+                var et = readyButton.GetComponent<EventTrigger>();
+                if (et != null) et.enabled = false;
+            }
+        }
+
         Refresh();
     }
 
@@ -113,16 +150,34 @@ public class LobbyPlayerCard : MonoBehaviour
 
         if (readyButtonText != null && roleComponent != null)
         {
-            if (roleComponent.IsReady)
-            {
-                readyButtonText.text = "Ready";
-                readyButtonText.color = Color.green;
-            }
-            else
-            {
-                readyButtonText.text = "Not Ready";
-                readyButtonText.color = Color.red;
-            }
+            readyButtonText.text = roleComponent.IsReady ? "Ready" : "Not Ready";
+        }
+
+        if (outlineReady != null && roleComponent != null)
+        {
+            outlineReady.color = roleComponent.IsReady ? readyColor : notReadyColor;
+        }
+
+        UpdateRoleIcon();
+    }
+
+    private void UpdateRoleIcon()
+    {
+        if (roleIcon == null || roleComponent == null) return;
+
+        switch (roleComponent.CurrentRole)
+        {
+            case PlayerRole.Runner:
+                roleIcon.sprite = runnerIcon;
+                roleIcon.enabled = true;
+                break;
+            case PlayerRole.Sniper:
+                roleIcon.sprite = sniperIcon;
+                roleIcon.enabled = true;
+                break;
+            default:
+                roleIcon.enabled = false;
+                break;
         }
     }
 
@@ -130,6 +185,8 @@ public class LobbyPlayerCard : MonoBehaviour
     {
         if (!isLocalCard && roleDropdown != null)
             roleDropdown.SetValueWithoutNotify(RoleToDropdown(newRole));
+
+        UpdateRoleIcon();
     }
 
     private void OnReadyUpdated(bool oldReady, bool newReady)
@@ -153,31 +210,8 @@ public class LobbyPlayerCard : MonoBehaviour
     {
         PlayerRole role = DropdownToRole(index);
 
-        if (role == PlayerRole.Sniper && IsSniperTaken())
-        {
-            role = PlayerRole.Runner;
-            roleDropdown.SetValueWithoutNotify(RoleToDropdown(role));
-        }
-
         if (roleComponent != null)
             roleComponent.RequestSetRole(role);
-    }
-
-    private bool IsSniperTaken()
-    {
-        if (NetworkManager.Singleton == null) return false;
-
-        foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
-        {
-            if (client.ClientId == clientId) continue;
-            if (client.PlayerObject == null) continue;
-
-            var other = client.PlayerObject.GetComponent<NetworkPlayerRole>();
-            if (other != null && other.CurrentRole == PlayerRole.Sniper)
-                return true;
-        }
-
-        return false;
     }
 
     private void OnReadyClicked()

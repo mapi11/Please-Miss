@@ -64,19 +64,6 @@ public class NetworkPlayerRole : NetworkBehaviour
 
     private void SetRoleServer(PlayerRole role)
     {
-        if (role == PlayerRole.Sniper)
-        {
-            foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
-            {
-                if (client.ClientId == OwnerClientId) continue;
-                if (client.PlayerObject == null) continue;
-
-                var other = client.PlayerObject.GetComponent<NetworkPlayerRole>();
-                if (other != null && other.CurrentRole == PlayerRole.Sniper)
-                    return;
-            }
-        }
-
         networkRole.Value = (byte)role;
 
         if (LobbyManager.Instance != null)

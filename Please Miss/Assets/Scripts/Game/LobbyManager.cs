@@ -16,6 +16,7 @@ public class LobbyManager : NetworkBehaviour
     [SerializeField] private LobbyUI lobbyUI;
 
     private Coroutine countdownCoroutine;
+    private bool isLeaving;
 
     public bool IsCountdownActive { get; private set; }
 
@@ -74,6 +75,8 @@ public class LobbyManager : NetworkBehaviour
             StopCoroutine(countdownCoroutine);
             countdownCoroutine = null;
             IsCountdownActive = false;
+            NetworkConnectionManager.ConnectionLocked = false;
+            HideCountdownClientRpc();
         }
     }
 
@@ -86,10 +89,11 @@ public class LobbyManager : NetworkBehaviour
 
     private void OnLocalDisconnected(ulong clientId)
     {
-        if (NetworkManager.Singleton == null) return;
+        if (isLeaving) return;
+        if (IsServer) return;
 
-        if (clientId == NetworkManager.Singleton.LocalClientId && !IsServer)
-            SceneManager.LoadScene(mainMenuSceneName);
+        isLeaving = true;
+        SceneManager.LoadScene(mainMenuSceneName);
     }
 
     public void OnPlayerStateChanged()
@@ -100,6 +104,41 @@ public class LobbyManager : NetworkBehaviour
             CancelCountdown();
 
         CheckAllReady();
+        UpdateWarning();
+    }
+
+    private void UpdateWarning()
+    {
+        if (lobbyUI == null) return;
+
+        bool allReady = true;
+        int sniperCount = 0;
+
+        foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
+        {
+            if (client.PlayerObject == null) continue;
+            var roleComp = client.PlayerObject.GetComponent<NetworkPlayerRole>();
+            if (roleComp == null) continue;
+            if (!roleComp.IsReady) allReady = false;
+            if (roleComp.CurrentRole == PlayerRole.Sniper) sniperCount++;
+        }
+
+        int warning = 0;
+
+        if (sniperCount > 1)
+            warning = 2;
+        else if (allReady && sniperCount == 0 && NetworkManager.Singleton.ConnectedClientsIds.Count >= 2)
+            warning = 1;
+
+        lobbyUI.SetWarning(warning);
+        UpdateWarningClientRpc(warning);
+    }
+
+    [ClientRpc]
+    private void UpdateWarningClientRpc(int warning)
+    {
+        if (!IsServer && lobbyUI != null)
+            lobbyUI.SetWarning(warning);
     }
 
     private void CancelCountdown()
@@ -121,7 +160,7 @@ public class LobbyManager : NetworkBehaviour
         if (IsCountdownActive) return;
         if (NetworkManager.Singleton.ConnectedClientsIds.Count < 2) return;
 
-        bool hasSniper = false;
+        int sniperCount = 0;
 
         foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
         {
@@ -131,11 +170,11 @@ public class LobbyManager : NetworkBehaviour
             if (roleComp == null) return;
 
             if (!roleComp.IsReady) return;
-            if (roleComp.CurrentRole == PlayerRole.Sniper) hasSniper = true;
+            if (roleComp.CurrentRole == PlayerRole.Sniper) sniperCount++;
             if (roleComp.CurrentRole == PlayerRole.None) return;
         }
 
-        if (!hasSniper) return;
+        if (sniperCount != 1) return;
 
         if (countdownCoroutine == null)
             countdownCoroutine = StartCoroutine(StartCountdown());
@@ -150,23 +189,34 @@ public class LobbyManager : NetworkBehaviour
 
         while (remaining > 0)
         {
+            int seconds = (int)Mathf.Ceil(remaining);
+
             if (lobbyUI != null)
-                lobbyUI.ShowCountdown((int)Mathf.Ceil(remaining));
+                lobbyUI.ShowCountdown(seconds);
+
+            ShowCountdownClientRpc(seconds);
 
             remaining -= Time.deltaTime;
             yield return null;
         }
 
-        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+        if (IsCountdownActive && NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
             NetworkManager.Singleton.SceneManager.LoadScene(gameSceneName, LoadSceneMode.Single);
 
         IsCountdownActive = false;
     }
 
     [ClientRpc]
+    private void ShowCountdownClientRpc(int seconds)
+    {
+        if (lobbyUI != null)
+            lobbyUI.ShowCountdown(seconds);
+    }
+
+    [ClientRpc]
     private void HideCountdownClientRpc()
     {
-        if (!IsServer && lobbyUI != null)
+        if (lobbyUI != null)
             lobbyUI.HideCountdown();
     }
 }
