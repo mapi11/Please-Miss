@@ -38,6 +38,9 @@ public class NetworkPlayerSpawnTeleporter : NetworkBehaviour
         if (!IsSpawned) return;
         if (teleportOnlyOwner && !IsOwner) return;
 
+        var all = GetComponents<NetworkPlayerSpawnTeleporter>();
+        if (all.Length > 1 && all[0] != this) return;
+
         if (teleportCoroutine != null)
             StopCoroutine(teleportCoroutine);
         teleportCoroutine = StartCoroutine(SpawnRoutine());

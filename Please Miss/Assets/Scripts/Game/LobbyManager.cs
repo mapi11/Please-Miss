@@ -6,6 +6,7 @@ using UnityEngine.SceneManagement;
 public class LobbyManager : NetworkBehaviour
 {
     public static LobbyManager Instance { get; private set; }
+    public static bool IsInLobby { get; set; } = true;
 
     [Header("Settings")]
     [SerializeField] private float countdownDuration = 5f;
@@ -28,6 +29,13 @@ public class LobbyManager : NetworkBehaviour
             return;
         }
         Instance = this;
+        IsInLobby = true;
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+            IsInLobby = false;
     }
 
     public override void OnNetworkSpawn()
@@ -42,6 +50,15 @@ public class LobbyManager : NetworkBehaviour
 
         if (lobbyUI != null)
             lobbyUI.RebuildCards();
+
+        HideInventoryUI();
+    }
+
+    private void HideInventoryUI()
+    {
+        var invUIs = FindObjectsByType<InventoryUI>(FindObjectsSortMode.None);
+        foreach (var inv in invUIs)
+            inv.gameObject.SetActive(false);
     }
 
     public override void OnNetworkDespawn()
