@@ -16,6 +16,8 @@ public class NetworkPlayerColor : NetworkBehaviour
         NetworkVariableWritePermission.Server
     );
 
+    public event System.Action<Color32> OnColorUpdated;
+
     public Color32 CurrentColor
     {
         get
@@ -105,5 +107,7 @@ public class NetworkPlayerColor : NetworkBehaviour
             if (material.HasProperty(standardColorProperty))
                 material.SetColor(standardColorProperty, color);
         }
+
+        OnColorUpdated?.Invoke(color);
     }
 }

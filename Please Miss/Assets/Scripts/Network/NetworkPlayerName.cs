@@ -27,6 +27,8 @@ public class NetworkPlayerName : NetworkBehaviour
 
     public string CurrentName => networkPlayerName.Value.ToString();
 
+    public event System.Action<string> OnNameUpdated;
+
     private void Awake()
     {
         if (nameplateRoot == null && nameText != null)
@@ -101,6 +103,8 @@ public class NetworkPlayerName : NetworkBehaviour
     {
         if (nameText != null)
             nameText.text = newName;
+
+        OnNameUpdated?.Invoke(newName);
     }
 
     private string SanitizeName(string rawName)

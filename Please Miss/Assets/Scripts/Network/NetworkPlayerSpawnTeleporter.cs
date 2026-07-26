@@ -66,6 +66,15 @@ public class NetworkPlayerSpawnTeleporter : NetworkBehaviour
 
         if (characterController != null)
             characterController.enabled = true;
+
+        DismissConnectionScreen();
+    }
+
+    private void DismissConnectionScreen()
+    {
+        var screen = FindObjectOfType<ConnectionScreenManager>();
+        if (screen != null)
+            screen.Dismiss();
     }
 
     private Transform FindTargetSpawn()

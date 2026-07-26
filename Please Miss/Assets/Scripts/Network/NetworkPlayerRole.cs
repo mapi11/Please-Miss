@@ -9,18 +9,28 @@ public class NetworkPlayerRole : NetworkBehaviour
         NetworkVariableWritePermission.Server
     );
 
+    private readonly NetworkVariable<bool> networkIsReady = new(
+        false,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
+
     public PlayerRole CurrentRole => (PlayerRole)networkRole.Value;
+    public bool IsReady => networkIsReady.Value;
 
     public event System.Action<PlayerRole, PlayerRole> OnRoleChanged;
+    public event System.Action<bool, bool> OnReadyChanged;
 
     public override void OnNetworkSpawn()
     {
         networkRole.OnValueChanged += OnRoleValueChanged;
+        networkIsReady.OnValueChanged += OnReadyValueChanged;
     }
 
     public override void OnNetworkDespawn()
     {
         networkRole.OnValueChanged -= OnRoleValueChanged;
+        networkIsReady.OnValueChanged -= OnReadyValueChanged;
     }
 
     public void RequestSetRole(PlayerRole role)
@@ -31,6 +41,16 @@ public class NetworkPlayerRole : NetworkBehaviour
             SetRoleServer(role);
         else
             SetRoleServerRpc(role);
+    }
+
+    public void RequestToggleReady()
+    {
+        if (!IsSpawned) return;
+
+        if (IsServer)
+            networkIsReady.Value = !networkIsReady.Value;
+        else
+            ToggleReadyServerRpc();
     }
 
     [ServerRpc(RequireOwnership = false)]
@@ -44,11 +64,44 @@ public class NetworkPlayerRole : NetworkBehaviour
 
     private void SetRoleServer(PlayerRole role)
     {
+        if (role == PlayerRole.Sniper)
+        {
+            foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
+            {
+                if (client.ClientId == OwnerClientId) continue;
+                if (client.PlayerObject == null) continue;
+
+                var other = client.PlayerObject.GetComponent<NetworkPlayerRole>();
+                if (other != null && other.CurrentRole == PlayerRole.Sniper)
+                    return;
+            }
+        }
+
         networkRole.Value = (byte)role;
+
+        if (LobbyManager.Instance != null)
+            LobbyManager.Instance.OnPlayerStateChanged();
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void ToggleReadyServerRpc(ServerRpcParams rpcParams = default)
+    {
+        if (rpcParams.Receive.SenderClientId != OwnerClientId)
+            return;
+
+        networkIsReady.Value = !networkIsReady.Value;
+
+        if (LobbyManager.Instance != null)
+            LobbyManager.Instance.OnPlayerStateChanged();
     }
 
     private void OnRoleValueChanged(byte oldValue, byte newValue)
     {
         OnRoleChanged?.Invoke((PlayerRole)oldValue, (PlayerRole)newValue);
+    }
+
+    private void OnReadyValueChanged(bool oldValue, bool newValue)
+    {
+        OnReadyChanged?.Invoke(oldValue, newValue);
     }
 }
