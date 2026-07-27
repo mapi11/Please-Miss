@@ -70,6 +70,9 @@ public class PlayerController : NetworkBehaviour
     [Header("Multiplayer")]
     [SerializeField] private int localOnlyLayer = 6;
 
+    [Header("Stamina")]
+    [SerializeField] private Stamina stamina;
+
     [Header("Audio")]
     [SerializeField] private AudioListener audioListener;
 
@@ -167,6 +170,9 @@ public class PlayerController : NetworkBehaviour
 
         if (inventory == null)
             inventory = GetComponent<Inventory>();
+
+        if (stamina == null)
+            stamina = GetComponent<Stamina>();
 
         if (bodyVisual != null)
             bodyInitialY = bodyVisual.localPosition.y;
@@ -298,6 +304,7 @@ public class PlayerController : NetworkBehaviour
         HandleArms();
         HandleCrouch();
         HandleMovement();
+        HandleStamina();
         HandleInteraction();
         HandleInventoryInput();
         HandlePointing();
@@ -369,11 +376,17 @@ public class PlayerController : NetworkBehaviour
             moveSmoothTime
         );
 
-        bool sprinting = IsSprintPressed() && !isCrouching;
+        bool wantSprint = IsSprintPressed() && !isCrouching;
+        bool canSprint = stamina == null || stamina.CanSprint;
+        bool sprinting = wantSprint && canSprint;
+
         float speed = sprinting ? sprintSpeed : walkSpeed;
 
         if (isCrouching)
             speed *= 0.55f;
+
+        if (stamina != null)
+            speed *= stamina.SpeedMultiplier;
 
         Vector3 move = transform.right * currentMoveInput.x + transform.forward * currentMoveInput.y;
         move *= speed;
@@ -382,8 +395,13 @@ public class PlayerController : NetworkBehaviour
         {
             verticalVelocity = jumpStickToGroundForce;
 
-            if (IsJumpPressed())
+            if (IsJumpPressed() && (stamina == null || !stamina.IsSlowed))
+            {
                 verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
+
+                if (stamina != null)
+                    stamina.Consume(stamina.JumpCost);
+            }
         }
 
         verticalVelocity += gravity * Time.deltaTime;
@@ -508,6 +526,13 @@ public class PlayerController : NetworkBehaviour
         }
 
         return true;
+    }
+
+    private void HandleStamina()
+    {
+        if (stamina == null) return;
+        bool sprinting = IsSprintPressed() && !isCrouching && stamina.CanSprint;
+        stamina.Tick(Time.deltaTime, sprinting);
     }
 
     private void HandleInteraction()
