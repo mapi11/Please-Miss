@@ -1,4 +1,3 @@
-using System.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
@@ -9,6 +8,7 @@ public class InventoryUI : MonoBehaviour
     [SerializeField] private Inventory inventory;
     [SerializeField] private Transform slotsParent;
     [SerializeField] private InventorySlot slotPrefab;
+    [SerializeField] private GameObject inventoryContent;
 
     [Header("Colors")]
     [SerializeField] private Color activeSlotColor = Color.white;
@@ -16,40 +16,37 @@ public class InventoryUI : MonoBehaviour
     [SerializeField] private Color emptySlotColor = new Color(0.15f, 0.15f, 0.15f, 0.5f);
 
     private InventorySlot[] slots;
+    private bool hasBound;
+
+    private void Awake()
+    {
+        gameObject.SetActive(true);
+        SetContentActive(false);
+    }
 
     private void Start()
     {
-        if (FindObjectOfType<LobbyManager>() != null)
-        {
-            gameObject.SetActive(false);
-            return;
-        }
-
-        var localInv = FindLocalPlayerInventory();
-        if (localInv != null)
-        {
-            BindInventory(localInv);
-            return;
-        }
-
-        StartCoroutine(WaitForPlayer());
+        TryBind();
     }
 
-    private IEnumerator WaitForPlayer()
+    private void Update()
     {
-        for (int i = 0; i < 60; i++)
+        if (FindObjectOfType<LobbyManager>() != null && LobbyManager.IsInLobby)
         {
-            var localInv = FindLocalPlayerInventory();
-            if (localInv != null)
-            {
-                BindInventory(localInv);
-                yield break;
-            }
-
-            yield return null;
+            SetContentActive(false);
+            return;
         }
 
-        gameObject.SetActive(false);
+        if (!hasBound)
+            TryBind();
+    }
+
+    private void TryBind()
+    {
+        if (hasBound) return;
+        var localInv = FindLocalPlayerInventory();
+        if (localInv != null)
+            BindInventory(localInv);
     }
 
     private void BindInventory(Inventory newInventory)
@@ -57,6 +54,7 @@ public class InventoryUI : MonoBehaviour
         if (newInventory == null) return;
 
         inventory = newInventory;
+        hasBound = true;
 
         if (slotsParent == null) return;
 
@@ -78,7 +76,7 @@ public class InventoryUI : MonoBehaviour
 
         OnActiveSlotChanged(inventory.ActiveSlot);
 
-        gameObject.SetActive(hasItems);
+        SetContentActive(hasItems);
     }
 
     private void OnDestroy()
@@ -96,7 +94,7 @@ public class InventoryUI : MonoBehaviour
         {
             var localObj = net.LocalClient?.PlayerObject;
             if (localObj != null)
-                return localObj.GetComponent<Inventory>();
+                return localObj.GetComponentInChildren<Inventory>();
         }
         return null;
     }
@@ -176,14 +174,23 @@ public class InventoryUI : MonoBehaviour
         {
             if (!string.IsNullOrEmpty(inventory.GetItemAtSlot(i)))
             {
-                if (!gameObject.activeSelf)
-                    gameObject.SetActive(true);
+                SetContentActive(true);
                 return;
             }
         }
 
-        if (gameObject.activeSelf)
-            gameObject.SetActive(false);
+        SetContentActive(false);
+    }
+
+    private void SetContentActive(bool active)
+    {
+        if (active && !gameObject.activeSelf)
+            gameObject.SetActive(true);
+
+        if (inventoryContent != null)
+            inventoryContent.SetActive(active);
+        else if (slotsParent != null)
+            slotsParent.gameObject.SetActive(active);
     }
 
     private void RefreshSlotColor(int slotIndex)

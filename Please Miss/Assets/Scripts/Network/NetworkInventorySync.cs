@@ -51,6 +51,20 @@ public class NetworkInventorySync : NetworkBehaviour
 
     private GameObject currentHeldVisual;
 
+    private void OnValidate()
+    {
+        if (items == null) return;
+        for (int i = 0; i < items.Length; i++)
+        {
+            if (items[i] != null && items[i].WorldDropPrefab != null && string.IsNullOrEmpty(items[i].Name))
+            {
+                var pickable = items[i].WorldDropPrefab.GetComponent<PickableItem>();
+                if (pickable != null && !string.IsNullOrEmpty(pickable.ItemName))
+                    items[i].Name = pickable.ItemName;
+            }
+        }
+    }
+
     private void Awake()
     {
         if (inventory == null)

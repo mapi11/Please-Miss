@@ -50,15 +50,6 @@ public class LobbyManager : NetworkBehaviour
 
         if (lobbyUI != null)
             lobbyUI.RebuildCards();
-
-        HideInventoryUI();
-    }
-
-    private void HideInventoryUI()
-    {
-        var invUIs = FindObjectsByType<InventoryUI>(FindObjectsSortMode.None);
-        foreach (var inv in invUIs)
-            inv.gameObject.SetActive(false);
     }
 
     public override void OnNetworkDespawn()

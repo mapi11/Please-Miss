@@ -267,9 +267,6 @@ public class PlayerController : NetworkBehaviour
                 if (crosshair != null)
                     crosshair.SetActive(false);
 
-                var invUI = FindObjectOfType<InventoryUI>();
-                if (invUI != null)
-                    invUI.gameObject.SetActive(false);
             }
             else
             {
@@ -288,10 +285,13 @@ public class PlayerController : NetworkBehaviour
         if (characterController != null && !characterController.enabled)
             return;
 
-        if (Cursor.lockState != CursorLockMode.Locked)
+        if (!(PauseMenu.Instance != null && PauseMenu.Instance.IsOpen))
         {
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
+            if (Cursor.lockState != CursorLockMode.Locked)
+            {
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
+            }
         }
 
         HandleLook();
