@@ -163,6 +163,9 @@ public sealed class NetworkProjectile : NetworkBehaviour
             if (candidate.collider == null)
                 continue;
 
+            if (candidate.collider.GetComponent<CharacterController>() != null)
+                continue;
+
             NetworkObject hitNetworkObject = candidate.collider.GetComponentInParent<NetworkObject>();
             if (hitNetworkObject != null && hitNetworkObject.OwnerClientId == attackerClientId)
                 continue;

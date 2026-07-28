@@ -4162,16 +4162,14 @@ MonoBehaviour:
     hitCollider: {fileID: 2916929415615240095}
     damageMode: 0
     damageValue: 0.5
-  - zoneName: Body
-    hitCollider: {fileID: 6500536504009098620}
-    damageMode: 0
-    damageValue: 1
   - zoneName: Head
     hitCollider: {fileID: 1704822315875028964}
     damageMode: 0
     damageValue: 2
-  fallbackDamageMode: 0
-  fallbackDamageValue: 1
+  - zoneName: Body
+    hitCollider: {fileID: 6500536504009098620}
+    damageMode: 0
+    damageValue: 1
   debugHealthStep: 10
 --- !u!114 &2807886825379859501
 MonoBehaviour:

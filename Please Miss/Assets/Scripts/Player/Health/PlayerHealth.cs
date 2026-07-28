@@ -55,10 +55,6 @@ public sealed class PlayerHealth : NetworkBehaviour, IDamageable
     [Tooltip("The exact collider struck by the projectile is looked up in this list.")]
     [SerializeField] private List<PlayerHitZone> hitZones = new List<PlayerHitZone>();
 
-    [Header("Fallback for a collider not present in Hit Zones")]
-    [SerializeField] private HitZoneDamageMode fallbackDamageMode = HitZoneDamageMode.BulletDamageMultiplier;
-    [Min(0f)] [SerializeField] private float fallbackDamageValue = 1f;
-
     [Header("Inspector test buttons")]
     [Min(0.1f)] [SerializeField] private float debugHealthStep = 10f;
 
@@ -100,7 +96,6 @@ public sealed class PlayerHealth : NetworkBehaviour, IDamageable
     private void OnValidate()
     {
         maximumHealth = Mathf.Max(1f, maximumHealth);
-        fallbackDamageValue = Mathf.Max(0f, fallbackDamageValue);
         debugHealthStep = Mathf.Max(0.1f, debugHealthStep);
 
         if (!Application.isPlaying)
@@ -195,10 +190,16 @@ public sealed class PlayerHealth : NetworkBehaviour, IDamageable
             return zone.CalculateDamage(bulletDamage);
         }
 
-        zoneName = "Fallback";
-        return fallbackDamageMode == HitZoneDamageMode.FixedDamage
-            ? fallbackDamageValue
-            : Mathf.Max(0f, bulletDamage) * fallbackDamageValue;
+        zoneName = "None";
+        if (hitCollider != null)
+        {
+            Debug.LogWarning(
+                $"Hit on collider '{hitCollider.name}' (on '{hitCollider.transform.parent?.name}') " +
+                $"is not listed in Hit Zones on '{name}'. No damage applied.",
+                this
+            );
+        }
+        return 0f;
     }
 
     public PlayerHitZone FindHitZone(Collider hitCollider)
