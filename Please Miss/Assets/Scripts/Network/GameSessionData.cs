@@ -2,7 +2,7 @@ using UnityEngine;
 
 public static class GameSessionData
 {
-    public const string GameVersion = "Please Miss 0.1";
+    public const string GameVersion = "Please Miss 0.2";
 
     public static string JoinCode = "";
     public static string ConnectionType = "";

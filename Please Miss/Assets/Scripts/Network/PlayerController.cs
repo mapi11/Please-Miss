@@ -108,6 +108,9 @@ public class PlayerController : NetworkBehaviour
     private Transform pointTarget;
     private Transform idleHandTarget;
 
+    private bool isTwoHandedHolding;
+    private TwoHandedHold currentTwoHanded;
+
     public bool IsCrouching => isCrouching;
     public float Pitch => pitch;
     public bool IsChargingThrow => isChargingThrow;
@@ -204,6 +207,10 @@ public class PlayerController : NetworkBehaviour
         idleHandTarget = new GameObject("IdleHandTarget").transform;
         idleHandTarget.SetParent(transform);
         idleHandTarget.localPosition = Vector3.zero;
+
+        var netSync = GetComponent<NetworkInventorySync>();
+        if (netSync != null)
+            netSync.OnHeldVisualChanged += OnHeldVisualChanged;
     }
 
     public override void OnNetworkSpawn()
@@ -265,11 +272,53 @@ public class PlayerController : NetworkBehaviour
     private void OnDisable()
     {
         SceneManager.sceneLoaded -= OnSceneLoaded;
+
+        var netSync = GetComponent<NetworkInventorySync>();
+        if (netSync != null)
+            netSync.OnHeldVisualChanged -= OnHeldVisualChanged;
     }
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         lobbyChecked = false;
+    }
+
+    private void OnHeldVisualChanged(GameObject heldVisual)
+    {
+        ClearTwoHandedGrip();
+        currentTwoHanded = null;
+
+        if (heldVisual == null)
+            return;
+
+        currentTwoHanded = heldVisual.GetComponent<TwoHandedHold>();
+        if (currentTwoHanded != null && currentTwoHanded.IsValid)
+            SetTwoHandedGrip(currentTwoHanded.LeftGrip);
+    }
+
+    private void SetTwoHandedGrip(Transform leftGrip)
+    {
+        isTwoHandedHolding = true;
+
+        if (leftHand != null)
+        {
+            leftHand.snapToTarget = true;
+            leftHand.SetTarget(leftGrip);
+        }
+    }
+
+    private void ClearTwoHandedGrip()
+    {
+        if (!isTwoHandedHolding)
+            return;
+
+        isTwoHandedHolding = false;
+
+        if (leftHand != null)
+        {
+            leftHand.snapToTarget = false;
+            leftHand.ClearTarget();
+        }
     }
 
     private void Update()
@@ -589,7 +638,18 @@ public class PlayerController : NetworkBehaviour
                 Hand hand = InteractionHandRef;
                 if (hand != null)
                 {
-                    hand.SetTarget(currentInteractable.HandTarget);
+                    if (isTwoHandedHolding && currentTwoHanded != null)
+                    {
+                        if (leftHand != null)
+                        {
+                            leftHand.snapToTarget = true;
+                            leftHand.SetTarget(currentTwoHanded.LeftGrip);
+                        }
+                    }
+                    else
+                    {
+                        hand.SetTarget(currentInteractable.HandTarget);
+                    }
 
                     float handDistance = hand.DistanceToTarget;
                     if (handDistance <= handActivationDistance)
@@ -598,6 +658,15 @@ public class PlayerController : NetworkBehaviour
                         {
                             handReachedInteractable = true;
                             currentInteractable.OnHandBegin(this);
+                        }
+
+                        if (currentInteractable == null)
+                            return;
+
+                        if (currentInteractable.CancelOnCanInteractFail && !currentInteractable.CanInteract(this))
+                        {
+                            StopInteraction();
+                            return;
                         }
 
                         currentInteractable.OnHandHold(this, Time.deltaTime);
@@ -617,6 +686,10 @@ public class PlayerController : NetworkBehaviour
 
         currentInteractable = interactable;
         handReachedInteractable = false;
+
+        currentInteractable.OnLocalInteractionBegin(this);
+        if (IsServer)
+            currentInteractable.OnServerInteractionBegin(OwnerClientId);
 
         Hand hand = InteractionHandRef;
         if (hand != null)
@@ -641,12 +714,28 @@ public class PlayerController : NetworkBehaviour
         if (currentInteractable != null && handReachedInteractable)
             currentInteractable.OnHandEnd(this);
 
+        if (currentInteractable != null)
+        {
+            currentInteractable.OnLocalInteractionEnd(this);
+            if (IsServer)
+                currentInteractable.OnServerInteractionEnd(OwnerClientId);
+        }
+
         currentInteractable = null;
         handReachedInteractable = false;
 
         Hand hand = InteractionHandRef;
         if (hand != null)
             hand.ClearTarget();
+
+        if (isTwoHandedHolding && currentTwoHanded != null)
+        {
+            if (leftHand != null)
+            {
+                leftHand.snapToTarget = true;
+                leftHand.SetTarget(currentTwoHanded.LeftGrip);
+            }
+        }
     }
 
     public void ReleaseCurrentInteractable()
@@ -654,12 +743,28 @@ public class PlayerController : NetworkBehaviour
         if (currentInteractable != null && handReachedInteractable)
             currentInteractable.OnHandEnd(this);
 
+        if (currentInteractable != null)
+        {
+            currentInteractable.OnLocalInteractionEnd(this);
+            if (IsServer)
+                currentInteractable.OnServerInteractionEnd(OwnerClientId);
+        }
+
         currentInteractable = null;
         handReachedInteractable = false;
 
         Hand hand = InteractionHandRef;
         if (hand != null)
             hand.ClearTarget();
+
+        if (isTwoHandedHolding && currentTwoHanded != null)
+        {
+            if (leftHand != null)
+            {
+                leftHand.snapToTarget = true;
+                leftHand.SetTarget(currentTwoHanded.LeftGrip);
+            }
+        }
     }
 
     private void HandleInventoryInput()
@@ -765,7 +870,7 @@ public class PlayerController : NetworkBehaviour
 
     private void StartPointing()
     {
-        if (isPointing) return;
+        if (isPointing || isTwoHandedHolding) return;
         isPointing = true;
 
         Hand pointing = PointingHandRef;

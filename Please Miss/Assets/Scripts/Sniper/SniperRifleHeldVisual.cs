@@ -10,6 +10,10 @@ public sealed class SniperRifleHeldVisual : MonoBehaviour
     [Header("Laser")]
     [SerializeField] private LineRenderer laserLine;
 
+    [Header("Laser Dot")]
+    [SerializeField] private Transform laserDot;
+    [SerializeField] private Color dotColor = new Color(1f, 0f, 0f, 0.5f);
+
     private bool laserStarted;
 
     public SniperRifleDefinition Definition => definition;
@@ -36,6 +40,20 @@ public sealed class SniperRifleHeldVisual : MonoBehaviour
         }
 
         laserLine.enabled = visible;
+
+        if (laserDot != null)
+        {
+            laserDot.gameObject.SetActive(visible);
+            if (visible)
+            {
+                laserDot.position = endPoint;
+
+                var renderer = laserDot.GetComponent<MeshRenderer>();
+                if (renderer != null)
+                    renderer.material.color = dotColor;
+            }
+        }
+
         if (!visible)
             return;
 

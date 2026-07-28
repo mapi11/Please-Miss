@@ -232,9 +232,9 @@ public class NetworkInventorySync : NetworkBehaviour
         if (currentHeldVisual == null)
             return;
 
+        OnHeldVisualChanged?.Invoke(null);
         Destroy(currentHeldVisual);
         currentHeldVisual = null;
-        OnHeldVisualChanged?.Invoke(null);
     }
 
     public void LaunchActiveItem(float charge, Vector3 direction)

@@ -8,6 +8,9 @@ public sealed class AmmoBox : Interactable
     [Min(0.1f)] [SerializeField] private float maximumUseDistance = 2.5f;
     [Min(0f)] [SerializeField] private float serverCooldown = 0.25f;
 
+    [Header("Auto Release")]
+    [Min(0f)] [SerializeField] private float releaseDelay = 0.3f;
+
     private double nextServerUseTime;
 
     public override bool CanInteract(PlayerController player)
@@ -30,12 +33,22 @@ public sealed class AmmoBox : Interactable
         if (IsSpawned && playerNetworkObject != null)
         {
             RefillRpc(playerNetworkObject);
+            StartCoroutine(ReleaseAfterDelay(player));
             return;
         }
 
         SniperWeaponController weapon = player.GetComponent<SniperWeaponController>();
         if (weapon != null && weapon.IsServer)
             weapon.ServerRefill(bulletDefinition);
+
+        StartCoroutine(ReleaseAfterDelay(player));
+    }
+
+    private System.Collections.IEnumerator ReleaseAfterDelay(PlayerController player)
+    {
+        yield return new WaitForSeconds(releaseDelay);
+        if (player != null)
+            player.ReleaseCurrentInteractable();
     }
 
     [Rpc(SendTo.Server)]

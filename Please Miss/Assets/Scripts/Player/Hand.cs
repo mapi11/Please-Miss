@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public class Hand : MonoBehaviour
@@ -11,6 +12,9 @@ public class Hand : MonoBehaviour
     [SerializeField] private float followSmoothTime = 0.055f;
     [SerializeField] private float targetFollowSmoothTime = 0.04f;
     [SerializeField] private float maxSpeed = 18f;
+
+    [NonSerialized] public bool snapToTarget;
+    [NonSerialized] public float targetFollowSmoothTimeOverride = -1f;
 
     [Header("Swing")]
     [SerializeField] private float swingAmount = 0.08f;
@@ -120,11 +124,25 @@ public class Hand : MonoBehaviour
             desiredPosition = GetRagdollLoosePosition();
             desiredRotation = Quaternion.LookRotation(followRoot.forward, Vector3.up);
         }
-        else if (hasTarget && target != null)
+        else if (hasTarget)
         {
-            Vector3 swing = ComputeSwing();
-            desiredPosition = target.position + swing;
-            desiredRotation = target.rotation;
+            if (target == null)
+            {
+                ClearTarget();
+                desiredPosition = GetIdlePosition();
+                desiredRotation = GetHandRotation() * Quaternion.Euler(idleLocalEuler);
+            }
+            else if (snapToTarget)
+            {
+                desiredPosition = target.position;
+                desiredRotation = target.rotation;
+            }
+            else
+            {
+                Vector3 swing = ComputeSwing();
+                desiredPosition = target.position + swing;
+                desiredRotation = target.rotation;
+            }
         }
         else
         {
@@ -132,7 +150,23 @@ public class Hand : MonoBehaviour
             desiredRotation = GetHandRotation() * Quaternion.Euler(idleLocalEuler);
         }
 
-        float smoothTime = hasTarget ? targetFollowSmoothTime : followSmoothTime;
+        if (snapToTarget && hasTarget)
+        {
+            if (target == null)
+            {
+                ClearTarget();
+                return;
+            }
+            transform.position = target.position;
+            transform.rotation = target.rotation;
+            return;
+        }
+
+        float smoothTime;
+        if (hasTarget && targetFollowSmoothTimeOverride >= 0f)
+            smoothTime = targetFollowSmoothTimeOverride;
+        else
+            smoothTime = hasTarget ? targetFollowSmoothTime : followSmoothTime;
 
         transform.position = Vector3.SmoothDamp(
             transform.position,
