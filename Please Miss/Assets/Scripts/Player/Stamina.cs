@@ -1,6 +1,7 @@
+using Unity.Netcode;
 using UnityEngine;
 
-public class Stamina : MonoBehaviour
+public class Stamina : NetworkBehaviour
 {
     [Header("Stamina")]
     [SerializeField] private float maxStamina = 100f;
@@ -20,15 +21,17 @@ public class Stamina : MonoBehaviour
 
     private float currentStamina;
     private float lastSprintTime;
-    private bool isExhausted;
     private bool uiShown;
+
+    private readonly NetworkVariable<bool> isExhausted = new NetworkVariable<bool>(false,
+        NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
     public float CurrentStamina => currentStamina;
     public float MaxStamina => maxStamina;
     public float Normalized => currentStamina / maxStamina;
-    public bool CanSprint => !isExhausted && currentStamina > 0f;
-    public bool IsSlowed => isExhausted;
-    public float SpeedMultiplier => isExhausted ? slowMultiplier : 1f;
+    public bool CanSprint => !isExhausted.Value && currentStamina > 0f;
+    public bool IsSlowed => isExhausted.Value;
+    public float SpeedMultiplier => isExhausted.Value ? slowMultiplier : 1f;
     public float JumpCost => jumpCost;
 
     public event System.Action<float> OnStaminaChanged;
@@ -41,6 +44,16 @@ public class Stamina : MonoBehaviour
 
         if (staminaUI == null)
             staminaUI = GetComponentInChildren<StaminaUI>();
+
+        isExhausted.OnValueChanged += (_, newValue) =>
+        {
+            if (staminaUI != null)
+                staminaUI.SetExhausted(newValue);
+            if (newValue)
+                OnStaminaExhausted?.Invoke();
+            else
+                OnStaminaRecovered?.Invoke();
+        };
     }
 
     public void Consume(float amount)
@@ -51,10 +64,7 @@ public class Stamina : MonoBehaviour
         if (currentStamina <= 0f)
         {
             currentStamina = 0f;
-            isExhausted = true;
-            OnStaminaExhausted?.Invoke();
-            if (staminaUI != null)
-                staminaUI.SetExhausted(true);
+            isExhausted.Value = true;
         }
 
         OnStaminaChanged?.Invoke(Normalized);
@@ -79,10 +89,7 @@ public class Stamina : MonoBehaviour
             if (currentStamina <= 0f)
             {
                 currentStamina = 0f;
-                isExhausted = true;
-                OnStaminaExhausted?.Invoke();
-                if (staminaUI != null)
-                    staminaUI.SetExhausted(true);
+                isExhausted.Value = true;
             }
 
             OnStaminaChanged?.Invoke(Normalized);
@@ -105,12 +112,9 @@ public class Stamina : MonoBehaviour
                     staminaUI.UpdateValue(Normalized);
             }
 
-            if (isExhausted && currentStamina >= maxStamina * regenThreshold)
+            if (isExhausted.Value && currentStamina >= maxStamina * regenThreshold)
             {
-                isExhausted = false;
-                OnStaminaRecovered?.Invoke();
-                if (staminaUI != null)
-                    staminaUI.SetExhausted(false);
+                isExhausted.Value = false;
             }
         }
     }
