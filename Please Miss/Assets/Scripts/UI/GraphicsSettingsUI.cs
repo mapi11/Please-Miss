@@ -10,6 +10,31 @@ using UnityEngine.UI;
 
 public class GraphicsSettingsUI : MonoBehaviour
 {
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    private static void ApplySavedSettingsEarly()
+    {
+        int preset = PlayerPrefs.GetInt("GraphicsPreset", -1);
+
+        if (preset < 0)
+        {
+            QualitySettings.globalTextureMipmapLimit = 1;
+            QualitySettings.shadows = UnityEngine.ShadowQuality.All;
+            QualitySettings.shadowDistance = 100f;
+            QualitySettings.shadowResolution = UnityEngine.ShadowResolution.High;
+            QualitySettings.vSyncCount = 1;
+            Application.targetFrameRate = 144;
+        }
+        else
+        {
+            QualitySettings.globalTextureMipmapLimit = PlayerPrefs.GetInt("TextureQuality", 0);
+            QualitySettings.shadows = (UnityEngine.ShadowQuality)PlayerPrefs.GetInt("ShadowQuality", 2);
+            QualitySettings.shadowDistance = PlayerPrefs.GetFloat("ShadowDistance", 100f);
+            QualitySettings.shadowResolution = (UnityEngine.ShadowResolution)PlayerPrefs.GetInt("ShadowResolution", 2);
+            QualitySettings.vSyncCount = PlayerPrefs.GetInt("VSync", 1);
+            Application.targetFrameRate = PlayerPrefs.GetInt("MaxFps", 144);
+        }
+    }
+
     [Header("Preset")]
     [SerializeField] private TMP_Dropdown presetDropdown;
 

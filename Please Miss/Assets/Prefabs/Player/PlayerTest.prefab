@@ -3783,7 +3783,7 @@ MonoBehaviour:
   regenRate: 10
   regenDelay: 1
   jumpCost: 10
-  slowMultiplier: 0.8
+  slowMultiplier: 0.7
   regenThreshold: 0.4
   staminaUI: {fileID: 8655659788233341531}
 --- !u!114 &2571829687392854606
