@@ -1,56 +1,106 @@
+using System;
 using Unity.Netcode;
 using UnityEngine;
 
-public class NetworkPlayerRole : NetworkBehaviour
+/// <summary>
+/// The single network source of truth for the player's selected lobby role and ready state.
+/// Add exactly one instance to the network Player Prefab.
+/// </summary>
+[DisallowMultipleComponent]
+public sealed class NetworkPlayerRole : NetworkBehaviour
 {
-    private readonly NetworkVariable<byte> networkRole = new(
-        0,
+    private readonly NetworkVariable<PlayerRole> networkRole = new NetworkVariable<PlayerRole>(
+        PlayerRole.None,
         NetworkVariableReadPermission.Everyone,
         NetworkVariableWritePermission.Server
     );
 
-    private readonly NetworkVariable<bool> networkIsReady = new(
+    private readonly NetworkVariable<bool> networkIsReady = new NetworkVariable<bool>(
         false,
         NetworkVariableReadPermission.Everyone,
         NetworkVariableWritePermission.Server
     );
 
-    public PlayerRole CurrentRole => (PlayerRole)networkRole.Value;
+    public PlayerRole CurrentRole => networkRole.Value;
     public bool IsReady => networkIsReady.Value;
+    public bool IsSniper => CurrentRole == PlayerRole.Sniper;
+    public bool IsRunner => CurrentRole == PlayerRole.Runner;
 
-    public event System.Action<PlayerRole, PlayerRole> OnRoleChanged;
-    public event System.Action<bool, bool> OnReadyChanged;
+    public event Action<PlayerRole, PlayerRole> OnRoleChanged;
+    public event Action<bool, bool> OnReadyChanged;
 
     public override void OnNetworkSpawn()
     {
-        networkRole.OnValueChanged += OnRoleValueChanged;
-        networkIsReady.OnValueChanged += OnReadyValueChanged;
+        networkRole.OnValueChanged += HandleRoleChanged;
+        networkIsReady.OnValueChanged += HandleReadyChanged;
     }
 
     public override void OnNetworkDespawn()
     {
-        networkRole.OnValueChanged -= OnRoleValueChanged;
-        networkIsReady.OnValueChanged -= OnReadyValueChanged;
+        networkRole.OnValueChanged -= HandleRoleChanged;
+        networkIsReady.OnValueChanged -= HandleReadyChanged;
     }
 
     public void RequestSetRole(PlayerRole role)
     {
-        if (!IsSpawned || role == CurrentRole) return;
+        if (!IsSpawned || (!IsOwner && !IsServer))
+            return;
+
+        if (!IsValidSelectableRole(role) || role == CurrentRole)
+            return;
 
         if (IsServer)
-            SetRoleServer(role);
+        {
+            TrySetRoleOnServer(role, OwnerClientId);
+        }
         else
+        {
             SetRoleServerRpc(role);
+        }
     }
 
     public void RequestToggleReady()
     {
-        if (!IsSpawned) return;
+        if (!IsSpawned || (!IsOwner && !IsServer))
+            return;
 
         if (IsServer)
-            networkIsReady.Value = !networkIsReady.Value;
+        {
+            ToggleReadyOnServer();
+        }
         else
+        {
             ToggleReadyServerRpc();
+        }
+    }
+
+    public bool ServerSetRole(PlayerRole role)
+    {
+        if (!IsServer)
+        {
+            Debug.LogWarning("ServerSetRole can only be called on the server.", this);
+            return false;
+        }
+
+        if (!IsValidRole(role))
+            return false;
+
+        return TrySetRoleOnServer(role, OwnerClientId);
+    }
+
+    public void ServerSetReady(bool isReady)
+    {
+        if (!IsServer)
+        {
+            Debug.LogWarning("ServerSetReady can only be called on the server.", this);
+            return;
+        }
+
+        if (isReady && CurrentRole == PlayerRole.None)
+            return;
+
+        networkIsReady.Value = isReady;
+        NotifyLobbyStateChanged();
     }
 
     [ServerRpc(RequireOwnership = false)]
@@ -59,15 +109,10 @@ public class NetworkPlayerRole : NetworkBehaviour
         if (rpcParams.Receive.SenderClientId != OwnerClientId)
             return;
 
-        SetRoleServer(role);
-    }
+        if (!IsValidSelectableRole(role))
+            return;
 
-    private void SetRoleServer(PlayerRole role)
-    {
-        networkRole.Value = (byte)role;
-
-        if (LobbyManager.Instance != null)
-            LobbyManager.Instance.OnPlayerStateChanged();
+        TrySetRoleOnServer(role, rpcParams.Receive.SenderClientId);
     }
 
     [ServerRpc(RequireOwnership = false)]
@@ -76,19 +121,56 @@ public class NetworkPlayerRole : NetworkBehaviour
         if (rpcParams.Receive.SenderClientId != OwnerClientId)
             return;
 
-        networkIsReady.Value = !networkIsReady.Value;
+        ToggleReadyOnServer();
+    }
 
+    private bool TrySetRoleOnServer(PlayerRole role, ulong requestingClientId)
+    {
+        if (!IsServer || role == CurrentRole)
+            return role == CurrentRole;
+
+        networkRole.Value = role;
+
+        // A changed role must be confirmed again with Ready.
+        if (networkIsReady.Value)
+            networkIsReady.Value = false;
+
+        NotifyLobbyStateChanged();
+        return true;
+    }
+
+    private void ToggleReadyOnServer()
+    {
+        if (!IsServer || CurrentRole == PlayerRole.None)
+            return;
+
+        networkIsReady.Value = !networkIsReady.Value;
+        NotifyLobbyStateChanged();
+    }
+
+    private void NotifyLobbyStateChanged()
+    {
         if (LobbyManager.Instance != null)
             LobbyManager.Instance.OnPlayerStateChanged();
     }
 
-    private void OnRoleValueChanged(byte oldValue, byte newValue)
+    private void HandleRoleChanged(PlayerRole oldRole, PlayerRole newRole)
     {
-        OnRoleChanged?.Invoke((PlayerRole)oldValue, (PlayerRole)newValue);
+        OnRoleChanged?.Invoke(oldRole, newRole);
     }
 
-    private void OnReadyValueChanged(bool oldValue, bool newValue)
+    private void HandleReadyChanged(bool oldReady, bool newReady)
     {
-        OnReadyChanged?.Invoke(oldValue, newValue);
+        OnReadyChanged?.Invoke(oldReady, newReady);
+    }
+
+    private static bool IsValidSelectableRole(PlayerRole role)
+    {
+        return role == PlayerRole.Runner || role == PlayerRole.Sniper;
+    }
+
+    private static bool IsValidRole(PlayerRole role)
+    {
+        return role == PlayerRole.None || IsValidSelectableRole(role);
     }
 }

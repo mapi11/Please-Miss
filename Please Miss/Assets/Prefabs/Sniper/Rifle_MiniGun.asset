@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 125f643140c473f43b6aff0be652d2e6, type: 3}
+  m_Name: Rifle_MiniGun
+  m_EditorClassIdentifier: 
+  rifleId: Rifle_MiniGun
+  displayName: Sniper Rifle MiniGun
+  magazineSize: 100
+  defaultBullet: {fileID: 11400000, guid: bb30920cedf2c9a4495c108942a9a55e, type: 2}
+  muzzleVelocity: 10
+  secondsBetweenShots: 0.01
+  projectilePrefab: {fileID: 4956007563087058510, guid: f5e628aaa2c6569409a02aceb51cc9ab, type: 3}
+  minimumMagnification: 2
+  maximumMagnification: 8
+  zoomStep: 1

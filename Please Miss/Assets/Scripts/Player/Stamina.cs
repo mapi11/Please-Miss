@@ -46,6 +46,7 @@ public class Stamina : MonoBehaviour
     public void Consume(float amount)
     {
         currentStamina -= amount;
+        lastSprintTime = Time.time;
 
         if (currentStamina <= 0f)
         {

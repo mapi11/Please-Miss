@@ -73,6 +73,10 @@ public class PlayerController : NetworkBehaviour
     [Header("Stamina")]
     [SerializeField] private Stamina stamina;
 
+    [Header("Role")]
+    [SerializeField] private PlayerRoleState roleState;
+    [SerializeField] private SniperWeaponController sniperWeapon;
+
     [Header("Audio")]
     [SerializeField] private AudioListener audioListener;
 
@@ -100,6 +104,7 @@ public class PlayerController : NetworkBehaviour
     private Vector3 rightShoulderInitialEuler;
     private bool isFrozen;
     private bool isPointing;
+    private bool sniperAiming;
     private Transform pointTarget;
     private Transform idleHandTarget;
 
@@ -174,6 +179,12 @@ public class PlayerController : NetworkBehaviour
         if (stamina == null)
             stamina = GetComponent<Stamina>();
 
+        if (roleState == null)
+            roleState = GetComponent<PlayerRoleState>();
+
+        if (sniperWeapon == null)
+            sniperWeapon = GetComponent<SniperWeaponController>();
+
         if (bodyVisual != null)
             bodyInitialY = bodyVisual.localPosition.y;
 
@@ -227,10 +238,16 @@ public class PlayerController : NetworkBehaviour
             if (crosshair != null)
                 crosshair.SetActive(false);
         }
+
+        if (IsOwner && sniperWeapon != null)
+            sniperWeapon.OnLocalAimChanged += HandleSniperAimChanged;
     }
 
     public override void OnNetworkDespawn()
     {
+        if (IsOwner && sniperWeapon != null)
+            sniperWeapon.OnLocalAimChanged -= HandleSniperAimChanged;
+
         if (IsOwner)
         {
             Cursor.lockState = CursorLockMode.None;
@@ -380,13 +397,14 @@ public class PlayerController : NetworkBehaviour
         bool canSprint = stamina == null || stamina.CanSprint;
         bool sprinting = wantSprint && canSprint;
 
-        float speed = sprinting ? sprintSpeed : walkSpeed;
+        float baseSpeed = sprinting ? sprintSpeed : walkSpeed;
+        float speed = baseSpeed;
 
         if (isCrouching)
             speed *= 0.55f;
 
         if (stamina != null)
-            speed *= stamina.SpeedMultiplier;
+            speed = Mathf.Max(speed * stamina.SpeedMultiplier, baseSpeed * 0.45f);
 
         Vector3 move = transform.right * currentMoveInput.x + transform.forward * currentMoveInput.y;
         move *= speed;
@@ -531,6 +549,7 @@ public class PlayerController : NetworkBehaviour
     private void HandleStamina()
     {
         if (stamina == null) return;
+        if (roleState != null && roleState.IsSniper) return;
         bool sprinting = IsSprintPressed() && !isCrouching && stamina.CanSprint;
         stamina.Tick(Time.deltaTime, sprinting);
     }
@@ -844,7 +863,15 @@ public class PlayerController : NetworkBehaviour
     private void UpdateCrosshair()
     {
         if (crosshair == null) return;
+        if (sniperAiming) { crosshair.SetActive(false); return; }
         crosshair.SetActive(HasInteractableInSight());
+    }
+
+    private void HandleSniperAimChanged(bool aiming)
+    {
+        sniperAiming = aiming;
+        if (crosshair != null)
+            crosshair.SetActive(!aiming);
     }
 
     private bool HasInteractableInSight()

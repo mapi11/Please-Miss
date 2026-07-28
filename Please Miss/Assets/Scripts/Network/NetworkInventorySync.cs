@@ -1,3 +1,4 @@
+using System;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -7,6 +8,10 @@ public class NetworkInventorySync : NetworkBehaviour
     [Header("References")]
     [SerializeField] private Inventory inventory;
     public Inventory Inventory => inventory;
+    public GameObject CurrentHeldVisual => currentHeldVisual;
+    public int NetworkActiveSlot => networkActiveSlot.Value;
+    public string NetworkActiveItemName => networkActiveItemName.Value.ToString();
+    public event Action<GameObject> OnHeldVisualChanged;
     [SerializeField] private PlayerController playerController;
     [SerializeField] private Transform leftHoldPivot;
     [SerializeField] private Transform rightHoldPivot;
@@ -16,11 +21,15 @@ public class NetworkInventorySync : NetworkBehaviour
     [SerializeField] private ItemEntry[] items;
     [SerializeField] private float heldItemScale = 0.8f;
 
+    [Header("Diagnostics")]
+    [SerializeField] private bool logMissingItemMappings = true;
+
     [System.Serializable]
     private class ItemEntry
     {
         public string Name;
         public GameObject WorldDropPrefab;
+        public GameObject HeldVisualPrefab;
     }
 
     [Header("Throw")]
@@ -31,19 +40,19 @@ public class NetworkInventorySync : NetworkBehaviour
     [SerializeField] private float throwBlockCheckRadius = 0.15f;
     [SerializeField] private LayerMask throwBlockMask = ~0;
 
-    private readonly NetworkVariable<int> networkActiveSlot = new(
+    private readonly NetworkVariable<int> networkActiveSlot = new NetworkVariable<int>(
         -1,
         NetworkVariableReadPermission.Everyone,
         NetworkVariableWritePermission.Server
     );
 
-    private readonly NetworkVariable<FixedString64Bytes> networkActiveItemName = new(
+    private readonly NetworkVariable<FixedString64Bytes> networkActiveItemName = new NetworkVariable<FixedString64Bytes>(
         new FixedString64Bytes(""),
         NetworkVariableReadPermission.Everyone,
         NetworkVariableWritePermission.Server
     );
 
-    private readonly NetworkVariable<byte> networkActiveHand = new(
+    private readonly NetworkVariable<byte> networkActiveHand = new NetworkVariable<byte>(
         0,
         NetworkVariableReadPermission.Everyone,
         NetworkVariableWritePermission.Server
@@ -56,12 +65,18 @@ public class NetworkInventorySync : NetworkBehaviour
         if (items == null) return;
         for (int i = 0; i < items.Length; i++)
         {
-            if (items[i] != null && items[i].WorldDropPrefab != null && string.IsNullOrEmpty(items[i].Name))
-            {
-                var pickable = items[i].WorldDropPrefab.GetComponent<PickableItem>();
-                if (pickable != null && !string.IsNullOrEmpty(pickable.ItemName))
-                    items[i].Name = pickable.ItemName;
-            }
+            if (items[i] == null || items[i].WorldDropPrefab == null)
+                continue;
+
+            var pickable = items[i].WorldDropPrefab.GetComponent<PickableItem>();
+            if (pickable == null)
+                continue;
+
+            if (string.IsNullOrEmpty(items[i].Name) && !string.IsNullOrEmpty(pickable.ItemName))
+                items[i].Name = pickable.ItemName;
+
+            if (items[i].HeldVisualPrefab == null)
+                items[i].HeldVisualPrefab = pickable.HeldVisualPrefab;
         }
     }
 
@@ -153,11 +168,7 @@ public class NetworkInventorySync : NetworkBehaviour
 
     private void UpdateHeldVisual(int slot, string itemName, byte handIndex)
     {
-        if (currentHeldVisual != null)
-        {
-            Destroy(currentHeldVisual);
-            currentHeldVisual = null;
-        }
+        DestroyCurrentHeldVisual();
 
         if (slot < 0 || string.IsNullOrEmpty(itemName))
             return;
@@ -176,11 +187,25 @@ public class NetworkInventorySync : NetworkBehaviour
             int prefabIndex = GetPrefabIndex(itemName);
 
             if (prefabIndex >= 0 && prefabIndex < items.Length)
-                prefab = items[prefabIndex].WorldDropPrefab;
+            {
+                prefab = items[prefabIndex].HeldVisualPrefab != null
+                    ? items[prefabIndex].HeldVisualPrefab
+                    : items[prefabIndex].WorldDropPrefab;
+            }
         }
 
         if (prefab == null)
+        {
+            if (logMissingItemMappings)
+            {
+                Debug.LogWarning(
+                    $"NetworkInventorySync could not find a Held Visual Prefab for item '{itemName}'. " +
+                    "Add this item to NetworkInventorySync -> Items and assign Name, World Drop Prefab and Held Visual Prefab.",
+                    this
+                );
+            }
             return;
+        }
 
         currentHeldVisual = Instantiate(prefab, pivot);
         currentHeldVisual.transform.localPosition = Vector3.zero;
@@ -198,6 +223,18 @@ public class NetworkInventorySync : NetworkBehaviour
         var colliders = currentHeldVisual.GetComponentsInChildren<Collider>();
         foreach (var c in colliders)
             Destroy(c);
+
+        OnHeldVisualChanged?.Invoke(currentHeldVisual);
+    }
+
+    private void DestroyCurrentHeldVisual()
+    {
+        if (currentHeldVisual == null)
+            return;
+
+        Destroy(currentHeldVisual);
+        currentHeldVisual = null;
+        OnHeldVisualChanged?.Invoke(null);
     }
 
     public void LaunchActiveItem(float charge, Vector3 direction)
@@ -205,59 +242,72 @@ public class NetworkInventorySync : NetworkBehaviour
         if (inventory == null)
             return;
 
-        int slot = inventory.ActiveSlot;
+        if (IsSpawned && !IsOwner)
+            return;
 
+        int slot = inventory.ActiveSlot;
         if (slot < 0)
             return;
 
         string itemName = inventory.GetItemAtSlot(slot);
-
         if (string.IsNullOrEmpty(itemName))
             return;
 
-        Vector3 pos = GetLaunchPosition();
-
-        if (IsPositionBlocked(pos))
+        Vector3 position = GetLaunchPosition();
+        if (IsPositionBlocked(position))
             return;
 
-        if (currentHeldVisual != null)
-        {
-            Destroy(currentHeldVisual);
-            currentHeldVisual = null;
-        }
+        Vector3 safeDirection = direction.sqrMagnitude > 0.0001f
+            ? direction.normalized
+            : transform.forward;
+        Vector3 velocity = safeDirection * Mathf.Lerp(minThrowForce, maxThrowForce, charge);
 
-        Vector3 velocity = direction * Mathf.Lerp(minThrowForce, maxThrowForce, charge);
+        // This is a prefab asset reference stored by Inventory. Never call Destroy on it.
+        GameObject heldVisualPrefab = inventory.GetSlotHeldPrefab(slot);
 
-        GameObject heldVisual = inventory.GetSlotHeldPrefab(slot);
-
+        DestroyCurrentHeldVisual();
         inventory.RemoveItem(slot);
 
         if (IsSpawned)
         {
-            if (!IsOwner)
-                return;
-
             byte handIndex = playerController != null
                 ? (byte)(playerController.SelectedInteractionHand == PlayerController.InteractionHand.Right ? 0 : 1)
                 : (byte)0;
 
             LaunchServerRpc(slot, new FixedString64Bytes(itemName), handIndex, velocity);
+            DestroyRuntimeHeldTemplateIfNeeded(heldVisualPrefab);
+            return;
+        }
 
-            if (heldVisual != null)
-                Destroy(heldVisual);
+        Quaternion rotation = Quaternion.LookRotation(safeDirection, Vector3.up);
+        int prefabIndex = GetPrefabIndex(itemName);
+        GameObject dropObject;
+
+        if (prefabIndex >= 0 && prefabIndex < items.Length && items[prefabIndex].WorldDropPrefab != null)
+        {
+            dropObject = Instantiate(items[prefabIndex].WorldDropPrefab, position, rotation);
         }
         else
         {
-            Quaternion rot = Quaternion.LookRotation(direction);
-            GameObject dropObj = BuildDropItem(pos, rot, heldVisual, itemName);
-            Rigidbody rb = dropObj.GetComponent<Rigidbody>();
-
-            if (rb != null)
-                rb.linearVelocity = velocity;
-
-            if (heldVisual != null)
-                Destroy(heldVisual);
+            dropObject = BuildDropItem(position, rotation, heldVisualPrefab, itemName);
         }
+
+        Rigidbody body = dropObject.GetComponent<Rigidbody>();
+        if (body != null)
+            body.linearVelocity = velocity;
+
+        DestroyRuntimeHeldTemplateIfNeeded(heldVisualPrefab);
+    }
+
+    private static void DestroyRuntimeHeldTemplateIfNeeded(GameObject heldVisualTemplate)
+    {
+        if (heldVisualTemplate == null)
+            return;
+
+        // Prefab assets have no valid Scene and must never be destroyed with Object.Destroy.
+        // Generated runtime templates from PickableItem.BuildVisualFromSelf do have a valid Scene.
+        if (heldVisualTemplate.scene.IsValid())
+            UnityEngine.Object.Destroy(heldVisualTemplate);
     }
 
     public bool CanLaunchActiveItem()
@@ -290,21 +340,16 @@ public class NetworkInventorySync : NetworkBehaviour
         string name = itemName.ToString();
         int idx = GetPrefabIndex(name);
 
-        GameObject obj;
+        if (idx < 0 || idx >= items.Length || items[idx].WorldDropPrefab == null)
+        {
+            Debug.LogError(
+                $"Cannot throw network item '{name}': no World Drop Prefab is configured in NetworkInventorySync -> Items.",
+                this
+            );
+            return;
+        }
 
-        if (idx >= 0 && idx < items.Length && items[idx].WorldDropPrefab != null)
-        {
-            obj = Instantiate(items[idx].WorldDropPrefab, position, rotation);
-        }
-        else
-        {
-            obj = new GameObject($"Dropped_{name}");
-            obj.transform.SetPositionAndRotation(position, rotation);
-            obj.AddComponent<BoxCollider>();
-            obj.AddComponent<Rigidbody>().useGravity = true;
-            var pickable = obj.AddComponent<PickableItem>();
-            pickable.SetupItem(name, null);
-        }
+        GameObject obj = Instantiate(items[idx].WorldDropPrefab, position, rotation);
 
         Rigidbody rb = obj.GetComponent<Rigidbody>();
         if (rb == null)
@@ -314,10 +359,34 @@ public class NetworkInventorySync : NetworkBehaviour
 
         NetworkObject netObj = obj.GetComponent<NetworkObject>();
         if (netObj == null)
-            netObj = obj.AddComponent<NetworkObject>();
+        {
+            Debug.LogError(
+                $"World Drop Prefab for '{name}' must contain a NetworkObject component.",
+                obj
+            );
+            Destroy(obj);
+            return;
+        }
 
         if (!netObj.IsSpawned)
             netObj.Spawn(true);
+    }
+
+    public bool TryGetConfiguredPrefabs(
+        string itemName,
+        out GameObject worldDropPrefab,
+        out GameObject heldVisualPrefab)
+    {
+        worldDropPrefab = null;
+        heldVisualPrefab = null;
+
+        int index = GetPrefabIndex(itemName);
+        if (index < 0 || index >= items.Length)
+            return false;
+
+        worldDropPrefab = items[index].WorldDropPrefab;
+        heldVisualPrefab = items[index].HeldVisualPrefab;
+        return worldDropPrefab != null || heldVisualPrefab != null;
     }
 
     private int GetPrefabIndex(string itemName)

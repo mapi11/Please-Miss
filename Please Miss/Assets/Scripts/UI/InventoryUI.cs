@@ -17,6 +17,8 @@ public class InventoryUI : MonoBehaviour
 
     private InventorySlot[] slots;
     private bool hasBound;
+    private bool forceHidden;
+    private SniperWeaponController sniperWeapon;
 
     private void Awake()
     {
@@ -27,6 +29,7 @@ public class InventoryUI : MonoBehaviour
     private void Start()
     {
         TryBind();
+        FindSniperWeapon();
     }
 
     private void Update()
@@ -39,6 +42,21 @@ public class InventoryUI : MonoBehaviour
 
         if (!hasBound)
             TryBind();
+    }
+
+    private void FindSniperWeapon()
+    {
+        var net = NetworkManager.Singleton;
+        if (net != null && net.IsClient)
+        {
+            var localObj = net.LocalClient?.PlayerObject;
+            if (localObj != null)
+            {
+                sniperWeapon = localObj.GetComponentInChildren<SniperWeaponController>();
+                if (sniperWeapon != null)
+                    sniperWeapon.OnLocalAimChanged += OnSniperAimChanged;
+            }
+        }
     }
 
     private void TryBind()
@@ -81,10 +99,27 @@ public class InventoryUI : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (sniperWeapon != null)
+            sniperWeapon.OnLocalAimChanged -= OnSniperAimChanged;
+
         if (inventory == null) return;
         inventory.OnSlotChanged -= OnSlotChanged;
         inventory.OnActiveSlotChanged -= OnActiveSlotChanged;
         inventory.OnSlotIconChanged -= OnSlotIconChanged;
+    }
+
+    private void OnSniperAimChanged(bool aiming)
+    {
+        SetForceHidden(aiming);
+    }
+
+    public void SetForceHidden(bool hidden)
+    {
+        forceHidden = hidden;
+        if (hidden)
+            SetContentActive(false);
+        else if (inventory != null)
+            UpdateVisibility();
     }
 
     private Inventory FindLocalPlayerInventory()
@@ -184,6 +219,9 @@ public class InventoryUI : MonoBehaviour
 
     private void SetContentActive(bool active)
     {
+        if (active && forceHidden)
+            return;
+
         if (active && !gameObject.activeSelf)
             gameObject.SetActive(true);
 
