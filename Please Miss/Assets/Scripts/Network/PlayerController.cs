@@ -11,6 +11,7 @@ public class PlayerController : NetworkBehaviour
     [SerializeField] private Camera playerCamera;
 
     [SerializeField] public float mouseSensitivity = 0.08f;
+    [SerializeField, Range(0f, 1f)] private float zoomSensitivityMultiplier = 1f;
     [SerializeField] private float minPitch = -80f;
     [SerializeField] private float maxPitch = 80f;
 
@@ -386,8 +387,12 @@ public class PlayerController : NetworkBehaviour
 
         Vector2 mouseDelta = mouse.delta.ReadValue();
 
-        float mouseX = mouseDelta.x * mouseSensitivity;
-        float mouseY = mouseDelta.y * mouseSensitivity;
+        float effectiveSensitivity = sniperAiming && sniperWeapon != null
+            ? mouseSensitivity * Mathf.Lerp(1f, 1f / sniperWeapon.CurrentZoomFactor, zoomSensitivityMultiplier)
+            : mouseSensitivity;
+
+        float mouseX = mouseDelta.x * effectiveSensitivity;
+        float mouseY = mouseDelta.y * effectiveSensitivity;
 
         transform.Rotate(Vector3.up * mouseX);
 

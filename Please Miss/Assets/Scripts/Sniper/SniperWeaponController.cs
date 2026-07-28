@@ -78,8 +78,39 @@ public sealed class SniperWeaponController : NetworkBehaviour
     private float nextAimSendTime;
     private Vector3 predictedLaserEnd;
 
+    private Quaternion aimCameraNeutralLocalRotation;
+    private bool aimCameraRotationCaptured;
+    private float swayNoiseSeedX;
+    private float swayNoiseSeedY;
+    private float swayNoiseTime;
+    private Vector2 swayOffset;
+    private float currentRecoil;
+    private float breathAmount;
+    private bool isHoldingBreath;
+    private bool breathDepleted;
+    private float breathRecoveryTimer;
+    private float breathPunishmentTimer;
+    private double nextAllowedLocalShotTime;
+
+    private float defSwayAmplitude = 0.1f;
+    private float defSwayFrequency = 0.5f;
+    private float defSwaySmoothTime = 0.3f;
+    private float defMaxBreath = 5f;
+    private float defBreathDepletionRate = 1f;
+    private float defBreathRecoveryRate = 0.5f;
+    private float defBreathRecoveryDelay = 1f;
+    private float defBreathRecoveryThreshold = 0.3f;
+    private float defBreathPunishmentDelay = 1f;
+    private float defBreathPunishmentMultiplier = 3f;
+    private float defBreathStabilityMultiplier = 0.05f;
+    private float defRecoilPitchAmount = 0.15f;
+    private float defRecoilRecoverySpeed = 3f;
+
     public int CurrentAmmo => currentAmmo.Value;
     public bool HasRifleEquipped => currentRifleDefinition != null;
+    public float CurrentZoomFactor => currentRifleDefinition != null
+        ? currentMagnification / Mathf.Max(currentRifleDefinition.MinimumMagnification, 0.001f)
+        : 1f;
     public bool IsAiming => IsOwner ? localAiming : networkAiming.Value;
     public BulletDefinition LoadedBullet => ResolveLoadedBullet();
     public SniperRifleHeldVisual CurrentRifleVisual => currentRifleVisual;
@@ -156,10 +187,35 @@ public sealed class SniperWeaponController : NetworkBehaviour
 
         EnsureCurrentWeaponDetected();
         HandleOwnerInput();
+        HandleBreath();
     }
 
     private void LateUpdate()
     {
+        UpdateScopeSway();
+
+        if (aimCamera != null && aimCameraRotationCaptured)
+        {
+            if (localAiming)
+            {
+                Vector3 swayEuler = new Vector3(swayOffset.y, swayOffset.x, 0f);
+                Vector3 recoilDown = new Vector3(-currentRecoil, 0f, 0f);
+                aimCamera.transform.localRotation = aimCameraNeutralLocalRotation * Quaternion.Euler(swayEuler + recoilDown);
+            }
+            else
+            {
+                aimCamera.transform.localRotation = aimCameraNeutralLocalRotation;
+            }
+        }
+
+        if (scopeUI != null)
+        {
+            if (localAiming)
+                scopeUI.SetBreath(breathAmount / Mathf.Max(defMaxBreath, 0.001f));
+            else
+                scopeUI.HideBreathBar();
+        }
+
         if (currentRifleVisual == null)
             return;
 
@@ -219,8 +275,12 @@ public sealed class SniperWeaponController : NetworkBehaviour
             UpdateAimRpc(cameraOrigin, cameraDirection);
         }
 
-        if (mouse.leftButton.wasPressedThisFrame)
+        if (mouse.leftButton.wasPressedThisFrame && NetworkManager.ServerTime.Time >= nextAllowedLocalShotTime && currentAmmo.Value > 0)
+        {
+            currentRecoil = defRecoilPitchAmount;
+            nextAllowedLocalShotTime = NetworkManager.ServerTime.Time + currentRifleDefinition.SecondsBetweenShots;
             FireRpc(cameraOrigin, cameraDirection);
+        }
     }
 
     private void BeginLocalAim()
@@ -232,6 +292,23 @@ public sealed class SniperWeaponController : NetworkBehaviour
         normalCameraFov = aimCamera.fieldOfView;
         currentMagnification = currentRifleDefinition.MinimumMagnification;
         ApplyMagnification();
+
+        if (aimCamera != null)
+        {
+            aimCameraNeutralLocalRotation = aimCamera.transform.localRotation;
+            aimCameraRotationCaptured = true;
+        }
+
+        swayOffset = Vector2.zero;
+        currentRecoil = 0f;
+        breathAmount = defMaxBreath;
+        isHoldingBreath = false;
+        breathDepleted = false;
+        breathRecoveryTimer = 0f;
+        breathPunishmentTimer = 0f;
+        swayNoiseTime = 0f;
+        swayNoiseSeedX = Random.Range(0f, 1000f);
+        swayNoiseSeedY = Random.Range(0f, 1000f);
 
         if (scopeUI != null)
         {
@@ -254,10 +331,16 @@ public sealed class SniperWeaponController : NetworkBehaviour
         localAiming = false;
 
         if (aimCamera != null)
+        {
             aimCamera.fieldOfView = normalCameraFov;
+            aimCamera.transform.localRotation = aimCameraNeutralLocalRotation;
+        }
 
         if (scopeUI != null)
+        {
             scopeUI.Show(false);
+            scopeUI.HideBreathBar();
+        }
 
         if (currentRifleVisual != null)
             currentRifleVisual.SetLaser(false, currentRifleVisual.LaserOrigin.position);
@@ -266,6 +349,84 @@ public sealed class SniperWeaponController : NetworkBehaviour
             SetAimingRpc(false, Vector3.zero, Vector3.forward);
 
         OnLocalAimChanged?.Invoke(false);
+    }
+
+    private void HandleBreath()
+    {
+        if (!localAiming)
+        {
+            isHoldingBreath = false;
+            return;
+        }
+
+        bool altHeld = Keyboard.current != null && Keyboard.current.leftAltKey.isPressed;
+
+        if (altHeld && breathAmount > 0f && !breathDepleted)
+        {
+            isHoldingBreath = true;
+            breathAmount -= Time.deltaTime * defBreathDepletionRate;
+            breathRecoveryTimer = 0f;
+
+            if (breathAmount <= 0f)
+            {
+                breathAmount = 0f;
+                breathDepleted = true;
+                breathPunishmentTimer = 0f;
+            }
+        }
+        else
+        {
+            isHoldingBreath = false;
+
+            if (breathDepleted)
+            {
+                breathPunishmentTimer += Time.deltaTime;
+
+                if (breathAmount >= defMaxBreath * defBreathRecoveryThreshold)
+                {
+                    breathDepleted = false;
+                    breathPunishmentTimer = 0f;
+                }
+
+                breathRecoveryTimer += Time.deltaTime;
+                if (breathRecoveryTimer >= defBreathPunishmentDelay)
+                    breathAmount = Mathf.Min(breathAmount + Time.deltaTime * defBreathRecoveryRate, defMaxBreath);
+            }
+            else
+            {
+                breathRecoveryTimer += Time.deltaTime;
+                if (breathRecoveryTimer >= defBreathRecoveryDelay)
+                    breathAmount = Mathf.Min(breathAmount + Time.deltaTime * defBreathRecoveryRate, defMaxBreath);
+            }
+        }
+    }
+
+    private void UpdateScopeSway()
+    {
+        if (!localAiming)
+        {
+            currentRecoil = Mathf.MoveTowards(currentRecoil, 0f, Time.deltaTime * defRecoilRecoverySpeed);
+            swayOffset = Vector2.Lerp(swayOffset, Vector2.zero, Time.deltaTime / defSwaySmoothTime);
+            return;
+        }
+
+        swayNoiseTime += Time.deltaTime * defSwayFrequency;
+
+        float sampleX = Mathf.PerlinNoise(swayNoiseSeedX, swayNoiseTime);
+        float sampleY = Mathf.PerlinNoise(swayNoiseSeedY, swayNoiseTime + 100f);
+        Vector2 targetSway = new Vector2((sampleX - 0.5f) * 2f, (sampleY - 0.5f) * 2f);
+
+        float amplitude = defSwayAmplitude;
+        if (isHoldingBreath)
+            amplitude *= defBreathStabilityMultiplier;
+        else if (breathDepleted)
+            amplitude *= defBreathPunishmentMultiplier;
+
+        targetSway *= amplitude;
+
+        swayOffset = Vector2.Lerp(swayOffset, targetSway, Time.deltaTime / defSwaySmoothTime);
+
+        currentRecoil = Mathf.MoveTowards(currentRecoil, 0f, Time.deltaTime * defRecoilRecoverySpeed);
     }
 
     private void ApplyMagnification()
@@ -300,6 +461,8 @@ public sealed class SniperWeaponController : NetworkBehaviour
             ? currentRifleVisual.Definition
             : null;
 
+        CacheRifleStats();
+
         if (heldVisual != null && currentRifleVisual == null && logSetupWarnings)
         {
             Debug.LogWarning(
@@ -325,6 +488,26 @@ public sealed class SniperWeaponController : NetworkBehaviour
                 EndLocalAim(true);
 
             RefreshScopeUi();
+        }
+    }
+
+    private void CacheRifleStats()
+    {
+        if (currentRifleDefinition != null)
+        {
+            defSwayAmplitude = currentRifleDefinition.SwayAmplitude;
+            defSwayFrequency = currentRifleDefinition.SwayFrequency;
+            defSwaySmoothTime = currentRifleDefinition.SwaySmoothTime;
+            defMaxBreath = currentRifleDefinition.MaxBreath;
+            defBreathDepletionRate = currentRifleDefinition.BreathDepletionRate;
+            defBreathRecoveryRate = currentRifleDefinition.BreathRecoveryRate;
+            defBreathRecoveryDelay = currentRifleDefinition.BreathRecoveryDelay;
+            defBreathRecoveryThreshold = currentRifleDefinition.BreathRecoveryThreshold;
+            defBreathPunishmentDelay = currentRifleDefinition.BreathPunishmentDelay;
+            defBreathPunishmentMultiplier = currentRifleDefinition.BreathPunishmentMultiplier;
+            defBreathStabilityMultiplier = currentRifleDefinition.BreathStabilityMultiplier;
+            defRecoilPitchAmount = currentRifleDefinition.RecoilPitchAmount;
+            defRecoilRecoverySpeed = currentRifleDefinition.RecoilRecoverySpeed;
         }
     }
 

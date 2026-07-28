@@ -16,6 +16,9 @@ public sealed class SniperScopeUI : MonoBehaviour
     [SerializeField] private Transform bulletsContent;
     [SerializeField] private BulletPanelUI bulletPanelPrefab;
 
+    [Header("Breath")]
+    [SerializeField] private Slider breathSlider;
+
     private void Start()
     {
         if (bulletsContent != null && FindObjectOfType<LobbyManager>() != null && LobbyManager.IsInLobby)
@@ -57,5 +60,26 @@ public sealed class SniperScopeUI : MonoBehaviour
             BulletPanelUI panel = Instantiate(bulletPanelPrefab, bulletsContent);
             panel.Setup(icon, color);
         }
+    }
+
+    public void SetBreath(float normalized)
+    {
+        if (breathSlider == null)
+            return;
+
+        if (normalized >= 1f)
+        {
+            breathSlider.gameObject.SetActive(false);
+            return;
+        }
+
+        breathSlider.gameObject.SetActive(true);
+        breathSlider.value = normalized;
+    }
+
+    public void HideBreathBar()
+    {
+        if (breathSlider != null)
+            breathSlider.gameObject.SetActive(false);
     }
 }
