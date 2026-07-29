@@ -2,17 +2,14 @@ using UnityEngine;
 
 public class PlayerUIConfigurator : MonoBehaviour
 {
-    [SerializeField] private Canvas targetCanvas;
     [SerializeField] private GameObject runnerUI;
     [SerializeField] private GameObject sniperUI;
+    [SerializeField] private GameObject[] ownerOnlyElements;
 
     private PlayerHealth playerHealth;
 
     private void Awake()
     {
-        if (targetCanvas == null)
-            targetCanvas = GetComponentInParent<Canvas>();
-
         if (playerHealth == null)
             playerHealth = GetComponentInParent<PlayerHealth>();
     }
@@ -25,8 +22,13 @@ public class PlayerUIConfigurator : MonoBehaviour
             return;
         }
 
-        if (targetCanvas != null)
-            targetCanvas.enabled = playerHealth.IsSpawned && playerHealth.IsOwner;
+        bool shouldShow = playerHealth.IsSpawned && playerHealth.IsOwner;
+
+        for (int i = 0; i < ownerOnlyElements.Length; i++)
+        {
+            if (ownerOnlyElements[i] != null && ownerOnlyElements[i].activeSelf != shouldShow)
+                ownerOnlyElements[i].SetActive(shouldShow);
+        }
     }
 
     public void Configure(PlayerRole role)
