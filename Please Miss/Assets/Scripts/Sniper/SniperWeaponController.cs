@@ -740,6 +740,14 @@ public sealed class SniperWeaponController : NetworkBehaviour
         return true;
     }
 
+    [Rpc(SendTo.Server)]
+    public void RefillFromAmmoBoxServerRpc(FixedString64Bytes bulletId)
+    {
+        BulletDefinition bullet = ResolveBulletDefinition(bulletId.ToString());
+        if (bullet != null)
+            ServerRefill(bullet);
+    }
+
     private bool CanUseRifleLocally()
     {
         if (currentRifleDefinition == null || currentRifleVisual == null || aimCamera == null)

@@ -29,17 +29,9 @@ public sealed class AmmoBox : Interactable
         if (player == null || bulletDefinition == null)
             return;
 
-        NetworkObject playerNetworkObject = player.GetComponent<NetworkObject>();
-        if (IsSpawned && playerNetworkObject != null)
-        {
-            RefillRpc(playerNetworkObject);
-            StartCoroutine(ReleaseAfterDelay(player));
-            return;
-        }
-
         SniperWeaponController weapon = player.GetComponent<SniperWeaponController>();
-        if (weapon != null && weapon.IsServer)
-            weapon.ServerRefill(bulletDefinition);
+        if (weapon != null)
+            weapon.RefillFromAmmoBoxServerRpc(new Unity.Collections.FixedString64Bytes(bulletDefinition.BulletId));
 
         StartCoroutine(ReleaseAfterDelay(player));
     }
@@ -49,30 +41,5 @@ public sealed class AmmoBox : Interactable
         yield return new WaitForSeconds(releaseDelay);
         if (player != null)
             player.ReleaseCurrentInteractable();
-    }
-
-    [Rpc(SendTo.Server)]
-    private void RefillRpc(NetworkObjectReference playerReference, RpcParams rpcParams = default)
-    {
-        if (NetworkManager.ServerTime.Time < nextServerUseTime)
-            return;
-
-        if (!playerReference.TryGet(out NetworkObject playerObject) || playerObject == null)
-            return;
-
-        if (playerObject.OwnerClientId != rpcParams.Receive.SenderClientId)
-            return;
-
-        if (Vector3.Distance(playerObject.transform.position, transform.position) > maximumUseDistance)
-            return;
-
-        SniperWeaponController weapon = playerObject.GetComponent<SniperWeaponController>();
-        PlayerRoleState role = playerObject.GetComponent<PlayerRoleState>();
-
-        if (weapon == null || role == null || !role.IsSniper)
-            return;
-
-        if (weapon.ServerRefill(bulletDefinition))
-            nextServerUseTime = NetworkManager.ServerTime.Time + serverCooldown;
     }
 }

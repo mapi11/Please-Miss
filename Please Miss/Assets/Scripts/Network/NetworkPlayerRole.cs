@@ -21,6 +21,9 @@ public sealed class NetworkPlayerRole : NetworkBehaviour
         NetworkVariableWritePermission.Server
     );
 
+    [SerializeField] private PlayerRole debugRole;
+    [SerializeField] private bool debugReady;
+
     public PlayerRole CurrentRole => networkRole.Value;
     public bool IsReady => networkIsReady.Value;
     public bool IsSniper => CurrentRole == PlayerRole.Sniper;
@@ -31,6 +34,8 @@ public sealed class NetworkPlayerRole : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
+        debugRole = networkRole.Value;
+        debugReady = networkIsReady.Value;
         networkRole.OnValueChanged += HandleRoleChanged;
         networkIsReady.OnValueChanged += HandleReadyChanged;
     }
@@ -156,11 +161,13 @@ public sealed class NetworkPlayerRole : NetworkBehaviour
 
     private void HandleRoleChanged(PlayerRole oldRole, PlayerRole newRole)
     {
+        debugRole = newRole;
         OnRoleChanged?.Invoke(oldRole, newRole);
     }
 
     private void HandleReadyChanged(bool oldReady, bool newReady)
     {
+        debugReady = newReady;
         OnReadyChanged?.Invoke(oldReady, newReady);
     }
 

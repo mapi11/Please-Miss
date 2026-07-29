@@ -1,0 +1,325 @@
+using System.Collections.Generic;
+using TMPro;
+using Unity.Netcode;
+using UnityEngine;
+
+public class GameManager : NetworkBehaviour
+{
+    public static GameManager Instance { get; private set; }
+
+    public static bool LocalRunnerFinished { get; set; }
+
+    public enum GameState : byte
+    {
+        Preparing,
+        Playing,
+        Ended
+    }
+
+    [Header("Timers")]
+    [SerializeField] private float prepareDuration = 10f;
+    [SerializeField] private float gameDuration = 180f;
+
+    [Header("References")]
+    [SerializeField] private GameObject[] startWalls;
+    [SerializeField] private TMP_Text timerText;
+
+    public readonly NetworkVariable<GameState> State = new NetworkVariable<GameState>(
+        GameState.Preparing,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
+
+    public readonly NetworkVariable<float> PrepareTimeRemaining = new NetworkVariable<float>(
+        0f,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
+
+    public readonly NetworkVariable<float> GameTimeRemaining = new NetworkVariable<float>(
+        0f,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
+
+    private float prepareTimer;
+    private float gameTimer;
+    private readonly Dictionary<ulong, PlayerHealth> trackedRunners = new Dictionary<ulong, PlayerHealth>();
+    private readonly HashSet<ulong> finishedRunners = new HashSet<ulong>();
+
+    private void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+
+        LocalRunnerFinished = false;
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        if (!IsServer) return;
+
+        State.Value = GameState.Preparing;
+        prepareTimer = prepareDuration;
+        PrepareTimeRemaining.Value = prepareDuration;
+        gameTimer = gameDuration;
+        GameTimeRemaining.Value = gameDuration;
+
+        NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
+        NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
+
+        foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
+            TrackRunner(client.ClientId, client.PlayerObject);
+
+        ConfigureAllPlayers();
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        if (NetworkManager.Singleton != null)
+        {
+            NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnected;
+            NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnected;
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+            Instance = null;
+    }
+
+    private void OnClientConnected(ulong clientId)
+    {
+        if (NetworkManager.Singleton != null &&
+            NetworkManager.Singleton.ConnectedClients.TryGetValue(clientId, out var client))
+        {
+            TrackRunner(clientId, client.PlayerObject);
+            ConfigurePlayer(clientId, client.PlayerObject);
+        }
+    }
+
+    private void OnClientDisconnected(ulong clientId)
+    {
+        UntrackRunner(clientId);
+        if (State.Value != GameState.Playing) return;
+
+        if (!HasActiveRunners())
+            SniperWins();
+    }
+
+    private void TrackRunner(ulong clientId, NetworkObject playerObj)
+    {
+        if (playerObj == null) return;
+
+        var role = playerObj.GetComponent<NetworkPlayerRole>();
+        if (role == null || !role.IsRunner) return;
+
+        var health = playerObj.GetComponent<PlayerHealth>();
+        if (health == null) return;
+
+        trackedRunners[clientId] = health;
+        health.OnDeathStateChanged += OnRunnerDeathStateChanged;
+    }
+
+    private void UntrackRunner(ulong clientId)
+    {
+        if (trackedRunners.TryGetValue(clientId, out var health))
+        {
+            health.OnDeathStateChanged -= OnRunnerDeathStateChanged;
+            trackedRunners.Remove(clientId);
+        }
+    }
+
+    private void OnRunnerDeathStateChanged(bool dead)
+    {
+        if (State.Value != GameState.Playing) return;
+
+        if (!HasActiveRunners())
+            SniperWins();
+    }
+
+    private void Update()
+    {
+        if (IsServer)
+        {
+            switch (State.Value)
+            {
+                case GameState.Preparing:
+                    TickPrepare();
+                    break;
+                case GameState.Playing:
+                    TickPlaying();
+                    break;
+            }
+        }
+
+        UpdateTimerText();
+    }
+
+    private void UpdateTimerText()
+    {
+        if (timerText == null) return;
+
+        switch (State.Value)
+        {
+            case GameState.Preparing:
+                timerText.text = "Prepare: " + FormatTime(PrepareTimeRemaining.Value);
+                break;
+            case GameState.Playing:
+                timerText.text = "Time: " + FormatTime(GameTimeRemaining.Value);
+                break;
+            case GameState.Ended:
+                timerText.text = "";
+                break;
+        }
+    }
+
+    private void TickPrepare()
+    {
+        prepareTimer -= Time.deltaTime;
+        PrepareTimeRemaining.Value = Mathf.Max(0f, prepareTimer);
+
+        if (prepareTimer <= 0f)
+        {
+            State.Value = GameState.Playing;
+            PrepareTimeRemaining.Value = 0f;
+            gameTimer = gameDuration;
+            GameTimeRemaining.Value = gameDuration;
+
+            DisableStartWallsClientRpc();
+        }
+    }
+
+    private void TickPlaying()
+    {
+        gameTimer -= Time.deltaTime;
+        GameTimeRemaining.Value = Mathf.Max(0f, gameTimer);
+
+        if (gameTimer <= 0f)
+        {
+            GameTimeRemaining.Value = 0f;
+            SniperWins();
+        }
+    }
+
+    public void OnRunnerReachedFinish(ulong clientId)
+    {
+        if (State.Value != GameState.Playing) return;
+
+        finishedRunners.Add(clientId);
+        NotifyRunnerFinishedClientRpc(clientId);
+
+        if (!HasActiveRunners())
+            SniperWins();
+    }
+
+    private bool HasActiveRunners()
+    {
+        foreach (var kvp in trackedRunners)
+        {
+            if (finishedRunners.Contains(kvp.Key)) continue;
+            if (kvp.Value != null && !kvp.Value.IsDead)
+                return true;
+        }
+        return false;
+    }
+
+    private void SniperWins()
+    {
+        State.Value = GameState.Ended;
+        KillAllRunners();
+        SniperWinsClientRpc();
+    }
+
+    private void ConfigureAllPlayers()
+    {
+        foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
+            ConfigurePlayer(client.ClientId, client.PlayerObject);
+    }
+
+    private void ConfigurePlayer(ulong clientId, NetworkObject player)
+    {
+        if (player == null) return;
+
+        var role = player.GetComponent<NetworkPlayerRole>();
+        if (role == null) return;
+
+        if (role.IsSniper)
+        {
+            var stamina = player.GetComponent<Stamina>();
+            if (stamina != null) stamina.enabled = false;
+        }
+        else
+        {
+            var weapon = player.GetComponent<SniperWeaponController>();
+            if (weapon != null) weapon.enabled = false;
+        }
+
+        ConfigurePlayerClientRpc(clientId, role.CurrentRole);
+    }
+
+    [ClientRpc]
+    private void ConfigurePlayerClientRpc(ulong clientId, PlayerRole role)
+    {
+        if (NetworkManager.Singleton.LocalClientId != clientId) return;
+
+        var player = NetworkManager.Singleton.LocalClient.PlayerObject;
+        if (player == null) return;
+
+        var configurator = player.GetComponent<PlayerUIConfigurator>();
+        if (configurator != null)
+            configurator.Configure(role);
+    }
+
+    private void KillAllRunners()
+    {
+        if (NetworkManager.Singleton == null) return;
+
+        foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
+        {
+            if (client.PlayerObject == null) continue;
+
+            var health = client.PlayerObject.GetComponent<PlayerHealth>();
+            if (health == null || health.IsDead) continue;
+
+            var role = client.PlayerObject.GetComponent<NetworkPlayerRole>();
+            if (role != null && role.IsRunner)
+                health.ServerSetHealth(0f);
+        }
+    }
+
+    [ClientRpc]
+    private void NotifyRunnerFinishedClientRpc(ulong clientId)
+    {
+        if (clientId == NetworkManager.Singleton.LocalClientId)
+            LocalRunnerFinished = true;
+    }
+
+    [ClientRpc]
+    private void SniperWinsClientRpc()
+    {
+        Debug.Log("Sniper wins!");
+    }
+
+    [ClientRpc]
+    private void DisableStartWallsClientRpc()
+    {
+        if (startWalls == null) return;
+        foreach (var wall in startWalls)
+            if (wall != null)
+                wall.SetActive(false);
+    }
+
+    private static string FormatTime(float seconds)
+    {
+        int totalSec = Mathf.CeilToInt(seconds);
+        int mins = totalSec / 60;
+        int secs = totalSec % 60;
+        return $"{mins}:{secs:D2}";
+    }
+}

@@ -73,6 +73,7 @@ public class PlayerController : NetworkBehaviour
 
     [Header("Stamina")]
     [SerializeField] private Stamina stamina;
+    [SerializeField] private PlayerHealth playerHealth;
 
     [Header("Role")]
     [SerializeField] private PlayerRoleState roleState;
@@ -138,6 +139,7 @@ public class PlayerController : NetworkBehaviour
     {
         characterController = GetComponent<CharacterController>();
         rb = GetComponent<Rigidbody>();
+        if (playerHealth == null) playerHealth = GetComponent<PlayerHealth>();
 
         if (rb != null)
         {
@@ -326,6 +328,13 @@ public class PlayerController : NetworkBehaviour
     {
         if (!IsOwner) return;
 
+        if (playerHealth != null && playerHealth.IsDead)
+        {
+            if (characterController != null && characterController.enabled)
+                characterController.enabled = false;
+            return;
+        }
+
         if (!lobbyChecked)
         {
             lobbyChecked = true;
@@ -358,7 +367,12 @@ public class PlayerController : NetworkBehaviour
         if (characterController != null && !characterController.enabled)
             return;
 
-        if (!(PauseMenu.Instance != null && PauseMenu.Instance.IsOpen))
+        bool uiOpen = (PauseMenu.Instance != null && PauseMenu.Instance.IsOpen)
+                    || GameManager.LocalRunnerFinished
+                    || (GameManager.Instance != null && GameManager.Instance.State.Value == GameManager.GameState.Ended)
+                    || (playerHealth != null && playerHealth.IsDead);
+
+        if (!uiOpen)
         {
             if (Cursor.lockState != CursorLockMode.Locked)
             {
@@ -471,7 +485,7 @@ public class PlayerController : NetworkBehaviour
             {
                 verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
 
-                if (stamina != null)
+                if (stamina != null && (roleState == null || !roleState.IsSniper))
                     stamina.Consume(stamina.JumpCost);
             }
         }

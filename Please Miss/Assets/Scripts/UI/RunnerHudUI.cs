@@ -9,9 +9,8 @@ public class RunnerHudUI : MonoBehaviour
 
     private readonly Dictionary<ulong, RunnerTeamPanel> panels = new Dictionary<ulong, RunnerTeamPanel>();
 
-    private void Start()
+    private void OnEnable()
     {
-        contentParent.gameObject.SetActive(true);
         Rebuild();
 
         if (NetworkManager.Singleton != null)

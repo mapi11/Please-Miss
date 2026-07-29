@@ -9,10 +9,13 @@ public sealed class NetworkProjectile : NetworkBehaviour
     [SerializeField] private WeaponContentDatabase contentDatabase;
 
     [Header("Collision")]
-    [Min(0f)] [SerializeField] private float collisionRadius = 0.025f;
+    [SerializeField] private Collider hitCollider;
     [SerializeField] private LayerMask hitMask = ~0;
     [SerializeField] private QueryTriggerInteraction triggerInteraction = QueryTriggerInteraction.Ignore;
     [Min(0.1f)] [SerializeField] private float maximumLifetime = 15f;
+    [SerializeField] private int bulletLayer = -1;
+
+    private float cachedRadius;
 
     private readonly NetworkVariable<FixedString64Bytes> bulletId = new NetworkVariable<FixedString64Bytes>(
         default,
@@ -40,13 +43,56 @@ public sealed class NetworkProjectile : NetworkBehaviour
     private void Awake()
     {
         propertyBlock = new MaterialPropertyBlock();
+        CacheColliderRadius();
+    }
+
+    private void CacheColliderRadius()
+    {
+        if (hitCollider == null)
+        {
+            cachedRadius = 0f;
+            return;
+        }
+
+        if (hitCollider is SphereCollider sphere)
+        {
+            Vector3 scale = hitCollider.transform.lossyScale;
+            float maxScale = Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.y), Mathf.Abs(scale.z));
+            cachedRadius = sphere.radius * maxScale;
+        }
+        else if (hitCollider is CapsuleCollider capsule)
+        {
+            Vector3 scale = hitCollider.transform.lossyScale;
+            float maxScale = Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.y), Mathf.Abs(scale.z));
+            cachedRadius = capsule.radius * maxScale;
+        }
+        else
+        {
+            cachedRadius = hitCollider.bounds.extents.magnitude;
+        }
     }
 
     public override void OnNetworkSpawn()
     {
+        if (bulletLayer >= 0)
+            gameObject.layer = bulletLayer;
+
+        if (hitCollider != null && IsServer)
+            IgnoreCharacterControllerCollisions();
+
         bulletId.OnValueChanged += OnBulletIdChanged;
         bulletColor.OnValueChanged += OnBulletColorChanged;
         ApplyVisual();
+    }
+
+    private void IgnoreCharacterControllerCollisions()
+    {
+        var controllers = FindObjectsByType<CharacterController>(FindObjectsSortMode.None);
+        foreach (var cc in controllers)
+        {
+            if (cc != null && cc.gameObject.scene.isLoaded)
+                Physics.IgnoreCollision(hitCollider, cc, true);
+        }
     }
 
     public override void OnNetworkDespawn()
@@ -119,7 +165,8 @@ public sealed class NetworkProjectile : NetworkBehaviour
             return;
         }
 
-        transform.position = origin + direction * distance;
+        Vector3 newPos = origin + direction * distance;
+        transform.position = newPos;
     }
 
     private bool TryFindNearestValidHit(
@@ -129,11 +176,11 @@ public sealed class NetworkProjectile : NetworkBehaviour
         out RaycastHit nearestHit)
     {
         int count;
-        if (collisionRadius > 0f)
+        if (cachedRadius > 0f)
         {
             count = Physics.SphereCastNonAlloc(
                 origin,
-                collisionRadius,
+                cachedRadius,
                 direction,
                 hitBuffer,
                 distance,
@@ -164,6 +211,9 @@ public sealed class NetworkProjectile : NetworkBehaviour
                 continue;
 
             if (candidate.collider.GetComponent<CharacterController>() != null)
+                continue;
+
+            if (candidate.collider.transform.IsChildOf(transform))
                 continue;
 
             NetworkObject hitNetworkObject = candidate.collider.GetComponentInParent<NetworkObject>();
