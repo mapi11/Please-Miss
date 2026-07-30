@@ -3358,8 +3358,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  prepareDuration: 3
-  gameDuration: 180
+  prepareDuration: 2
+  gameDuration: 60
   startWalls:
   - {fileID: 654785241}
   - {fileID: 1452985719}

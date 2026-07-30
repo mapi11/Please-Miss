@@ -8,10 +8,13 @@ public class DeathController : MonoBehaviour
     [SerializeField] private Collider leftHand;
     [SerializeField] private Collider rightHand;
 
-    [SerializeField] private float fallTorque = 300f;
-    [SerializeField] private float freezeDelay = 2f;
+    private const float FallbackTorque = 300f;
+    [SerializeField] private float groundedTimeToFreeze = 4f;
+    [SerializeField] private float groundCheckDistance = 0.2f;
+    [SerializeField] private LayerMask groundMask = ~0;
 
     private CharacterController characterController;
+    private Rigidbody rb;
     private bool isDead;
 
     private void Awake()
@@ -53,7 +56,7 @@ public class DeathController : MonoBehaviour
         if (rightHand != null)
             rightHand.enabled = false;
 
-        Rigidbody rb = GetComponent<Rigidbody>();
+        rb = GetComponent<Rigidbody>();
         if (rb == null)
             rb = gameObject.AddComponent<Rigidbody>();
 
@@ -61,14 +64,31 @@ public class DeathController : MonoBehaviour
         rb.interpolation = RigidbodyInterpolation.Interpolate;
         rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
 
-        rb.AddTorque(transform.right * -fallTorque, ForceMode.Impulse);
+        float torque = playerHealth != null && playerHealth.LastDeathTorque > 0f
+            ? playerHealth.LastDeathTorque
+            : FallbackTorque;
+        rb.AddTorque(transform.right * -torque, ForceMode.Impulse);
 
-        StartCoroutine(FreezeAfterDelay(rb));
+        StartCoroutine(FreezeWhenGrounded());
     }
 
-    private IEnumerator FreezeAfterDelay(Rigidbody rb)
+    private IEnumerator FreezeWhenGrounded()
     {
-        yield return new WaitForSeconds(freezeDelay);
+        float groundedTimer = 0f;
+
+        while (groundedTimer < groundedTimeToFreeze)
+        {
+            if (rb == null)
+                yield break;
+
+            Vector3 origin = transform.position + Vector3.up * 0.1f;
+            if (Physics.Raycast(origin, Vector3.down, groundCheckDistance, groundMask))
+                groundedTimer += Time.deltaTime;
+            else
+                groundedTimer = 0f;
+
+            yield return null;
+        }
 
         if (rb != null)
             rb.isKinematic = true;

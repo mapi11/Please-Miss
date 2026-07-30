@@ -20,6 +20,7 @@ public readonly struct DamageInfo
     public readonly Vector3 HitNormal;
     public readonly DamageSourceType SourceType;
     public readonly string SourceId;
+    public readonly float DeathTorque;
 
     public DamageInfo(
         float baseDamage,
@@ -28,7 +29,8 @@ public readonly struct DamageInfo
         Vector3 hitPoint,
         Vector3 hitNormal,
         DamageSourceType sourceType,
-        string sourceId = null)
+        string sourceId = null,
+        float deathTorque = 0f)
     {
         BaseDamage = Mathf.Max(0f, baseDamage);
         AttackerClientId = attackerClientId;
@@ -37,5 +39,6 @@ public readonly struct DamageInfo
         HitNormal = hitNormal;
         SourceType = sourceType;
         SourceId = sourceId ?? string.Empty;
+        DeathTorque = deathTorque;
     }
 }

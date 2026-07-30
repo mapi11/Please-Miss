@@ -35,6 +35,7 @@ public sealed class NetworkProjectile : NetworkBehaviour
     private float currentSpeed;
     private float accelerationPerSecond;
     private float damage;
+    private float deathTorque;
     private float lifeRemaining;
     private ulong attackerClientId;
     private bool initialized;
@@ -104,7 +105,8 @@ public sealed class NetworkProjectile : NetworkBehaviour
     public void InitializeServer(
         BulletDefinition definition,
         float rifleMuzzleVelocity,
-        ulong shooterClientId)
+        ulong shooterClientId,
+        float torque)
     {
         if (!IsServer || definition == null)
             return;
@@ -114,6 +116,7 @@ public sealed class NetworkProjectile : NetworkBehaviour
         currentSpeed = rifleMuzzleVelocity * definition.SpeedMultiplier;
         accelerationPerSecond = definition.AccelerationPerSecond;
         damage = definition.Damage;
+        deathTorque = torque;
         attackerClientId = shooterClientId;
         lifeRemaining = maximumLifetime;
         initialized = true;
@@ -154,7 +157,8 @@ public sealed class NetworkProjectile : NetworkBehaviour
                     hit.point,
                     hit.normal,
                     DamageSourceType.Projectile,
-                    bulletId.Value.ToString()
+                    bulletId.Value.ToString(),
+                    deathTorque
                 );
 
                 damageable.TakeDamage(in damageInfo);

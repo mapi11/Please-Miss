@@ -22,3 +22,17 @@ MonoBehaviour:
   minimumMagnification: 4
   maximumMagnification: 40
   zoomStep: 2
+  swayAmplitude: 0.1
+  swayFrequency: 0.5
+  swaySmoothTime: 0.3
+  maxBreath: 5
+  breathDepletionRate: 1
+  breathRecoveryRate: 0.5
+  breathRecoveryDelay: 1
+  breathRecoveryThreshold: 0.3
+  breathPunishmentDelay: 1
+  breathPunishmentMultiplier: 3
+  breathStabilityMultiplier: 0.05
+  deathTorque: 1000
+  recoilPitchAmount: 0.15
+  recoilRecoverySpeed: 3

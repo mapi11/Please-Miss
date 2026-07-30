@@ -685,7 +685,8 @@ public sealed class SniperWeaponController : NetworkBehaviour
         projectile.InitializeServer(
             serverLoadedBullet,
             currentRifleDefinition.MuzzleVelocity,
-            OwnerClientId
+            OwnerClientId,
+            currentRifleDefinition.DeathTorque
         );
 
         if (serverMagazineCache.TryGetValue(serverEquippedKey, out MagazineState fireState))

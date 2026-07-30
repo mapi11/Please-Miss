@@ -72,6 +72,7 @@ public sealed class PlayerHealth : NetworkBehaviour, IDamageable
 
     private float offlineHealth;
     private bool offlineDead;
+    private float lastDeathTorque;
 
     public event Action<float, float> OnHealthChanged;
     public event Action<bool> OnDeathStateChanged;
@@ -81,6 +82,7 @@ public sealed class PlayerHealth : NetworkBehaviour, IDamageable
     public float CurrentHealth => IsSpawned ? networkHealth.Value : offlineHealth;
     public float NormalizedHealth => maximumHealth <= 0f ? 0f : CurrentHealth / maximumHealth;
     public bool IsDead => IsSpawned ? networkDead.Value : offlineDead;
+    public float LastDeathTorque => lastDeathTorque;
     public float DebugHealthStep => debugHealthStep;
     public IReadOnlyList<PlayerHitZone> HitZones => hitZones;
 
@@ -153,6 +155,7 @@ public sealed class PlayerHealth : NetworkBehaviour, IDamageable
         if (finalDamage <= 0f)
             return;
 
+        lastDeathTorque = damageInfo.DeathTorque;
         SetHealthOnServer(networkHealth.Value - finalDamage);
         OnDamageAppliedOnServer?.Invoke(damageInfo, finalDamage, zoneName);
     }

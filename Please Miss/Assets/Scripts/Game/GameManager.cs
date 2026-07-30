@@ -46,6 +46,8 @@ public class GameManager : NetworkBehaviour
     private float gameTimer;
     private readonly Dictionary<ulong, PlayerHealth> trackedRunners = new Dictionary<ulong, PlayerHealth>();
     private readonly HashSet<ulong> finishedRunners = new HashSet<ulong>();
+    private ulong? sniperClientId;
+    private PlayerHealth sniperHealth;
 
     private void Awake()
     {
@@ -76,10 +78,13 @@ public class GameManager : NetworkBehaviour
             TrackRunner(client.ClientId, client.PlayerObject);
 
         ConfigureAllPlayers();
+        TrackSniper();
     }
 
     public override void OnNetworkDespawn()
     {
+        UntrackSniper();
+
         if (NetworkManager.Singleton != null)
         {
             NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnected;
@@ -106,6 +111,15 @@ public class GameManager : NetworkBehaviour
     private void OnClientDisconnected(ulong clientId)
     {
         UntrackRunner(clientId);
+
+        if (sniperClientId.HasValue && sniperClientId.Value == clientId)
+        {
+            UntrackSniper();
+            if (State.Value == GameState.Playing)
+                RunnerWins();
+            return;
+        }
+
         if (State.Value != GameState.Playing) return;
 
         if (!HasActiveRunners())
@@ -133,6 +147,41 @@ public class GameManager : NetworkBehaviour
             health.OnDeathStateChanged -= OnRunnerDeathStateChanged;
             trackedRunners.Remove(clientId);
         }
+    }
+
+    private void TrackSniper()
+    {
+        if (NetworkManager.Singleton == null) return;
+
+        foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
+        {
+            if (client.PlayerObject == null) continue;
+            var role = client.PlayerObject.GetComponent<NetworkPlayerRole>();
+            if (role == null || !role.IsSniper) continue;
+
+            sniperClientId = client.ClientId;
+            sniperHealth = client.PlayerObject.GetComponent<PlayerHealth>();
+            if (sniperHealth != null)
+                sniperHealth.OnDeathStateChanged += OnSniperDeathStateChanged;
+            return;
+        }
+    }
+
+    private void UntrackSniper()
+    {
+        if (sniperHealth != null)
+        {
+            sniperHealth.OnDeathStateChanged -= OnSniperDeathStateChanged;
+            sniperHealth = null;
+        }
+        sniperClientId = null;
+    }
+
+    private void OnSniperDeathStateChanged(bool dead)
+    {
+        if (!dead || State.Value != GameState.Playing) return;
+
+        RunnerWins();
     }
 
     private void OnRunnerDeathStateChanged(bool dead)
@@ -203,7 +252,7 @@ public class GameManager : NetworkBehaviour
         if (gameTimer <= 0f)
         {
             GameTimeRemaining.Value = 0f;
-            SniperWins();
+            RunnerWins();
         }
     }
 
@@ -215,7 +264,22 @@ public class GameManager : NetworkBehaviour
         NotifyRunnerFinishedClientRpc(clientId);
 
         if (!HasActiveRunners())
-            SniperWins();
+        {
+            if (AllRunnersFinished())
+                RunnerWins();
+            else
+                SniperWins();
+        }
+    }
+
+    private bool AllRunnersFinished()
+    {
+        foreach (var kvp in trackedRunners)
+        {
+            if (!finishedRunners.Contains(kvp.Key))
+                return false;
+        }
+        return trackedRunners.Count > 0;
     }
 
     private bool HasActiveRunners()
@@ -234,6 +298,12 @@ public class GameManager : NetworkBehaviour
         State.Value = GameState.Ended;
         KillAllRunners();
         SniperWinsClientRpc();
+    }
+
+    private void RunnerWins()
+    {
+        State.Value = GameState.Ended;
+        RunnerWinsClientRpc();
     }
 
     private void ConfigureAllPlayers()
@@ -304,6 +374,12 @@ public class GameManager : NetworkBehaviour
     private void SniperWinsClientRpc()
     {
         Debug.Log("Sniper wins!");
+    }
+
+    [ClientRpc]
+    private void RunnerWinsClientRpc()
+    {
+        Debug.Log("Runners win!");
     }
 
     [ClientRpc]
