@@ -70,9 +70,15 @@ public sealed class PlayerHealth : NetworkBehaviour, IDamageable
         NetworkVariableWritePermission.Server
     );
 
+    private readonly NetworkVariable<float> networkDeathTorque = new NetworkVariable<float>(
+        0f,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
+
     private float offlineHealth;
     private bool offlineDead;
-    private float lastDeathTorque;
+    private float offlineDeathTorque;
 
     public event Action<float, float> OnHealthChanged;
     public event Action<bool> OnDeathStateChanged;
@@ -82,7 +88,7 @@ public sealed class PlayerHealth : NetworkBehaviour, IDamageable
     public float CurrentHealth => IsSpawned ? networkHealth.Value : offlineHealth;
     public float NormalizedHealth => maximumHealth <= 0f ? 0f : CurrentHealth / maximumHealth;
     public bool IsDead => IsSpawned ? networkDead.Value : offlineDead;
-    public float LastDeathTorque => lastDeathTorque;
+    public float LastDeathTorque => IsSpawned ? networkDeathTorque.Value : offlineDeathTorque;
     public float DebugHealthStep => debugHealthStep;
     public IReadOnlyList<PlayerHitZone> HitZones => hitZones;
 
@@ -155,7 +161,7 @@ public sealed class PlayerHealth : NetworkBehaviour, IDamageable
         if (finalDamage <= 0f)
             return;
 
-        lastDeathTorque = damageInfo.DeathTorque;
+        networkDeathTorque.Value = damageInfo.DeathTorque;
         SetHealthOnServer(networkHealth.Value - finalDamage);
         OnDamageAppliedOnServer?.Invoke(damageInfo, finalDamage, zoneName);
     }
@@ -267,13 +273,15 @@ public sealed class PlayerHealth : NetworkBehaviour, IDamageable
         networkDead.Value = clamped <= 0f;
     }
 
-    private void SetOfflineHealth(float value)
+    private void SetOfflineHealth(float value, float deathTorque = 0f)
     {
         float previousHealth = offlineHealth;
         bool previousDead = offlineDead;
 
         offlineHealth = Mathf.Clamp(value, 0f, maximumHealth);
         offlineDead = offlineHealth <= 0f;
+        if (offlineDead)
+            offlineDeathTorque = deathTorque;
 
         if (!Mathf.Approximately(previousHealth, offlineHealth))
             OnHealthChanged?.Invoke(offlineHealth, maximumHealth);

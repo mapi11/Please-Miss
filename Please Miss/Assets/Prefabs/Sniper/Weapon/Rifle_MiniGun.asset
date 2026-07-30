@@ -33,6 +33,6 @@ MonoBehaviour:
   breathPunishmentDelay: 1
   breathPunishmentMultiplier: 3
   breathStabilityMultiplier: 0.05
-  deathTorque: 1000
+  deathTorque: 500
   recoilPitchAmount: 0.15
   recoilRecoverySpeed: 3
