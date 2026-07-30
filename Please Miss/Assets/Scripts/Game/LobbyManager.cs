@@ -104,6 +104,28 @@ public class LobbyManager : NetworkBehaviour
         SceneManager.LoadScene(mainMenuSceneName);
     }
 
+    public void FastStartTest()
+    {
+        if (!IsServer) return;
+
+        var clients = NetworkManager.Singleton.ConnectedClientsList;
+        if (clients.Count < 2) return;
+
+        int sniperIndex = Random.Range(0, clients.Count);
+
+        for (int i = 0; i < clients.Count; i++)
+        {
+            var client = clients[i];
+            if (client.PlayerObject == null) continue;
+
+            var roleComp = client.PlayerObject.GetComponent<NetworkPlayerRole>();
+            if (roleComp == null) continue;
+
+            roleComp.ServerSetRole(i == sniperIndex ? PlayerRole.Sniper : PlayerRole.Runner);
+            roleComp.ServerSetReady(true);
+        }
+    }
+
     public void OnPlayerStateChanged()
     {
         if (!IsServer) return;

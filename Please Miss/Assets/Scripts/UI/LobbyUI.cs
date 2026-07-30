@@ -26,6 +26,9 @@ public class LobbyUI : MonoBehaviour
     [SerializeField] private Button leaveButton;
     [SerializeField] private string mainMenuSceneName = "MainMenu";
 
+    [Header("Fast Start")]
+    [SerializeField] private Button fastStartButton;
+
     private readonly Dictionary<ulong, LobbyPlayerCard> activeCards = new();
 
     private void Start()
@@ -35,6 +38,9 @@ public class LobbyUI : MonoBehaviour
 
         if (leaveButton != null)
             leaveButton.onClick.AddListener(LeaveLobby);
+
+        if (fastStartButton != null)
+            fastStartButton.onClick.AddListener(FastStartTest);
     }
 
     public void RebuildCards()
@@ -107,6 +113,12 @@ public class LobbyUI : MonoBehaviour
 
         if (multiSniperWarning != null)
             multiSniperWarning.SetActive(type == 2);
+    }
+
+    public void FastStartTest()
+    {
+        if (LobbyManager.Instance != null)
+            LobbyManager.Instance.FastStartTest();
     }
 
     public void LeaveLobby()

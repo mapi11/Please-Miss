@@ -2,38 +2,58 @@ using UnityEngine;
 
 public class PlayerUIConfigurator : MonoBehaviour
 {
-    [SerializeField] private GameObject runnerUI;
-    [SerializeField] private GameObject sniperUI;
-    [SerializeField] private GameObject[] ownerOnlyElements;
+    [SerializeField] private GameObject[] sniperElements;
+    [SerializeField] private GameObject[] runnerElements;
+    [SerializeField] private GameObject[] commonElements;
+    [SerializeField] private GameObject[] hideOnDeathElements;
+    [SerializeField] private GameObject[] spectatorElements;
 
     private PlayerHealth playerHealth;
+    private PlayerRoleState roleState;
 
     private void Awake()
     {
-        if (playerHealth == null)
-            playerHealth = GetComponentInParent<PlayerHealth>();
+        playerHealth = GetComponentInParent<PlayerHealth>();
+        roleState = GetComponentInParent<PlayerRoleState>();
     }
 
     private void Update()
     {
-        if (playerHealth == null)
+        if (playerHealth == null || !playerHealth.IsSpawned)
+            return;
+
+        bool isOwner = playerHealth.IsOwner;
+
+        if (!isOwner)
         {
-            playerHealth = GetComponentInParent<PlayerHealth>();
+            SetElementsActive(sniperElements, false);
+            SetElementsActive(runnerElements, false);
+            SetElementsActive(commonElements, false);
+            SetElementsActive(hideOnDeathElements, false);
+            SetElementsActive(spectatorElements, false);
             return;
         }
 
-        bool shouldShow = playerHealth.IsSpawned && playerHealth.IsOwner;
+        bool dead = playerHealth.IsDead;
 
-        for (int i = 0; i < ownerOnlyElements.Length; i++)
-        {
-            if (ownerOnlyElements[i] != null && ownerOnlyElements[i].activeSelf != shouldShow)
-                ownerOnlyElements[i].SetActive(shouldShow);
-        }
+        PlayerRole role = roleState != null ? roleState.CurrentRole : PlayerRole.None;
+        bool isSniper = role == PlayerRole.Sniper;
+        bool isRunner = role == PlayerRole.Runner;
+
+        SetElementsActive(sniperElements, !dead && isSniper);
+        SetElementsActive(runnerElements, !dead && isRunner);
+        SetElementsActive(commonElements, !dead);
+        SetElementsActive(hideOnDeathElements, !dead);
+        SetElementsActive(spectatorElements, dead);
     }
 
-    public void Configure(PlayerRole role)
+    private static void SetElementsActive(GameObject[] elements, bool active)
     {
-        if (runnerUI != null) runnerUI.SetActive(role == PlayerRole.Runner);
-        if (sniperUI != null) sniperUI.SetActive(role == PlayerRole.Sniper);
+        if (elements == null) return;
+        for (int i = 0; i < elements.Length; i++)
+        {
+            if (elements[i] != null && elements[i].activeSelf != active)
+                elements[i].SetActive(active);
+        }
     }
 }

@@ -771,7 +771,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 663.45, y: 930}
+  m_SizeDelta: {x: 600, y: 930}
   m_Pivot: {x: 0, y: 1}
 --- !u!1 &1451024436036735188
 GameObject:
@@ -783,7 +783,6 @@ GameObject:
   m_Component:
   - component: {fileID: 8663816557765797959}
   - component: {fileID: 6816889717869159560}
-  - component: {fileID: 4480406718156281034}
   m_Layer: 5
   m_Name: TeamHud
   m_TagString: Untagged
@@ -825,21 +824,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   contentParent: {fileID: 287495350918591196}
   panelPrefab: {fileID: 5934918494501279810, guid: c917e3430d3c1ba4887fd46671a8a635, type: 3}
---- !u!114 &4480406718156281034
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1451024436036735188}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7b1db9a701c49274b9cd96e0420bd458, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  playerHealth: {fileID: 5763602185442780398}
-  targets:
-  - {fileID: 7602605808175928514}
 --- !u!1 &1517689584089936370
 GameObject:
   m_ObjectHideFlags: 0
@@ -2841,7 +2825,6 @@ GameObject:
   m_Component:
   - component: {fileID: 6273858239767517100}
   - component: {fileID: 8655659788233341531}
-  - component: {fileID: 7074367269686867233}
   m_Layer: 5
   m_Name: Stamina
   m_TagString: Untagged
@@ -2885,21 +2868,6 @@ MonoBehaviour:
   staminaPanel: {fileID: 8518370040342841270}
   normalColor: {r: 1, g: 1, b: 1, a: 1}
   exhaustedColor: {r: 1, g: 0, b: 0, a: 1}
---- !u!114 &7074367269686867233
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6773934745301745552}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7b1db9a701c49274b9cd96e0420bd458, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  playerHealth: {fileID: 5763602185442780398}
-  targets:
-  - {fileID: 8518370040342841270}
 --- !u!1 &6818440226341732365
 GameObject:
   m_ObjectHideFlags: 0
@@ -3309,10 +3277,10 @@ RectTransform:
   - {fileID: 6004241941477030668}
   - {fileID: 7930755717302351457}
   - {fileID: 8663816557765797959}
-  - {fileID: 3138648584327637286}
   - {fileID: 337880290235938423}
   - {fileID: 4866564898787944757}
   - {fileID: 1984155358129681144}
+  - {fileID: 3138648584327637286}
   - {fileID: 8340973616428194893}
   m_Father: {fileID: 8229351524461367658}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -3396,9 +3364,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a0b35080b63253040b366a58858aae00, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  runnerUI: {fileID: 3713787532309897826}
-  sniperUI: {fileID: 1677428476075623671}
-  ownerOnlyElements: []
+  sniperElements:
+  - {fileID: 1791738333781288381}
+  runnerElements:
+  - {fileID: 3031294992037351145}
+  - {fileID: 9146988073033541282}
+  - {fileID: 6773934745301745552}
+  commonElements:
+  - {fileID: 2338472475098032452}
+  - {fileID: 9201828631824376735}
+  - {fileID: 1451024436036735188}
+  - {fileID: 4044071476452646228}
+  hideOnDeathElements: []
+  spectatorElements:
+  - {fileID: 1367422382334082022}
 --- !u!1 &7602605808175928514
 GameObject:
   m_ObjectHideFlags: 0
@@ -5150,7 +5129,6 @@ GameObject:
   m_Component:
   - component: {fileID: 8374826949680462513}
   - component: {fileID: 6093554201717852228}
-  - component: {fileID: 1139062705501540267}
   m_Layer: 5
   m_Name: HealthPanel
   m_TagString: Untagged
@@ -5195,21 +5173,6 @@ MonoBehaviour:
   healthText: {fileID: 4892653130527144710}
   healthContent: {fileID: 5951856358707036866}
   deadPanel: {fileID: 5989420654910946453}
---- !u!114 &1139062705501540267
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9146988073033541282}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7b1db9a701c49274b9cd96e0420bd458, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  playerHealth: {fileID: 5763602185442780398}
-  targets:
-  - {fileID: 5951856358707036866}
 --- !u!1 &9147096217465566555
 GameObject:
   m_ObjectHideFlags: 0

@@ -23,6 +23,7 @@ public class GameManager : NetworkBehaviour
     [Header("References")]
     [SerializeField] private GameObject[] startWalls;
     [SerializeField] private TMP_Text timerText;
+    [SerializeField] private GameObject timerPanel;
 
     public readonly NetworkVariable<GameState> State = new NetworkVariable<GameState>(
         GameState.Preparing,
@@ -48,6 +49,7 @@ public class GameManager : NetworkBehaviour
     private readonly HashSet<ulong> finishedRunners = new HashSet<ulong>();
     private ulong? sniperClientId;
     private PlayerHealth sniperHealth;
+    private PlayerHealth localPlayerHealth;
 
     private void Awake()
     {
@@ -63,6 +65,8 @@ public class GameManager : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
+        localPlayerHealth = NetworkManager.Singleton.LocalClient?.PlayerObject?.GetComponent<PlayerHealth>();
+
         if (!IsServer) return;
 
         State.Value = GameState.Preparing;
@@ -214,6 +218,19 @@ public class GameManager : NetworkBehaviour
     {
         if (timerText == null) return;
 
+        bool localDead = localPlayerHealth != null && localPlayerHealth.IsDead;
+        bool hide = State.Value == GameState.Ended ||
+                    (State.Value == GameState.Playing && (LocalRunnerFinished || localDead));
+
+        if (timerPanel != null)
+            timerPanel.SetActive(!hide);
+
+        if (hide)
+        {
+            timerText.text = "";
+            return;
+        }
+
         switch (State.Value)
         {
             case GameState.Preparing:
@@ -221,9 +238,6 @@ public class GameManager : NetworkBehaviour
                 break;
             case GameState.Playing:
                 timerText.text = "Time: " + FormatTime(GameTimeRemaining.Value);
-                break;
-            case GameState.Ended:
-                timerText.text = "";
                 break;
         }
     }
@@ -330,20 +344,6 @@ public class GameManager : NetworkBehaviour
             if (weapon != null) weapon.enabled = false;
         }
 
-        ConfigurePlayerClientRpc(clientId, role.CurrentRole);
-    }
-
-    [ClientRpc]
-    private void ConfigurePlayerClientRpc(ulong clientId, PlayerRole role)
-    {
-        if (NetworkManager.Singleton.LocalClientId != clientId) return;
-
-        var player = NetworkManager.Singleton.LocalClient.PlayerObject;
-        if (player == null) return;
-
-        var configurator = player.GetComponent<PlayerUIConfigurator>();
-        if (configurator != null)
-            configurator.Configure(role);
     }
 
     private void KillAllRunners()
