@@ -12,6 +12,7 @@ public class Hand : MonoBehaviour
     [SerializeField] private float followSmoothTime = 0.055f;
     [SerializeField] private float targetFollowSmoothTime = 0.04f;
     [SerializeField] private float maxSpeed = 18f;
+    [SerializeField] private float snapGlueDistance = 0.05f;
 
     [NonSerialized] public bool snapToTarget;
     [NonSerialized] public float targetFollowSmoothTimeOverride = -1f;
@@ -61,6 +62,13 @@ public class Hand : MonoBehaviour
         float pitch = followRoot.localEulerAngles.x;
         if (pitch > 180f) pitch -= 360f;
         return Quaternion.Euler(pitch * pitchInfluence, followRoot.eulerAngles.y, 0f);
+    }
+
+    private Quaternion GetTargetRotation()
+    {
+        Quaternion targetRotation = target.rotation;
+        float yaw = followRoot != null ? followRoot.eulerAngles.y : transform.eulerAngles.y;
+        return Quaternion.Euler(targetRotation.eulerAngles.x, yaw, targetRotation.eulerAngles.z);
     }
 
     public float DistanceToTarget
@@ -118,6 +126,7 @@ public class Hand : MonoBehaviour
     {
         Vector3 desiredPosition;
         Quaternion desiredRotation;
+        bool glueToTarget = false;
 
         if (isRagdollMode)
         {
@@ -136,12 +145,13 @@ public class Hand : MonoBehaviour
             {
                 desiredPosition = target.position;
                 desiredRotation = target.rotation;
+                glueToTarget = Vector3.Distance(transform.position, target.position) <= snapGlueDistance;
             }
             else
             {
                 Vector3 swing = ComputeSwing();
                 desiredPosition = target.position + swing;
-                desiredRotation = target.rotation;
+                desiredRotation = GetTargetRotation();
             }
         }
         else
@@ -150,15 +160,10 @@ public class Hand : MonoBehaviour
             desiredRotation = GetHandRotation() * Quaternion.Euler(idleLocalEuler);
         }
 
-        if (snapToTarget && hasTarget)
+        if (glueToTarget)
         {
-            if (target == null)
-            {
-                ClearTarget();
-                return;
-            }
-            transform.position = target.position;
-            transform.rotation = target.rotation;
+            transform.position = desiredPosition;
+            transform.rotation = desiredRotation;
             return;
         }
 

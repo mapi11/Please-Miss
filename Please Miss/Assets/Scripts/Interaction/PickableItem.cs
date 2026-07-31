@@ -65,14 +65,7 @@ public class PickableItem : Interactable
     [ServerRpc(RequireOwnership = false)]
     private void PickupServerRpc(NetworkObjectReference playerRef)
     {
-        var rb = GetComponent<Rigidbody>();
-        if (rb != null)
-        {
-            rb.isKinematic = true;
-            rb.useGravity = false;
-        }
-
-        transform.position = new Vector3(0, -9999, 0);
+        NetworkObject.Despawn(true);
     }
 
     public override void OnHandHold(PlayerController player, float deltaTime) { }

@@ -23,6 +23,7 @@ public class GraphicsSettingsUI : MonoBehaviour
             QualitySettings.shadowResolution = UnityEngine.ShadowResolution.High;
             QualitySettings.vSyncCount = 1;
             Application.targetFrameRate = 144;
+            ApplyUrpShadowResolution(2);
         }
         else
         {
@@ -32,7 +33,32 @@ public class GraphicsSettingsUI : MonoBehaviour
             QualitySettings.shadowResolution = (UnityEngine.ShadowResolution)PlayerPrefs.GetInt("ShadowResolution", 2);
             QualitySettings.vSyncCount = PlayerPrefs.GetInt("VSync", 1);
             Application.targetFrameRate = PlayerPrefs.GetInt("MaxFps", 144);
+            ApplyUrpShadowResolution(PlayerPrefs.GetInt("ShadowResolution", 2));
         }
+    }
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    private static void ApplySavedSettingsAfterSceneLoad()
+    {
+        int preset = PlayerPrefs.GetInt("GraphicsPreset", -1);
+        int shadowResolution = preset < 0 ? 2 : PlayerPrefs.GetInt("ShadowResolution", 2);
+        ApplyUrpShadowResolution(shadowResolution);
+
+        if (Camera.main != null && preset >= 0)
+        {
+            Camera.main.farClipPlane = PlayerPrefs.GetFloat("DrawDistance", Camera.main.farClipPlane);
+        }
+    }
+
+    private static void ApplyUrpShadowResolution(int index)
+    {
+        int[] resolutions = { 256, 512, 1024, 2048 };
+        int res = resolutions[Mathf.Clamp(index, 0, resolutions.Length - 1)];
+
+        var urp = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
+
+        if (urp != null)
+            urp.mainLightShadowmapResolution = res;
     }
 
     [Header("Preset")]
@@ -379,13 +405,7 @@ public class GraphicsSettingsUI : MonoBehaviour
 
     private void SetShadowResolution(int index)
     {
-        int[] resolutions = { 256, 512, 1024, 2048 };
-        int res = resolutions[Mathf.Clamp(index, 0, resolutions.Length - 1)];
-
-        var urp = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
-
-        if (urp != null)
-            urp.mainLightShadowmapResolution = res;
+        ApplyUrpShadowResolution(index);
 
         QualitySettings.shadowResolution = (UnityEngine.ShadowResolution)index;
         PlayerPrefs.SetInt("ShadowResolution", index);

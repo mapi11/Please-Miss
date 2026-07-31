@@ -161,6 +161,7 @@ MonoBehaviour:
   followSmoothTime: 0.055
   targetFollowSmoothTime: 0.04
   maxSpeed: 18
+  snapGlueDistance: 0.05
   swingAmount: 0.08
   swingSpeed: 9
   sprintSwayAmount: 0.12
@@ -2135,6 +2136,7 @@ MonoBehaviour:
   followSmoothTime: 0.055
   targetFollowSmoothTime: 0.04
   maxSpeed: 18
+  snapGlueDistance: 0.05
   swingAmount: 0.08
   swingSpeed: 9
   sprintSwayAmount: 0.12
@@ -4672,6 +4674,8 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   handActivationDistance: 0.5
+  handActivationDelay: 0.05
+  interactionReachSmoothTime: 0.01
   inventory: {fileID: 2571829687392854606}
   crosshair: {fileID: 6224247169380045861}
   maxChargeTime: 1

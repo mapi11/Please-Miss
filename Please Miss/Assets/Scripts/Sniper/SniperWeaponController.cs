@@ -744,9 +744,13 @@ public sealed class SniperWeaponController : NetworkBehaviour
     [Rpc(SendTo.Server)]
     public void RefillFromAmmoBoxServerRpc(FixedString64Bytes bulletId)
     {
+        ServerRefillFromAmmoBox(bulletId);
+    }
+
+    public bool ServerRefillFromAmmoBox(FixedString64Bytes bulletId)
+    {
         BulletDefinition bullet = ResolveBulletDefinition(bulletId.ToString());
-        if (bullet != null)
-            ServerRefill(bullet);
+        return bullet != null && ServerRefill(bullet);
     }
 
     private bool CanUseRifleLocally()

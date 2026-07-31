@@ -1,7 +1,7 @@
 using Unity.Netcode;
 using UnityEngine;
 
-public sealed class AmmoBox : Interactable
+public sealed class InfinityAmmoBox : Interactable
 {
     [Header("Ammo")]
     [SerializeField] private BulletDefinition bulletDefinition;

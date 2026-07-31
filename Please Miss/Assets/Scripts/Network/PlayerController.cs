@@ -57,6 +57,7 @@ public class PlayerController : NetworkBehaviour
     [SerializeField] private float interactionViewDot = 0.35f;
     [SerializeField] private LayerMask interactableMask = ~0;
     [SerializeField] private float handActivationDistance = 0.12f;
+    [SerializeField] private float interactionReachSmoothTime = 0.09f;
 
     [Header("Inventory")]
     [SerializeField] private Inventory inventory;
@@ -96,6 +97,7 @@ public class PlayerController : NetworkBehaviour
     private float pitch;
 
     private bool handReachedInteractable;
+    private Hand reachingHand;
     private bool isChargingThrow;
     private float throwChargeTime;
     private NetworkInventorySync cachedSync;
@@ -126,7 +128,10 @@ public class PlayerController : NetworkBehaviour
     public float AirborneSquash => airborneSquash;
     public Transform ActiveHandHoldPivot => InteractionHandRef != null ? InteractionHandRef.HoldPivot : null;
 
-    private Hand InteractionHandRef => interactionHand == InteractionHand.Right ? rightHand : leftHand;
+    private Hand InteractionHandRef =>
+        isTwoHandedHolding && currentTwoHanded != null
+            ? leftHand
+            : interactionHand == InteractionHand.Right ? rightHand : leftHand;
     private Hand PointingHandRef => interactionHand == InteractionHand.Right ? leftHand : rightHand;
     private Hand IdleHandRef => interactionHand == InteractionHand.Right ? rightHand : leftHand;
 
@@ -306,6 +311,7 @@ public class PlayerController : NetworkBehaviour
         if (leftHand != null)
         {
             leftHand.snapToTarget = true;
+            leftHand.targetFollowSmoothTimeOverride = -1f;
             leftHand.SetTarget(leftGrip);
         }
     }
@@ -627,6 +633,9 @@ public class PlayerController : NetworkBehaviour
 
         if (currentInteractable == null)
         {
+            if (reachingHand != null)
+                ReleaseCurrentInteractable();
+
             if (WasInteractPressedThisFrame())
             {
                 var found = FindBestInteractable();
@@ -653,21 +662,11 @@ public class PlayerController : NetworkBehaviour
                     return;
                 }
 
-                Hand hand = InteractionHandRef;
+                Hand hand = reachingHand;
                 if (hand != null)
                 {
-                    if (isTwoHandedHolding && currentTwoHanded != null)
-                    {
-                        if (leftHand != null)
-                        {
-                            leftHand.snapToTarget = true;
-                            leftHand.SetTarget(currentTwoHanded.LeftGrip);
-                        }
-                    }
-                    else
-                    {
-                        hand.SetTarget(currentInteractable.HandTarget);
-                    }
+                    hand.snapToTarget = false;
+                    hand.SetTarget(currentInteractable.HandTarget);
 
                     float handDistance = hand.DistanceToTarget;
                     if (handDistance <= handActivationDistance)
@@ -710,8 +709,13 @@ public class PlayerController : NetworkBehaviour
             currentInteractable.OnServerInteractionBegin(OwnerClientId);
 
         Hand hand = InteractionHandRef;
+        reachingHand = hand;
         if (hand != null)
+        {
+            hand.snapToTarget = false;
+            hand.targetFollowSmoothTimeOverride = interactionReachSmoothTime;
             hand.SetTarget(currentInteractable.HandTarget);
+        }
     }
 
     private bool IsInventoryFull()
@@ -742,15 +746,17 @@ public class PlayerController : NetworkBehaviour
         currentInteractable = null;
         handReachedInteractable = false;
 
-        Hand hand = InteractionHandRef;
+        Hand hand = reachingHand;
         if (hand != null)
             hand.ClearTarget();
+        reachingHand = null;
 
         if (isTwoHandedHolding && currentTwoHanded != null)
         {
             if (leftHand != null)
             {
                 leftHand.snapToTarget = true;
+                leftHand.targetFollowSmoothTimeOverride = -1f;
                 leftHand.SetTarget(currentTwoHanded.LeftGrip);
             }
         }
@@ -771,15 +777,17 @@ public class PlayerController : NetworkBehaviour
         currentInteractable = null;
         handReachedInteractable = false;
 
-        Hand hand = InteractionHandRef;
+        Hand hand = reachingHand;
         if (hand != null)
             hand.ClearTarget();
+        reachingHand = null;
 
         if (isTwoHandedHolding && currentTwoHanded != null)
         {
             if (leftHand != null)
             {
                 leftHand.snapToTarget = true;
+                leftHand.targetFollowSmoothTimeOverride = -1f;
                 leftHand.SetTarget(currentTwoHanded.LeftGrip);
             }
         }
