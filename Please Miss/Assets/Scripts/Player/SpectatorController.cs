@@ -143,13 +143,10 @@ public class SpectatorController : NetworkBehaviour
 
         var cam = playerObj.GetComponentInChildren<Camera>();
         if (cam != null && cam != spectatorCamera)
-        {
             cam.enabled = false;
 
-            var listener = cam.GetComponent<AudioListener>();
-            if (listener != null)
-                listener.enabled = false;
-        }
+        foreach (var listener in playerObj.GetComponentsInChildren<AudioListener>(true))
+            listener.enabled = false;
     }
 
     private void EnablePlayerCamera()
@@ -161,14 +158,11 @@ public class SpectatorController : NetworkBehaviour
         foreach (var cam in cams)
         {
             if (cam != spectatorCamera)
-            {
                 cam.enabled = true;
-
-                var listener = cam.GetComponent<AudioListener>();
-                if (listener != null)
-                    listener.enabled = true;
-            }
         }
+
+        foreach (var listener in playerObj.GetComponentsInChildren<AudioListener>(true))
+            listener.enabled = true;
     }
 
     private static SpectatorManager GetLocalSpectatorManager()

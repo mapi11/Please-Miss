@@ -135,6 +135,7 @@ public class NetworkConnectionManager : MonoBehaviour
         if (isBusy)
             return;
 
+        ResetSessionState();
         ShowConnectionScreen(playerColor);
 
         ApplyPlayerSettings(profileId, playerName, playerColor);
@@ -208,6 +209,7 @@ public class NetworkConnectionManager : MonoBehaviour
 
         try
         {
+            ResetSessionState();
             ApplyPlayerSettings(profileId, playerName, playerColor);
             FindTransportIfNeeded();
 
@@ -279,6 +281,7 @@ public class NetworkConnectionManager : MonoBehaviour
 
         try
         {
+            ResetSessionState();
             ApplyPlayerSettings(profileId, playerName, playerColor);
             FindTransportIfNeeded();
 
@@ -355,7 +358,30 @@ public class NetworkConnectionManager : MonoBehaviour
         if (NetworkManager.Singleton != null)
             NetworkManager.Singleton.Shutdown();
 
+        ResetSessionState();
         SetStatus("Shutdown");
+    }
+
+    public static void ResetSessionState()
+    {
+        ConnectionLocked = false;
+        IsLobbyLocked = false;
+        clientProfiles.Clear();
+
+        GameSessionData.JoinCode = "";
+        GameSessionData.ConnectionType = "";
+        GameManager.LocalRunnerFinished = false;
+
+        if (Instance != null)
+        {
+            Instance.waitingForClientConnection = false;
+            Instance.clientConnectionTimer = 0f;
+            Instance.isBusy = false;
+            Instance.currentJoinCode = "";
+        }
+
+        foreach (var screen in FindObjectsOfType<ConnectionScreenManager>())
+            screen.Dismiss();
     }
 
     public static string GetConnectionPayloadId()

@@ -11,13 +11,10 @@ public class SpectatorManager : NetworkBehaviour
     public void EnterSpectatorMode()
     {
         if (playerCamera != null)
-        {
             playerCamera.enabled = false;
 
-            var listener = playerCamera.GetComponent<AudioListener>();
-            if (listener != null)
-                listener.enabled = false;
-        }
+        foreach (var listener in GetComponentsInChildren<AudioListener>(true))
+            listener.enabled = false;
 
         if (IsServer)
             SpawnSpectator(transform.position);
@@ -28,13 +25,10 @@ public class SpectatorManager : NetworkBehaviour
     public void ExitSpectatorMode()
     {
         if (playerCamera != null)
-        {
             playerCamera.enabled = true;
 
-            var listener = playerCamera.GetComponent<AudioListener>();
-            if (listener != null)
-                listener.enabled = true;
-        }
+        foreach (var listener in GetComponentsInChildren<AudioListener>(true))
+            listener.enabled = true;
     }
 
     [ServerRpc(RequireOwnership = false)]

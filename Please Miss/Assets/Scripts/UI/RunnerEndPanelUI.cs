@@ -160,7 +160,9 @@ public class RunnerEndPanelUI : MonoBehaviour
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
-        if (NetworkManager.Singleton != null)
+        if (NetworkConnectionManager.Instance != null)
+            NetworkConnectionManager.Instance.ShutdownNetwork();
+        else if (NetworkManager.Singleton != null)
             NetworkManager.Singleton.Shutdown();
 
         SceneManager.LoadScene("MainMenu");

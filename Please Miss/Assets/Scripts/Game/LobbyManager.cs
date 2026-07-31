@@ -101,6 +101,12 @@ public class LobbyManager : NetworkBehaviour
         if (IsServer) return;
 
         isLeaving = true;
+
+        if (NetworkConnectionManager.Instance != null)
+            NetworkConnectionManager.Instance.ShutdownNetwork();
+        else if (NetworkManager.Singleton != null)
+            NetworkManager.Singleton.Shutdown();
+
         SceneManager.LoadScene(mainMenuSceneName);
     }
 

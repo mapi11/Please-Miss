@@ -123,7 +123,9 @@ public class LobbyUI : MonoBehaviour
 
     public void LeaveLobby()
     {
-        if (NetworkManager.Singleton != null)
+        if (NetworkConnectionManager.Instance != null)
+            NetworkConnectionManager.Instance.ShutdownNetwork();
+        else if (NetworkManager.Singleton != null)
             NetworkManager.Singleton.Shutdown();
 
         SceneManager.LoadScene(mainMenuSceneName);

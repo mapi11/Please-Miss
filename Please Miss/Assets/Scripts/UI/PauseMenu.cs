@@ -183,7 +183,9 @@ public class PauseMenu : MonoBehaviour
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
-        if (NetworkManager.Singleton != null)
+        if (NetworkConnectionManager.Instance != null)
+            NetworkConnectionManager.Instance.ShutdownNetwork();
+        else if (NetworkManager.Singleton != null)
             NetworkManager.Singleton.Shutdown();
 
         if (pauseInstance != null)
