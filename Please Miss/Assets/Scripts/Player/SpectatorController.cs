@@ -106,13 +106,19 @@ public class SpectatorController : NetworkBehaviour
     {
         if (!isSpectating || !IsOwner) return;
 
+        AutoRetarget();
+
+        var keyboard = Keyboard.current;
+        if (keyboard != null)
+        {
+            if (keyboard.qKey.wasPressedThisFrame)
+                CycleTarget(-1);
+            else if (keyboard.eKey.wasPressedThisFrame)
+                CycleTarget(1);
+        }
+
         var mouse = Mouse.current;
         if (mouse == null) return;
-
-        if (mouse.leftButton.wasPressedThisFrame)
-            CycleTarget(1);
-        else if (mouse.rightButton.wasPressedThisFrame)
-            CycleTarget(-1);
 
         HandleZoom(mouse);
         UpdateOrbit(mouse);
@@ -232,14 +238,36 @@ public class SpectatorController : NetworkBehaviour
             if (client.PlayerObject == null || client.PlayerObject == NetworkManager.Singleton.LocalClient?.PlayerObject)
                 continue;
 
-            var role = client.PlayerObject.GetComponent<NetworkPlayerRole>();
-            if (role == null || !role.IsRunner) continue;
-
-            var health = client.PlayerObject.GetComponent<PlayerHealth>();
-            if (health == null || health.IsDead) continue;
-
-            validTargets.Add(client.PlayerObject);
+            if (IsValidTarget(client.PlayerObject))
+                validTargets.Add(client.PlayerObject);
         }
+    }
+
+    private bool IsValidTarget(NetworkObject target)
+    {
+        if (target == null) return false;
+
+        var role = target.GetComponent<NetworkPlayerRole>();
+        if (role == null || !role.IsRunner) return false;
+
+        var health = target.GetComponent<PlayerHealth>();
+        if (health == null || health.IsDead) return false;
+
+        if (GameManager.Instance != null && GameManager.Instance.FinishedRunners.Contains(target.OwnerClientId))
+            return false;
+
+        return true;
+    }
+
+    private void AutoRetarget()
+    {
+        if (currentTargetIndex >= 0 &&
+            currentTargetIndex < validTargets.Count &&
+            IsValidTarget(validTargets[currentTargetIndex]))
+            return;
+
+        RefreshTargets();
+        currentTargetIndex = validTargets.Count > 0 ? 0 : -1;
     }
 
     private static void SetLayerRecursively(Transform root, int layer)

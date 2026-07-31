@@ -15,6 +15,9 @@ public class SpectatorUI : MonoBehaviour
     private void Update()
     {
         if (spectator == null)
+            spectator = GetComponentInParent<SpectatorController>();
+
+        if (spectator == null)
             return;
 
         if (targetNameText != null)

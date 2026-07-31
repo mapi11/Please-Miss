@@ -20,6 +20,8 @@ public class GameManager : NetworkBehaviour
     [SerializeField] private float prepareDuration = 10f;
     [SerializeField] private float gameDuration = 180f;
 
+    public float GameDuration => gameDuration;
+
     [Header("References")]
     [SerializeField] private GameObject[] startWalls;
     [SerializeField] private TMP_Text timerText;
@@ -46,7 +48,8 @@ public class GameManager : NetworkBehaviour
     private float prepareTimer;
     private float gameTimer;
     private readonly Dictionary<ulong, PlayerHealth> trackedRunners = new Dictionary<ulong, PlayerHealth>();
-    private readonly HashSet<ulong> finishedRunners = new HashSet<ulong>();
+
+    public readonly NetworkList<ulong> FinishedRunners = new NetworkList<ulong>();
     private ulong? sniperClientId;
     private PlayerHealth sniperHealth;
     private PlayerHealth localPlayerHealth;
@@ -65,6 +68,8 @@ public class GameManager : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
+        FinishedRunners.Initialize(this);
+
         localPlayerHealth = NetworkManager.Singleton.LocalClient?.PlayerObject?.GetComponent<PlayerHealth>();
 
         if (!IsServer) return;
@@ -273,9 +278,17 @@ public class GameManager : NetworkBehaviour
     public void OnRunnerReachedFinish(ulong clientId)
     {
         if (State.Value != GameState.Playing) return;
+        if (FinishedRunners.Contains(clientId)) return;
 
-        finishedRunners.Add(clientId);
+        FinishedRunners.Add(clientId);
         NotifyRunnerFinishedClientRpc(clientId);
+
+        if (NetworkManager.Singleton.ConnectedClients.TryGetValue(clientId, out var client) &&
+            client.PlayerObject != null)
+        {
+            client.PlayerObject.transform.position = new Vector3(0f, -9999f, 0f);
+            HideFinishedRunnerClientRpc(client.PlayerObject);
+        }
 
         if (!HasActiveRunners())
         {
@@ -290,21 +303,44 @@ public class GameManager : NetworkBehaviour
     {
         foreach (var kvp in trackedRunners)
         {
-            if (!finishedRunners.Contains(kvp.Key))
+            if (!FinishedRunners.Contains(kvp.Key))
                 return false;
         }
         return trackedRunners.Count > 0;
     }
 
-    private bool HasActiveRunners()
+    public bool HasActiveRunners()
     {
         foreach (var kvp in trackedRunners)
         {
-            if (finishedRunners.Contains(kvp.Key)) continue;
+            if (FinishedRunners.Contains(kvp.Key)) continue;
             if (kvp.Value != null && !kvp.Value.IsDead)
                 return true;
         }
         return false;
+    }
+
+    public int CountAliveRunners()
+    {
+        if (NetworkManager.Singleton == null) return 0;
+
+        int count = 0;
+        foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
+        {
+            NetworkObject playerObj = client.PlayerObject;
+            if (playerObj == null) continue;
+
+            var role = playerObj.GetComponent<NetworkPlayerRole>();
+            if (role == null || !role.IsRunner) continue;
+
+            if (FinishedRunners.Contains(client.ClientId)) continue;
+
+            var health = playerObj.GetComponent<PlayerHealth>();
+            if (health != null && health.IsDead) continue;
+
+            count++;
+        }
+        return count;
     }
 
     private void SniperWins()
@@ -368,6 +404,22 @@ public class GameManager : NetworkBehaviour
     {
         if (clientId == NetworkManager.Singleton.LocalClientId)
             LocalRunnerFinished = true;
+    }
+
+    [ClientRpc]
+    private void HideFinishedRunnerClientRpc(NetworkObjectReference runnerRef)
+    {
+        if (!runnerRef.TryGet(out NetworkObject runner)) return;
+
+        runner.transform.SetPositionAndRotation(new Vector3(0f, -9999f, 0f), Quaternion.identity);
+        Physics.SyncTransforms();
+
+        foreach (var renderer in runner.GetComponentsInChildren<Renderer>(true))
+            renderer.enabled = false;
+
+        var cc = runner.GetComponent<CharacterController>();
+        if (cc != null)
+            cc.enabled = false;
     }
 
     [ClientRpc]
