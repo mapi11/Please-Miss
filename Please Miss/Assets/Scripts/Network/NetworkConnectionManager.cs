@@ -372,7 +372,7 @@ public class NetworkConnectionManager : MonoBehaviour
             System.Text.Encoding.UTF8.GetBytes(GetConnectionPayloadId());
     }
 
-    private void ShowConnectionScreen(Color32 playerColor)
+    public void ShowConnectionScreen(Color32 playerColor)
     {
         if (connectionScreenPrefab == null)
             return;
@@ -486,11 +486,17 @@ public class NetworkConnectionManager : MonoBehaviour
         NetworkManager.Singleton.OnServerStarted -= OnServerStarted;
         NetworkManager.Singleton.OnTransportFailure -= OnTransportFailure;
 
+        if (NetworkManager.Singleton.SceneManager != null)
+            NetworkManager.Singleton.SceneManager.OnSceneEvent -= OnSceneEvent;
+
         NetworkManager.Singleton.ConnectionApprovalCallback += OnConnectionApproval;
         NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
         NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
         NetworkManager.Singleton.OnServerStarted += OnServerStarted;
         NetworkManager.Singleton.OnTransportFailure += OnTransportFailure;
+
+        if (NetworkManager.Singleton.SceneManager != null)
+            NetworkManager.Singleton.SceneManager.OnSceneEvent += OnSceneEvent;
     }
 
     private void UnregisterNetworkCallbacks()
@@ -503,6 +509,46 @@ public class NetworkConnectionManager : MonoBehaviour
         NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnected;
         NetworkManager.Singleton.OnServerStarted -= OnServerStarted;
         NetworkManager.Singleton.OnTransportFailure -= OnTransportFailure;
+
+        if (NetworkManager.Singleton.SceneManager != null)
+            NetworkManager.Singleton.SceneManager.OnSceneEvent -= OnSceneEvent;
+    }
+
+    private void SubscribeSceneCallbacks()
+    {
+        if (NetworkManager.Singleton == null)
+            return;
+
+        if (NetworkManager.Singleton.SceneManager != null)
+        {
+            NetworkManager.Singleton.SceneManager.OnSceneEvent -= OnSceneEvent;
+            NetworkManager.Singleton.SceneManager.OnSceneEvent += OnSceneEvent;
+        }
+    }
+
+    private void OnSceneEvent(SceneEvent sceneEvent)
+    {
+        if (sceneEvent.SceneEventType == SceneEventType.Load &&
+            !string.IsNullOrEmpty(sceneEvent.SceneName) &&
+            sceneEvent.SceneName == gameSceneName)
+        {
+            ShowConnectionScreen(LocalPlayerSettings.PlayerColor);
+        }
+        else if (sceneEvent.SceneEventType == SceneEventType.LoadEventCompleted &&
+                 !string.IsNullOrEmpty(sceneEvent.SceneName) &&
+                 sceneEvent.SceneName == gameSceneName)
+        {
+            StartCoroutine(DismissScreenFallback());
+        }
+    }
+
+    private System.Collections.IEnumerator DismissScreenFallback()
+    {
+        yield return new WaitForSeconds(1.5f);
+
+        var screen = FindObjectOfType<ConnectionScreenManager>();
+        if (screen != null)
+            screen.Dismiss();
     }
 
     private void OnConnectionApproval(
@@ -537,6 +583,7 @@ public class NetworkConnectionManager : MonoBehaviour
 
     private void OnServerStarted()
     {
+        SubscribeSceneCallbacks();
     }
 
     private void OnClientConnected(ulong clientId)
@@ -546,6 +593,8 @@ public class NetworkConnectionManager : MonoBehaviour
 
         if (clientId == NetworkManager.Singleton.LocalClientId)
         {
+            SubscribeSceneCallbacks();
+
             waitingForClientConnection = false;
             clientConnectionTimer = 0f;
 

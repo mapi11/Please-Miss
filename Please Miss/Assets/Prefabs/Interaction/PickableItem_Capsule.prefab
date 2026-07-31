@@ -264,7 +264,7 @@ MonoBehaviour:
   cancelOnCanInteractFail: 1
   itemName: Capsule
   inventoryIcon: {fileID: 21300000, guid: e820caf92cf153e4e9c454f03ec19ab1, type: 3}
-  heldVisualPrefab: {fileID: 1960839501645163978, guid: ade14a04239e76e4997145cd0df2e8c9, type: 3}
+  heldVisualPrefab: {fileID: 0}
 --- !u!1 &4287457239238957265
 GameObject:
   m_ObjectHideFlags: 0

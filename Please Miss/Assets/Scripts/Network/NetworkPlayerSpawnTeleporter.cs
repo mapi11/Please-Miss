@@ -10,11 +10,13 @@ public class NetworkPlayerSpawnTeleporter : NetworkBehaviour
     [SerializeField] private bool teleportOnlyOwner = true;
 
     private CharacterController characterController;
+    private PlayerController playerController;
     private Coroutine teleportCoroutine;
 
     private void Awake()
     {
         characterController = GetComponent<CharacterController>();
+        playerController = GetComponent<PlayerController>();
     }
 
     public override void OnNetworkSpawn()
@@ -66,6 +68,11 @@ public class NetworkPlayerSpawnTeleporter : NetworkBehaviour
         }
 
         yield return new WaitForSeconds(postTeleportDelay);
+
+        bool inLobby = FindObjectOfType<LobbyManager>() != null;
+
+        if (!inLobby && playerController != null)
+            playerController.SetFrozen(false);
 
         if (characterController != null)
             characterController.enabled = true;

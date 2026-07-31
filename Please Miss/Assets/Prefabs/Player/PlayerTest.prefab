@@ -4551,6 +4551,7 @@ GameObject:
   - component: {fileID: 9179805293738147706}
   - component: {fileID: 1416272919552389440}
   - component: {fileID: 5591246847348015817}
+  - component: {fileID: 7096804005758132945}
   m_Layer: 0
   m_Name: PlayerTest
   m_TagString: Untagged
@@ -4744,7 +4745,10 @@ MonoBehaviour:
     HeldVisualPrefab: {fileID: 0}
   - Name: Capsule
     WorldDropPrefab: {fileID: 1960839501645163978, guid: 64af151f458de6f488c9f82c7798af0a, type: 3}
-    HeldVisualPrefab: {fileID: 1960839501645163978, guid: ade14a04239e76e4997145cd0df2e8c9, type: 3}
+    HeldVisualPrefab: {fileID: 0}
+  - Name: Capsule long
+    WorldDropPrefab: {fileID: 1960839501645163978, guid: a9b2ed5e23941b04693cc4bbfd76e037, type: 3}
+    HeldVisualPrefab: {fileID: 3685833382113716179, guid: a91c74aff4f61a9409dc272facdf762b, type: 3}
   - Name: Rifle Standart
     WorldDropPrefab: {fileID: 6189976537596541179, guid: 309bd91830b5fda4aa3eccee64e0d9b3, type: 3}
     HeldVisualPrefab: {fileID: 8443404322149711434, guid: 3ef1b56ee5654624fa3cf0c12f910676, type: 3}
@@ -5170,6 +5174,67 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   spectatorCameraPrefab: {fileID: 6163669389809681465, guid: e06dfd005a5c0724cb7f90ef4658032f, type: 3}
   playerCamera: {fileID: 3214421397173659329}
+--- !u!114 &7096804005758132945
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8987667153060076939}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 69beb381e244f92449b8c4cf954630e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_TrackedObjects:
+  - rid: 4062985345602158744
+  references:
+    version: 2
+    RefIds:
+    - rid: 4062985345602158744
+      type: {class: TrackedMonoBehaviourObject, ns: UnityEngine.Localization.PropertyVariants.TrackedObjects, asm: Unity.Localization}
+      data:
+        m_Target: {fileID: 2765458078306976260}
+        m_TrackedProperties:
+          items:
+          - rid: 4062985345602158745
+          - rid: 4062985345602158747
+        m_UpdateType: 1
+        m_Changed:
+          m_PersistentCalls:
+            m_Calls: []
+    - rid: 4062985345602158745
+      type: {class: LocalizedAssetProperty, ns: UnityEngine.Localization.PropertyVariants.TrackedProperties, asm: Unity.Localization}
+      data:
+        m_Localized:
+          rid: 4062985345602158746
+        m_PropertyPath: items.Array.data[2].HeldVisualPrefab
+    - rid: 4062985345602158746
+      type: {class: LocalizedGameObject, ns: UnityEngine.Localization, asm: Unity.Localization}
+      data:
+        m_TableReference:
+          m_TableCollectionName: 
+        m_TableEntryReference:
+          m_KeyId: 0
+          m_Key: 
+        m_FallbackState: 0
+        m_WaitForCompletion: 0
+    - rid: 4062985345602158747
+      type: {class: LocalizedAssetProperty, ns: UnityEngine.Localization.PropertyVariants.TrackedProperties, asm: Unity.Localization}
+      data:
+        m_Localized:
+          rid: 4062985345602158748
+        m_PropertyPath: items.Array.data[2].WorldDropPrefab
+    - rid: 4062985345602158748
+      type: {class: LocalizedGameObject, ns: UnityEngine.Localization, asm: Unity.Localization}
+      data:
+        m_TableReference:
+          m_TableCollectionName: 
+        m_TableEntryReference:
+          m_KeyId: 0
+          m_Key: 
+        m_FallbackState: 0
+        m_WaitForCompletion: 0
 --- !u!1 &9146988073033541282
 GameObject:
   m_ObjectHideFlags: 0

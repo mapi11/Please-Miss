@@ -26,6 +26,12 @@ public class MainMenuUI : MonoBehaviour
     [SerializeField] private Button pasteCodeButton;
     [SerializeField] private Button copyCodeButton;
 
+    [Header("Test Profiles")]
+    [SerializeField] private Button testProfile1Button;
+    [SerializeField] private Button testProfile2Button;
+    [SerializeField] private Button testProfile3Button;
+    [SerializeField] private Button testProfile4Button;
+
     [Header("Texts")]
     [SerializeField] private TMP_Text statusText;
     [SerializeField] private TMP_Text footerText;
@@ -143,6 +149,41 @@ public class MainMenuUI : MonoBehaviour
 
         if (copyCodeButton != null)
             copyCodeButton.onClick.AddListener(OnCopyCodeClicked);
+
+        if (testProfile1Button != null)
+            testProfile1Button.onClick.AddListener(() => ApplyTestProfile(1));
+
+        if (testProfile2Button != null)
+            testProfile2Button.onClick.AddListener(() => ApplyTestProfile(2));
+
+        if (testProfile3Button != null)
+            testProfile3Button.onClick.AddListener(() => ApplyTestProfile(3));
+
+        if (testProfile4Button != null)
+            testProfile4Button.onClick.AddListener(() => ApplyTestProfile(4));
+    }
+
+    private void ApplyTestProfile(int index)
+    {
+        if (index < 1 || index > GameSessionData.ColorValues.Length)
+            return;
+
+        int colorIndex = index - 1;
+
+        if (playerNameInput != null)
+            playerNameInput.text = $"Player_{index}";
+
+        GameSessionData.SelectedColorIndex = colorIndex;
+        selectedColor = GameSessionData.ColorValues[colorIndex];
+        LocalPlayerSettings.Load(GetProfileId());
+        LocalPlayerSettings.SetPlayerColor(selectedColor);
+        PlayerPrefs.SetInt($"PlayerColorIndex_{LocalPlayerSettings.ProfileId}", colorIndex);
+        PlayerPrefs.Save();
+
+        if (colorDropdown != null)
+            colorDropdown.SetValueWithoutNotify(colorIndex);
+
+        RefreshColor();
     }
 
     private void OnStartLocalHostClicked()

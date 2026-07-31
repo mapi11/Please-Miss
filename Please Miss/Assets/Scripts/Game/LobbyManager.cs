@@ -10,7 +10,7 @@ public class LobbyManager : NetworkBehaviour
 
     [Header("Settings")]
     [SerializeField] private float countdownDuration = 5f;
-    [SerializeField] private string gameSceneName = "GameScene";
+    [SerializeField] private string gameSceneName = "Game";
     [SerializeField] private string mainMenuSceneName = "MainMenu";
 
     [Header("UI")]

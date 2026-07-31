@@ -339,16 +339,15 @@ public class PlayerController : NetworkBehaviour
         {
             lobbyChecked = true;
             bool inLobby = FindObjectOfType<LobbyManager>() != null;
-            SetFrozen(inLobby);
 
             if (inLobby)
             {
+                SetFrozen(true);
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
 
                 if (crosshair != null)
                     crosshair.SetActive(false);
-
             }
             else
             {

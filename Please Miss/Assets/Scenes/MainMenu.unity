@@ -155,7 +155,7 @@ MonoBehaviour:
   gameSceneName: Game
   address: 127.0.0.1
   port: 7777
-  maxPlayers: 5
+  maxPlayers: 4
   relayConnectionType: dtls
   connectionScreenPrefab: {fileID: 4856380656470067255, guid: 73bc68cbd9e9a12448fa3ce8f405318f, type: 3}
   clientConnectTimeout: 45
