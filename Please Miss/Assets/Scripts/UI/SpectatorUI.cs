@@ -7,15 +7,15 @@ public class SpectatorUI : MonoBehaviour
 
     private SpectatorController spectator;
 
+    public void Initialize(SpectatorController controller)
+    {
+        spectator = controller;
+    }
+
     private void Update()
     {
         if (spectator == null)
-        {
-            var local = Unity.Netcode.NetworkManager.Singleton?.LocalClient?.PlayerObject;
-            if (local != null)
-                spectator = local.GetComponent<SpectatorController>();
             return;
-        }
 
         if (targetNameText != null)
             targetNameText.text = spectator.IsSpectating ? spectator.GetCurrentTargetName() : "";

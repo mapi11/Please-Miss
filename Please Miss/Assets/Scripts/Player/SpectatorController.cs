@@ -48,7 +48,7 @@ public class SpectatorController : NetworkBehaviour
             spectatorCamera = GetComponentInChildren<Camera>();
 
         if (spectatorUI != null)
-            spectatorUI.SetActive(false);
+            spectatorUI.SetActive(IsSpawned && IsOwner);
     }
 
     public override void OnNetworkSpawn()
@@ -59,6 +59,9 @@ public class SpectatorController : NetworkBehaviour
         {
             if (spectatorCamera != null)
                 spectatorCamera.enabled = false;
+
+            if (spectatorUI != null)
+                spectatorUI.SetActive(false);
             return;
         }
 
@@ -76,7 +79,13 @@ public class SpectatorController : NetworkBehaviour
         currentTargetIndex = validTargets.Count > 0 ? 0 : -1;
 
         if (spectatorUI != null)
+        {
             spectatorUI.SetActive(true);
+
+            var spectatorUiComp = spectatorUI.GetComponentInChildren<SpectatorUI>(true);
+            if (spectatorUiComp != null)
+                spectatorUiComp.Initialize(this);
+        }
     }
 
     public override void OnNetworkDespawn()
