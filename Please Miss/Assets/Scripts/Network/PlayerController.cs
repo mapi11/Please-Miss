@@ -716,8 +716,11 @@ public class PlayerController : NetworkBehaviour
 
         for (int i = 0; i < count; i++)
         {
-            if (!headroomHits[i].transform.IsChildOf(transform))
-                return false;
+            Collider hit = headroomHits[i];
+            if (hit == null) continue;
+            if (hit.transform.IsChildOf(transform)) continue;
+            if (hit.GetComponentInParent<Hand>() != null) continue;
+            return false;
         }
 
         return true;
