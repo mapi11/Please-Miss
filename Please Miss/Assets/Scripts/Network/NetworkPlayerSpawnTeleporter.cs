@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -9,9 +10,13 @@ public class NetworkPlayerSpawnTeleporter : NetworkBehaviour
     [SerializeField] private float postTeleportDelay = 0.5f;
     [SerializeField] private bool teleportOnlyOwner = true;
 
+    private static readonly List<NetworkPlayerSpawnTeleporter> activeTeleporters =
+        new List<NetworkPlayerSpawnTeleporter>();
+
     private CharacterController characterController;
     private PlayerController playerController;
     private Coroutine teleportCoroutine;
+    private bool finishedSpawning;
 
     private void Awake()
     {
@@ -21,6 +26,11 @@ public class NetworkPlayerSpawnTeleporter : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
+        activeTeleporters.Add(this);
+        finishedSpawning = false;
+
+        IgnorePlayerCollisions(true);
+
         SceneManager.sceneLoaded += OnSceneLoaded;
         ScheduleSpawn();
     }
@@ -33,12 +43,12 @@ public class NetworkPlayerSpawnTeleporter : NetworkBehaviour
     private void OnDestroy()
     {
         SceneManager.sceneLoaded -= OnSceneLoaded;
+        activeTeleporters.Remove(this);
     }
 
     private void ScheduleSpawn()
     {
         if (!IsSpawned) return;
-        if (teleportOnlyOwner && !IsOwner) return;
 
         var all = GetComponents<NetworkPlayerSpawnTeleporter>();
         if (all.Length > 1 && all[0] != this) return;
@@ -53,6 +63,67 @@ public class NetworkPlayerSpawnTeleporter : NetworkBehaviour
         ScheduleSpawn();
     }
 
+    private static readonly List<Collider> selfColliders = new List<Collider>(16);
+    private static readonly List<Collider> otherColliders = new List<Collider>(16);
+
+    private void IgnorePlayerCollisions(bool ignore)
+    {
+        selfColliders.Clear();
+        GetComponentsInChildren<Collider>(true, selfColliders);
+        if (selfColliders.Count == 0) return;
+
+        foreach (var other in activeTeleporters)
+        {
+            if (other == null || other == this) continue;
+
+            otherColliders.Clear();
+            other.GetComponentsInChildren<Collider>(true, otherColliders);
+            if (otherColliders.Count == 0) continue;
+
+            foreach (var mine in selfColliders)
+            {
+                foreach (var theirs in otherColliders)
+                {
+                    if (mine == theirs) continue;
+                    Physics.IgnoreCollision(mine, theirs, ignore);
+                }
+            }
+        }
+    }
+
+    private static bool IsHandCollider(Collider c)
+    {
+        return c != null && c.GetComponentInParent<Hand>() != null;
+    }
+
+    private void EnableCollisionsWithSpawnedPlayers()
+    {
+        selfColliders.Clear();
+        GetComponentsInChildren<Collider>(true, selfColliders);
+        if (selfColliders.Count == 0) return;
+
+        foreach (var other in activeTeleporters)
+        {
+            if (other == null || other == this) continue;
+            if (!other.finishedSpawning) continue;
+
+            otherColliders.Clear();
+            other.GetComponentsInChildren<Collider>(true, otherColliders);
+            if (otherColliders.Count == 0) continue;
+
+            foreach (var mine in selfColliders)
+            {
+                foreach (var theirs in otherColliders)
+                {
+                    if (mine == theirs) continue;
+                    if (IsHandCollider(mine) || IsHandCollider(theirs)) continue;
+
+                    Physics.IgnoreCollision(mine, theirs, false);
+                }
+            }
+        }
+    }
+
     private IEnumerator SpawnRoutine()
     {
         if (characterController != null)
@@ -60,22 +131,28 @@ public class NetworkPlayerSpawnTeleporter : NetworkBehaviour
 
         yield return new WaitForSeconds(teleportDelay);
 
-        Transform target = FindTargetSpawn();
-
-        if (target != null)
+        if (!teleportOnlyOwner || IsOwner)
         {
-            TeleportTo(target.position, target.rotation);
+            Transform target = FindTargetSpawn();
+
+            if (target != null)
+            {
+                TeleportTo(target.position, target.rotation);
+            }
         }
 
         yield return new WaitForSeconds(postTeleportDelay);
 
         bool inLobby = FindObjectOfType<LobbyManager>() != null;
 
-        if (!inLobby && playerController != null)
+        if (IsOwner && !inLobby && playerController != null)
             playerController.SetFrozen(false);
 
         if (characterController != null)
             characterController.enabled = true;
+
+        finishedSpawning = true;
+        EnableCollisionsWithSpawnedPlayers();
 
         DismissConnectionScreen();
     }

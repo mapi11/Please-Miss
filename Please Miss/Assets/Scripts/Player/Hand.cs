@@ -50,7 +50,37 @@ public class Hand : MonoBehaviour
     private float swingTime;
     private Vector3 smoothedVelocity;
 
+    private Collider[] handColliders;
+    private bool collisionEnabled;
+
     public Transform HoldPivot => holdPivot;
+    public bool CollisionEnabled => collisionEnabled;
+
+    public Collider[] Colliders
+    {
+        get
+        {
+            if (handColliders == null)
+                handColliders = GetComponentsInChildren<Collider>(true);
+            return handColliders;
+        }
+    }
+
+    public void SetCollisionEnabled(bool enabled)
+    {
+        collisionEnabled = enabled;
+
+        if (handColliders == null)
+            handColliders = GetComponentsInChildren<Collider>(true);
+
+        for (int i = 0; i < handColliders.Length; i++)
+            handColliders[i].enabled = enabled;
+    }
+
+    private void Awake()
+    {
+        SetCollisionEnabled(true);
+    }
 
     private Quaternion GetYawRotation()
     {

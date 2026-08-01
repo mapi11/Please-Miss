@@ -256,6 +256,21 @@ public class PlayerController : NetworkBehaviour
 
         if (IsOwner && sniperWeapon != null)
             sniperWeapon.OnLocalAimChanged += HandleSniperAimChanged;
+
+        SyncHandCollisionIgnoresFromOthers();
+    }
+
+    private void SyncHandCollisionIgnoresFromOthers()
+    {
+        var players = FindObjectsByType<PlayerController>(FindObjectsSortMode.None);
+        for (int i = 0; i < players.Length; i++)
+        {
+            var other = players[i];
+            if (other == null || other == this) continue;
+            other.IgnoreHandCollisionsWithOtherPlayers(true);
+        }
+
+        IgnoreHandCollisionsWithOtherPlayers(true);
     }
 
     public override void OnNetworkDespawn()
@@ -874,6 +889,37 @@ public class PlayerController : NetworkBehaviour
 
         if (chargeSlider != null)
             chargeSlider.Hide();
+    }
+
+    private void IgnoreHandCollisionsWithOtherPlayers(bool ignore)
+    {
+        var hands = new[] { rightHand, leftHand };
+
+        for (int handIndex = 0; handIndex < hands.Length; handIndex++)
+        {
+            Hand hand = hands[handIndex];
+            if (hand == null) continue;
+
+            Collider[] handColliders = hand.Colliders;
+            if (handColliders == null || handColliders.Length == 0) continue;
+
+            var players = FindObjectsByType<PlayerController>(FindObjectsSortMode.None);
+            for (int i = 0; i < players.Length; i++)
+            {
+                var other = players[i];
+                if (other == null || other == this) continue;
+
+                Collider[] otherColliders = other.GetComponentsInChildren<Collider>(true);
+                for (int h = 0; h < handColliders.Length; h++)
+                {
+                    for (int c = 0; c < otherColliders.Length; c++)
+                    {
+                        if (handColliders[h] == otherColliders[c]) continue;
+                        Physics.IgnoreCollision(handColliders[h], otherColliders[c], ignore);
+                    }
+                }
+            }
+        }
     }
 
     private void HandlePointing()
