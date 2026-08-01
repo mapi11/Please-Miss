@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -19,16 +20,70 @@ public sealed class LimitedAmmoBox : NetworkBehaviour
     [SerializeField] private bool oneTypeOnly;
     [SerializeField] private BulletDefinition singleBulletType;
 
+    [Header("Spawn Timing")]
+    [Min(0f)] [SerializeField] private float fallbackDelay = 5f;
+
+    private bool pickupsSpawned;
+
     public override void OnNetworkSpawn()
     {
         if (!IsServer)
             return;
 
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.SceneManager != null)
+        {
+            NetworkManager.Singleton.SceneManager.OnSceneEvent += OnSceneEvent;
+            StartCoroutine(SpawnFallback());
+        }
+        else
+        {
+            SpawnInitialPickups();
+        }
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.SceneManager != null)
+            NetworkManager.Singleton.SceneManager.OnSceneEvent -= OnSceneEvent;
+    }
+
+    private void OnSceneEvent(SceneEvent sceneEvent)
+    {
+        if (pickupsSpawned)
+            return;
+
+        if (sceneEvent.SceneEventType != SceneEventType.LoadEventCompleted)
+            return;
+
+        if (sceneEvent.SceneName != gameObject.scene.name)
+            return;
+
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.SceneManager != null)
+            NetworkManager.Singleton.SceneManager.OnSceneEvent -= OnSceneEvent;
+
         SpawnInitialPickups();
+    }
+
+    private IEnumerator SpawnFallback()
+    {
+        yield return new WaitForSeconds(fallbackDelay);
+
+        if (!pickupsSpawned)
+        {
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.SceneManager != null)
+                NetworkManager.Singleton.SceneManager.OnSceneEvent -= OnSceneEvent;
+
+            SpawnInitialPickups();
+        }
     }
 
     private void SpawnInitialPickups()
     {
+        if (pickupsSpawned)
+            return;
+
+        pickupsSpawned = true;
+
         if (bulletPickupPrefab == null)
             return;
 
