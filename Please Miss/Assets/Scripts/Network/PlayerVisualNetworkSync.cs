@@ -32,10 +32,23 @@ public class PlayerVisualNetworkSync : NetworkBehaviour
         NetworkVariableWritePermission.Owner
     );
 
+    private readonly NetworkVariable<bool> networkIsDashing = new(
+        false,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Owner
+    );
+
+    private readonly NetworkVariable<float> networkDashDuration = new(
+        0f,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Owner
+    );
+
     private float sendTimer;
     private float lastSentPitch;
     private bool lastSentCrouching;
     private float lastSentAirborneSquash = 1f;
+    private bool lastSentDashing;
 
     private float smoothedRemotePitch;
     private bool hasRemotePitch;
@@ -51,6 +64,7 @@ public class PlayerVisualNetworkSync : NetworkBehaviour
         lastSentPitch = networkPitch.Value;
         lastSentCrouching = networkIsCrouching.Value;
         lastSentAirborneSquash = playerController != null ? playerController.AirborneSquash : 1f;
+        lastSentDashing = networkIsDashing.Value;
 
         smoothedRemotePitch = networkPitch.Value;
         hasRemotePitch = true;
@@ -76,21 +90,27 @@ public class PlayerVisualNetworkSync : NetworkBehaviour
 
         bool currentCrouching = playerController.IsCrouching;
         float currentPitch = playerController.Pitch;
+        bool currentDashing = playerController.IsDashing;
 
         bool crouchChanged = currentCrouching != lastSentCrouching;
         bool pitchChanged = Mathf.Abs(Mathf.DeltaAngle(lastSentPitch, currentPitch)) >= minPitchDifferenceToSend;
         float currentAirborne = playerController.AirborneSquash;
         bool squashChanged = Mathf.Abs(currentAirborne - lastSentAirborneSquash) > 0.001f;
+        bool dashChanged = currentDashing != lastSentDashing;
 
-        if (!crouchChanged && !pitchChanged && !squashChanged) return;
+        if (!crouchChanged && !pitchChanged && !squashChanged && !dashChanged) return;
 
         networkIsCrouching.Value = currentCrouching;
         networkPitch.Value = currentPitch;
         networkAirborneSquash.Value = currentAirborne;
+        networkIsDashing.Value = currentDashing;
+        if (dashChanged && currentDashing)
+            networkDashDuration.Value = playerController.DashFlipDuration;
 
         lastSentCrouching = currentCrouching;
         lastSentPitch = currentPitch;
         lastSentAirborneSquash = currentAirborne;
+        lastSentDashing = currentDashing;
     }
 
     private void ApplyRemoteVisualState()
@@ -116,5 +136,7 @@ public class PlayerVisualNetworkSync : NetworkBehaviour
             smoothedRemotePitch,
             networkAirborneSquash.Value
         );
+
+        playerController.ApplyRemoteDashState(networkIsDashing.Value, networkDashDuration.Value);
     }
 }

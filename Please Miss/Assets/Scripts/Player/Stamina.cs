@@ -11,6 +11,7 @@ public class Stamina : NetworkBehaviour
 
     [Header("Actions")]
     [SerializeField] private float jumpCost = 10f;
+    [SerializeField] private float dashCost = 25f;
 
     [Header("Slow")]
     [SerializeField] private float slowMultiplier = 0.8f;
@@ -33,6 +34,9 @@ public class Stamina : NetworkBehaviour
     public bool IsSlowed => isExhausted.Value;
     public float SpeedMultiplier => isExhausted.Value ? slowMultiplier : 1f;
     public float JumpCost => jumpCost;
+    public float DashCost => dashCost;
+
+    public bool CanConsume(float amount) => !isExhausted.Value && currentStamina >= amount;
 
     public event System.Action<float> OnStaminaChanged;
     public event System.Action OnStaminaExhausted;

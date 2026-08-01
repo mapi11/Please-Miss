@@ -36,7 +36,14 @@ public class PlayerController : NetworkBehaviour
 
     [SerializeField] private float crouchSpeed = 10f;
 
+    [Header("Dash")]
+    [SerializeField] private float dashDuration = 0.35f;
+    [SerializeField] private float dashSpeed = 10f;
+    [SerializeField] private float dashFlipDuration = 0.35f;
+    [SerializeField] private Transform dashFlipVisual;
+
     [Header("Visual Body")]
+    [SerializeField] private Transform visualRoot;
     [SerializeField] private Transform bodyVisual;
     [SerializeField] private Transform headVisual;
     [SerializeField] private Transform leftShoulder;
@@ -115,6 +122,12 @@ public class PlayerController : NetworkBehaviour
     private bool isTwoHandedHolding;
     private TwoHandedHold currentTwoHanded;
 
+    private bool isDashing;
+    private float dashTimer;
+    private float dashFlipRemaining;
+    private float dashFlipTotal;
+    private bool remoteIsDashing;
+
     public bool IsCrouching => isCrouching;
     public float Pitch => pitch;
     public bool IsChargingThrow => isChargingThrow;
@@ -126,6 +139,8 @@ public class PlayerController : NetworkBehaviour
     public Hand LeftHand => leftHand;
     public InteractionHand SelectedInteractionHand => interactionHand;
     public float AirborneSquash => airborneSquash;
+    public bool IsDashing => isDashing;
+    public float DashFlipDuration => dashFlipDuration;
     public Transform ActiveHandHoldPivot => InteractionHandRef != null ? InteractionHandRef.HoldPivot : null;
 
     private Hand InteractionHandRef =>
@@ -403,6 +418,7 @@ public class PlayerController : NetworkBehaviour
 
         HandleLook();
         HandleArms();
+        HandleDash();
         HandleCrouch();
         HandleMovement();
         HandleStamina();
@@ -410,6 +426,30 @@ public class PlayerController : NetworkBehaviour
         HandleInventoryInput();
         HandlePointing();
         UpdateCrosshair();
+    }
+
+    private void LateUpdate()
+    {
+        if (dashFlipVisual == null) return;
+
+        if (dashFlipRemaining <= 0f)
+        {
+            if (!isDashing && !remoteIsDashing)
+                dashFlipVisual.localRotation = Quaternion.identity;
+            return;
+        }
+
+        dashFlipRemaining -= Time.deltaTime;
+        if (dashFlipRemaining < 0f)
+            dashFlipRemaining = 0f;
+
+        float t = dashFlipTotal > 0f ? 1f - dashFlipRemaining / dashFlipTotal : 1f;
+        t = Mathf.Clamp01(t);
+
+        dashFlipVisual.localRotation = Quaternion.Euler(Mathf.SmoothStep(0f, 360f, t), 0f, 0f);
+
+        if (dashFlipRemaining <= 0f && !isDashing && !remoteIsDashing)
+            dashFlipVisual.localRotation = Quaternion.identity;
     }
 
     private void HandleLook()
@@ -497,6 +537,14 @@ public class PlayerController : NetworkBehaviour
         Vector3 move = transform.right * currentMoveInput.x + transform.forward * currentMoveInput.y;
         move *= speed;
 
+        if (isDashing)
+        {
+            Vector3 dashDir = transform.forward;
+            dashDir.y = 0f;
+            dashDir.Normalize();
+            move = dashDir * dashSpeed;
+        }
+
         if (characterController.isGrounded && verticalVelocity < 0f)
         {
             verticalVelocity = jumpStickToGroundForce;
@@ -556,9 +604,50 @@ public class PlayerController : NetworkBehaviour
         return keyboard != null && (keyboard.leftCtrlKey.isPressed || keyboard.rightCtrlKey.isPressed || keyboard.cKey.isPressed);
     }
 
+    private bool WasCrouchPressedThisFrame()
+    {
+        var keyboard = Keyboard.current;
+        return keyboard != null && (keyboard.leftCtrlKey.wasPressedThisFrame || keyboard.rightCtrlKey.wasPressedThisFrame || keyboard.cKey.wasPressedThisFrame);
+    }
+
+    private void HandleDash()
+    {
+        if (isDashing)
+        {
+            dashTimer -= Time.deltaTime;
+            if (dashTimer <= 0f)
+            {
+                isDashing = false;
+                dashTimer = 0f;
+            }
+            return;
+        }
+
+        if (!WasCrouchPressedThisFrame()) return;
+        if (!IsSprintPressed()) return;
+        if (!CanDash()) return;
+
+        isDashing = true;
+        dashTimer = dashDuration;
+        isCrouching = true;
+
+        dashFlipTotal = dashFlipDuration;
+        dashFlipRemaining = dashFlipTotal;
+
+        if (stamina != null)
+            stamina.Consume(stamina.DashCost);
+    }
+
+    private bool CanDash()
+    {
+        if (roleState != null && roleState.IsSniper) return false;
+        if (stamina == null) return false;
+        return stamina.CanConsume(stamina.DashCost);
+    }
+
     private void HandleCrouch()
     {
-        bool wantCrouch = IsCrouchPressed();
+        bool wantCrouch = IsCrouchPressed() || isDashing;
 
         if (!wantCrouch && !HasHeadroom())
             wantCrouch = true;
@@ -1082,7 +1171,6 @@ public class PlayerController : NetworkBehaviour
     public void ApplyRemoteVisualState(bool remoteCrouching, float remotePitch, float remoteAirborneSquash = 1f)
     {
         if (IsOwner) return;
-
         isCrouching = remoteCrouching;
         pitch = remotePitch;
         airborneSquash = remoteAirborneSquash;
@@ -1116,6 +1204,17 @@ public class PlayerController : NetworkBehaviour
         }
 
         ApplyRemoteArmsAndBody();
+    }
+
+    public void ApplyRemoteDashState(bool dashing, float duration)
+    {
+        remoteIsDashing = dashing;
+
+        if (dashing && dashFlipRemaining <= 0f)
+        {
+            dashFlipTotal = duration > 0f ? duration : dashFlipDuration;
+            dashFlipRemaining = dashFlipTotal;
+        }
     }
 
     private void ApplyRemoteArmsAndBody()
