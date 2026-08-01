@@ -4737,8 +4737,8 @@ MonoBehaviour:
   drainRate: 26
   regenRate: 10
   regenDelay: 1
-  jumpCost: 10
-  dashCost: 25
+  jumpCost: 15
+  dashCost: 55
   shoveCost: 50
   slowMultiplier: 0.7
   regenThreshold: 0.4

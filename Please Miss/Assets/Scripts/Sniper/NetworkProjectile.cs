@@ -75,6 +75,8 @@ public sealed class NetworkProjectile : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
+        hitMask &= ~GameLayers.InvisibleWallMask;
+
         if (bulletLayer >= 0)
             gameObject.layer = bulletLayer;
 

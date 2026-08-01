@@ -132,6 +132,8 @@ public sealed class SniperWeaponController : NetworkBehaviour
         if (scopeUI == null)
             scopeUI = GetComponentInChildren<SniperScopeUI>(true);
 
+        aimCollisionMask &= ~GameLayers.InvisibleWallMask;
+
         if (inventorySync != null)
             inventorySync.OnHeldVisualChanged += HandleHeldVisualChanged;
     }
