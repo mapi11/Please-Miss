@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using TMPro;
+using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -8,6 +10,9 @@ public class GameManager : NetworkBehaviour
     public static GameManager Instance { get; private set; }
 
     public static bool LocalRunnerFinished { get; set; }
+
+    /// <summary>Raised on clients that are the sniper when a runner is killed by the sniper.</summary>
+    public event Action<string, Color32, float, string> OnSniperKillRecorded;
 
     public enum GameState : byte
     {
@@ -48,6 +53,12 @@ public class GameManager : NetworkBehaviour
     private float prepareTimer;
     private float gameTimer;
     private readonly Dictionary<ulong, PlayerHealth> trackedRunners = new Dictionary<ulong, PlayerHealth>();
+
+    private readonly Dictionary<ulong, Action<bool>> runnerDeathCallbacks = new Dictionary<ulong, Action<bool>>();
+    private readonly Dictionary<ulong, Action<DamageInfo, float, string>> runnerDamageCallbacks =
+        new Dictionary<ulong, Action<DamageInfo, float, string>>();
+    private readonly Dictionary<ulong, DamageInfo> lastRunnerDamage = new Dictionary<ulong, DamageInfo>();
+    private readonly Dictionary<ulong, string> lastRunnerZone = new Dictionary<ulong, string>();
 
     public readonly NetworkList<ulong> FinishedRunners = new NetworkList<ulong>();
     private ulong? sniperClientId;
@@ -146,14 +157,32 @@ public class GameManager : NetworkBehaviour
         if (health == null) return;
 
         trackedRunners[clientId] = health;
-        health.OnDeathStateChanged += OnRunnerDeathStateChanged;
+
+        Action<bool> deathCallback = dead => OnRunnerDeathStateChanged(clientId, dead);
+        Action<DamageInfo, float, string> damageCallback = (info, finalDamage, zoneName) =>
+            OnRunnerDamageApplied(clientId, info, zoneName);
+
+        runnerDeathCallbacks[clientId] = deathCallback;
+        runnerDamageCallbacks[clientId] = damageCallback;
+
+        health.OnDeathStateChanged += deathCallback;
+        health.OnDamageAppliedOnServer += damageCallback;
     }
 
     private void UntrackRunner(ulong clientId)
     {
         if (trackedRunners.TryGetValue(clientId, out var health))
         {
-            health.OnDeathStateChanged -= OnRunnerDeathStateChanged;
+            if (runnerDeathCallbacks.TryGetValue(clientId, out var deathCallback))
+                health.OnDeathStateChanged -= deathCallback;
+
+            if (runnerDamageCallbacks.TryGetValue(clientId, out var damageCallback))
+                health.OnDamageAppliedOnServer -= damageCallback;
+
+            runnerDeathCallbacks.Remove(clientId);
+            runnerDamageCallbacks.Remove(clientId);
+            lastRunnerDamage.Remove(clientId);
+            lastRunnerZone.Remove(clientId);
             trackedRunners.Remove(clientId);
         }
     }
@@ -193,12 +222,83 @@ public class GameManager : NetworkBehaviour
         RunnerWins();
     }
 
-    private void OnRunnerDeathStateChanged(bool dead)
+    private void OnRunnerDamageApplied(ulong clientId, DamageInfo damageInfo, string zoneName)
     {
+        lastRunnerDamage[clientId] = damageInfo;
+        lastRunnerZone[clientId] = zoneName;
+    }
+
+    private void OnRunnerDeathStateChanged(ulong clientId, bool dead)
+    {
+        if (dead)
+            NotifySniperKill(clientId);
+
         if (State.Value != GameState.Playing) return;
 
         if (!HasActiveRunners())
             SniperWins();
+    }
+
+    private void NotifySniperKill(ulong runnerClientId)
+    {
+        if (State.Value != GameState.Playing) return;
+        if (!sniperClientId.HasValue) return;
+
+        if (!lastRunnerDamage.TryGetValue(runnerClientId, out var damageInfo)) return;
+        if (damageInfo.AttackerClientId != sniperClientId.Value) return;
+
+        string playerName = "Player";
+        Color32 color = Color.white;
+
+        if (NetworkManager.Singleton.ConnectedClients.TryGetValue(runnerClientId, out var runnerClient) &&
+            runnerClient.PlayerObject != null)
+        {
+            var nameComponent = runnerClient.PlayerObject.GetComponent<NetworkPlayerName>();
+            if (nameComponent != null)
+                playerName = nameComponent.CurrentName;
+
+            var colorComponent = runnerClient.PlayerObject.GetComponent<NetworkPlayerColor>();
+            if (colorComponent != null)
+                color = colorComponent.CurrentColor;
+        }
+
+        string zoneName = lastRunnerZone.TryGetValue(runnerClientId, out var storedZone)
+            ? storedZone
+            : "None";
+
+        float survivedTime = Mathf.Max(0f, GameDuration - GameTimeRemaining.Value);
+
+        ClientRpcParams rpcParams = new ClientRpcParams
+        {
+            Send = new ClientRpcSendParams
+            {
+                TargetClientIds = new ulong[] { sniperClientId.Value }
+            }
+        };
+
+        SniperKillRecordedClientRpc(
+            new FixedString64Bytes(playerName),
+            LocalPlayerSettings.PackColor(color),
+            survivedTime,
+            new FixedString32Bytes(zoneName),
+            rpcParams
+        );
+    }
+
+    [ClientRpc]
+    private void SniperKillRecordedClientRpc(
+        FixedString64Bytes playerName,
+        int packedColor,
+        float survivedTime,
+        FixedString32Bytes zoneName,
+        ClientRpcParams rpcParams = default)
+    {
+        OnSniperKillRecorded?.Invoke(
+            playerName.ToString(),
+            LocalPlayerSettings.UnpackColor(packedColor),
+            survivedTime,
+            zoneName.ToString()
+        );
     }
 
     private void Update()
