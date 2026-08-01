@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -6,6 +7,7 @@ public class StaminaUI : MonoBehaviour
     [Header("References")]
     [SerializeField] private Slider staminaSlider;
     [SerializeField] private GameObject staminaPanel;
+    [SerializeField] private TMP_Text shoveCooldownText;
 
     [Header("Colors")]
     [SerializeField] private Color normalColor = Color.white;
@@ -50,5 +52,22 @@ public class StaminaUI : MonoBehaviour
     {
         if (staminaFill != null)
             staminaFill.color = exhausted ? exhaustedColor : normalColor;
+    }
+
+    public void UpdateShoveCooldown(float remaining)
+    {
+        if (shoveCooldownText == null) return;
+
+        if (remaining <= 0f)
+        {
+            if (shoveCooldownText.gameObject.activeSelf)
+                shoveCooldownText.gameObject.SetActive(false);
+            return;
+        }
+
+        if (!shoveCooldownText.gameObject.activeSelf)
+            shoveCooldownText.gameObject.SetActive(true);
+
+        shoveCooldownText.text = remaining.ToString("0.0");
     }
 }
