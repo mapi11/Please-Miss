@@ -16,6 +16,8 @@ public class PauseMenu : MonoBehaviour
     private GameObject settingsInstance;
     private PlayerController playerController;
     private bool returningToMenu;
+    private bool closingPause;
+    private bool closingSettings;
 
     public bool IsOpen { get; private set; }
     public bool SettingsOpen { get; private set; }
@@ -66,16 +68,22 @@ public class PauseMenu : MonoBehaviour
         if (Keyboard.current == null || !Keyboard.current.escapeKey.wasPressedThisFrame)
             return;
 
-        if (settingsInstance != null)
+        if (settingsInstance != null || closingSettings)
         {
-            CloseSettings();
+            if (!closingSettings)
+                CloseSettings();
             return;
         }
 
-        if (pauseInstance != null)
-            ClosePause();
+        if (pauseInstance != null || closingPause)
+        {
+            if (!closingPause)
+                ClosePause();
+        }
         else
+        {
             OpenPause();
+        }
     }
 
     private void OnDisconnected(ulong clientId)
@@ -91,7 +99,7 @@ public class PauseMenu : MonoBehaviour
 
     public void OpenPause()
     {
-        if (pauseInstance != null)
+        if (pauseInstance != null || closingPause)
             return;
 
         IsOpen = true;
@@ -111,8 +119,10 @@ public class PauseMenu : MonoBehaviour
 
     public void ClosePause()
     {
-        if (pauseInstance == null)
+        if (pauseInstance == null || closingPause)
             return;
+
+        closingPause = true;
 
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
@@ -132,6 +142,7 @@ public class PauseMenu : MonoBehaviour
     private void OnPauseClosed()
     {
         IsOpen = false;
+        closingPause = false;
 
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
@@ -141,7 +152,7 @@ public class PauseMenu : MonoBehaviour
 
     public void OpenSettings()
     {
-        if (settingsInstance != null)
+        if (settingsInstance != null || closingSettings)
             return;
 
         SettingsOpen = true;
@@ -152,8 +163,10 @@ public class PauseMenu : MonoBehaviour
 
     public void CloseSettings()
     {
-        if (settingsInstance == null)
+        if (settingsInstance == null || closingSettings)
             return;
+
+        closingSettings = true;
 
         var panel = settingsInstance.GetComponent<SettingsPanelUI>();
 
@@ -170,6 +183,7 @@ public class PauseMenu : MonoBehaviour
     private void OnSettingsClosed()
     {
         SettingsOpen = false;
+        closingSettings = false;
         settingsInstance = null;
     }
 
@@ -199,6 +213,11 @@ public class PauseMenu : MonoBehaviour
             Destroy(settingsInstance);
             settingsInstance = null;
         }
+
+        closingPause = false;
+        closingSettings = false;
+        IsOpen = false;
+        SettingsOpen = false;
 
         UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
     }
