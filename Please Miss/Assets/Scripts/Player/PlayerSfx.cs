@@ -22,6 +22,10 @@ public class PlayerSfx : NetworkBehaviour
     [Header("Settings")]
     [SerializeField, Range(0f, 1f)] private float volume = 1f;
     [SerializeField, Range(0f, 0.5f)] private float pitchVariation = 0.1f;
+    [Tooltip("Радиус полной громкости")]
+    [SerializeField] private float minDistance = 1f;
+    [Tooltip("Максимальный радиус слышимости звуков игрока")]
+    [SerializeField] private float maxDistance = 100f;
 
     [Header("Who Hears (кто слышит)")]
     [Tooltip("Слышат ли другие игроки (если выкл — только сам игрок)")]
@@ -55,13 +59,14 @@ public class PlayerSfx : NetworkBehaviour
     private void Awake()
     {
         if (audioSource == null)
-            audioSource = GetComponent<AudioSource>();
-
-        if (audioSource == null)
             audioSource = gameObject.AddComponent<AudioSource>();
 
         audioSource.playOnAwake = false;
         audioSource.spatialBlend = 1f;
+        audioSource.rolloffMode = AudioRolloffMode.Linear;
+        audioSource.dopplerLevel = 0f;
+        audioSource.minDistance = minDistance;
+        audioSource.maxDistance = maxDistance;
     }
 
     public void PlayJump()

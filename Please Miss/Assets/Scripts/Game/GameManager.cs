@@ -327,14 +327,16 @@ public class GameManager : NetworkBehaviour
 
     private void UpdateTimerText()
     {
-        if (timerText == null) return;
-
+        bool timerRunning = State.Value == GameState.Preparing || State.Value == GameState.Playing;
         bool localDead = localPlayerHealth != null && localPlayerHealth.IsDead;
-        bool hide = State.Value == GameState.Ended ||
+        bool hide = !timerRunning ||
                     (State.Value == GameState.Playing && (LocalRunnerFinished || localDead));
 
         if (timerPanel != null)
             timerPanel.SetActive(!hide);
+
+        if (timerText == null)
+            return;
 
         if (hide)
         {

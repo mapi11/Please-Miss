@@ -18,6 +18,9 @@ public class NetworkPlayerSpawnTeleporter : NetworkBehaviour
     private Coroutine teleportCoroutine;
     private bool finishedSpawning;
 
+    private readonly NetworkVariable<byte> spawnIndex =
+        new NetworkVariable<byte>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
     private void Awake()
     {
         characterController = GetComponent<CharacterController>();
@@ -29,10 +32,31 @@ public class NetworkPlayerSpawnTeleporter : NetworkBehaviour
         activeTeleporters.Add(this);
         finishedSpawning = false;
 
+        if (IsServer)
+            AssignSpawnIndex();
+
         IgnorePlayerCollisions(true);
 
         SceneManager.sceneLoaded += OnSceneLoaded;
         ScheduleSpawn();
+    }
+
+    private void AssignSpawnIndex()
+    {
+        byte index = 0;
+
+        foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
+        {
+            if (client.PlayerObject == null)
+                continue;
+
+            if (client.PlayerObject == NetworkObject)
+                break;
+
+            index++;
+        }
+
+        spawnIndex.Value = index;
     }
 
     public override void OnNetworkDespawn()
@@ -175,6 +199,17 @@ public class NetworkPlayerSpawnTeleporter : NetworkBehaviour
 
         if (spawnPoints == null || spawnPoints.Length == 0)
             return null;
+
+        // поочерёдный спавн: каждый игрок идёт на свою точку по индексу (0, 1, 2...)
+        foreach (var sp in spawnPoints)
+        {
+            if (sp.Index == spawnIndex.Value)
+                return sp.transform;
+        }
+
+        // если точек меньше, чем игроков — замыкаем по кругу
+        if (spawnIndex.Value >= spawnPoints.Length)
+            return spawnPoints[spawnIndex.Value % spawnPoints.Length].transform;
 
         foreach (var sp in spawnPoints)
         {

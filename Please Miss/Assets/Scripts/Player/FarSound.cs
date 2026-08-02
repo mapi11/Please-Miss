@@ -17,13 +17,12 @@ public class FarSound : MonoBehaviour
     private void Awake()
     {
         if (audioSource == null)
-            audioSource = GetComponent<AudioSource>();
-
-        if (audioSource == null)
             audioSource = gameObject.AddComponent<AudioSource>();
 
         audioSource.playOnAwake = false;
         audioSource.spatialBlend = 1f;
+        audioSource.rolloffMode = AudioRolloffMode.Linear;
+        audioSource.dopplerLevel = 0f;
         audioSource.minDistance = minDistance;
         audioSource.maxDistance = maxDistance;
     }
