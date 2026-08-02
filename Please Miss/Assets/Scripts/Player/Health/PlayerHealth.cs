@@ -55,6 +55,9 @@ public sealed class PlayerHealth : NetworkBehaviour, IDamageable
     [Tooltip("The exact collider struck by the projectile is looked up in this list.")]
     [SerializeField] private List<PlayerHitZone> hitZones = new List<PlayerHitZone>();
 
+    [Header("Audio")]
+    [SerializeField] private PlayerSfx playerSfx;
+
     [Header("Inspector test buttons")]
     [Min(0.1f)] [SerializeField] private float debugHealthStep = 10f;
 
@@ -97,8 +100,19 @@ public sealed class PlayerHealth : NetworkBehaviour, IDamageable
         if (roleState == null)
             roleState = GetComponent<PlayerRoleState>();
 
+        if (playerSfx == null)
+            playerSfx = GetComponent<PlayerSfx>();
+
+        OnDeathStateChanged += HandleDeathStateChanged;
+
         offlineHealth = startAtFullHealth ? maximumHealth : Mathf.Clamp(offlineHealth, 0f, maximumHealth);
         offlineDead = offlineHealth <= 0f;
+    }
+
+    private void HandleDeathStateChanged(bool dead)
+    {
+        if (dead)
+            playerSfx?.PlayDeath();
     }
 
     private void OnValidate()
@@ -348,6 +362,9 @@ public sealed class PlayerHealth : NetworkBehaviour, IDamageable
 
     private void HandleNetworkHealthChanged(float previousValue, float newValue)
     {
+        if (newValue < previousValue && IsOwner)
+            playerSfx?.PlayDamage();
+
         OnHealthChanged?.Invoke(newValue, maximumHealth);
     }
 

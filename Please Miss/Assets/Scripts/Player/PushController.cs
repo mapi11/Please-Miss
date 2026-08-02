@@ -28,6 +28,7 @@ public class PushController : NetworkBehaviour
     private CharacterController characterController;
     private Stamina stamina;
     private StaminaUI staminaUI;
+    private PlayerSfx playerSfx;
     private Hand leftHand;
     private Hand rightHand;
 
@@ -67,6 +68,7 @@ public class PushController : NetworkBehaviour
         characterController = GetComponent<CharacterController>();
         stamina = GetComponent<Stamina>();
         staminaUI = GetComponentInChildren<StaminaUI>(true);
+        playerSfx = GetComponent<PlayerSfx>();
 
         if (leftHand == null || rightHand == null)
         {
@@ -348,6 +350,9 @@ public class PushController : NetworkBehaviour
 
         if (stamina != null)
             stamina.Consume(stamina.ShoveCost);
+
+        if (playerSfx != null)
+            playerSfx.PlayShove();
 
         if (leftHand == null && rightHand == null) return;
 

@@ -67,6 +67,10 @@ public sealed class SniperRifleDefinition : ScriptableObject
     [Tooltip("Скорость возврата прицела после отдачи")]
     [SerializeField] private float recoilRecoverySpeed = 3f;
 
+    [Header("Sound Pack")]
+    [Tooltip("Пак звуков этой винтовки (выстрел, затвор, прицел, зум, дыхание)")]
+    [SerializeField] private SniperSoundPack soundPack = new SniperSoundPack();
+
     public string RifleId => rifleId;
     public string DisplayName => displayName;
     public int MagazineSize => magazineSize;
@@ -91,6 +95,7 @@ public sealed class SniperRifleDefinition : ScriptableObject
     public float DeathTorque => deathTorque;
     public float RecoilPitchAmount => recoilPitchAmount;
     public float RecoilRecoverySpeed => recoilRecoverySpeed;
+    public SniperSoundPack SoundPack => soundPack;
 
     private void OnValidate()
     {

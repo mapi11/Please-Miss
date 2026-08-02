@@ -89,6 +89,13 @@ public class PlayerController : NetworkBehaviour
 
     [Header("Audio")]
     [SerializeField] private AudioListener audioListener;
+    [SerializeField] private PlayerSfx playerSfx;
+    [Tooltip("Скорость падения (м/с), при которой играет звук приземления")]
+    [SerializeField] private float landingSoundVelocityThreshold = -3f;
+    [Tooltip("Интервал между шагами при ходьбе (сек)")]
+    [SerializeField] private float footstepWalkInterval = 0.45f;
+    [Tooltip("Интервал между шагами при беге (сек)")]
+    [SerializeField] private float footstepSprintInterval = 0.3f;
 
     [Header("Debug")]
     [SerializeField] private bool isCrouching;
@@ -110,6 +117,7 @@ public class PlayerController : NetworkBehaviour
     private NetworkInventorySync cachedSync;
     private float shoulderY;
     private float airborneSquash = 1f;
+    private bool wasGrounded;
     private float bodyInitialY;
     private Vector3 leftShoulderInitialEuler;
     private Vector3 rightShoulderInitialEuler;
@@ -127,6 +135,8 @@ public class PlayerController : NetworkBehaviour
     private float dashFlipRemaining;
     private float dashFlipTotal;
     private bool remoteIsDashing;
+    private bool crouchedByDash;
+    private float footstepTimer;
 
     public bool IsCrouching => isCrouching;
     public float Pitch => pitch;
@@ -135,6 +145,7 @@ public class PlayerController : NetworkBehaviour
     public Interactable CurrentInteractable => currentInteractable;
     public bool HasCurrentInteractable => currentInteractable != null;
     public Inventory PlayerInventory => inventory;
+    public PlayerSfx PlayerSfx => playerSfx;
     public Hand RightHand => rightHand;
     public Hand LeftHand => leftHand;
     public InteractionHand SelectedInteractionHand => interactionHand;
@@ -204,6 +215,9 @@ public class PlayerController : NetworkBehaviour
 
         if (stamina == null)
             stamina = GetComponent<Stamina>();
+
+        if (playerSfx == null)
+            playerSfx = GetComponent<PlayerSfx>();
 
         if (roleState == null)
             roleState = GetComponent<PlayerRoleState>();
@@ -545,26 +559,53 @@ public class PlayerController : NetworkBehaviour
             move = dashDir * dashSpeed;
         }
 
-        if (characterController.isGrounded && verticalVelocity < 0f)
+        bool isGrounded = characterController.isGrounded;
+
+        if (isGrounded && verticalVelocity < 0f)
         {
+            if (!wasGrounded && verticalVelocity < landingSoundVelocityThreshold)
+                playerSfx?.PlayLanding();
+
             verticalVelocity = jumpStickToGroundForce;
 
             if (IsJumpPressed() && (stamina == null || !stamina.IsSlowed))
             {
                 verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
 
+                if (playerSfx != null)
+                    playerSfx.PlayJump();
+
                 if (stamina != null && (roleState == null || !roleState.IsSniper))
                     stamina.Consume(stamina.JumpCost);
             }
         }
+
+        wasGrounded = isGrounded;
 
         verticalVelocity += gravity * Time.deltaTime;
         move.y = verticalVelocity;
 
         characterController.Move(move * Time.deltaTime);
 
+        UpdateFootsteps(isGrounded, sprinting);
+
         float targetAirborne = characterController.isGrounded ? 1f : jumpSquash;
         airborneSquash = Mathf.Lerp(airborneSquash, targetAirborne, Time.deltaTime * crouchSpeed);
+    }
+
+    private void UpdateFootsteps(bool grounded, bool sprinting)
+    {
+        if (footstepTimer > 0f)
+        {
+            footstepTimer -= Time.deltaTime;
+            return;
+        }
+
+        if (!grounded || isDashing || isFrozen || currentMoveInput.sqrMagnitude <= 0.01f)
+            return;
+
+        footstepTimer = sprinting ? footstepSprintInterval : footstepWalkInterval;
+        playerSfx?.PlayFootstep();
     }
 
     private Vector2 ReadMoveInput()
@@ -640,6 +681,9 @@ public class PlayerController : NetworkBehaviour
         dashFlipTotal = dashFlipDuration;
         dashFlipRemaining = dashFlipTotal;
 
+        if (playerSfx != null)
+            playerSfx.PlayDash();
+
         if (stamina != null)
             stamina.Consume(stamina.DashCost);
     }
@@ -653,10 +697,28 @@ public class PlayerController : NetworkBehaviour
 
     private void HandleCrouch()
     {
+        bool wasCrouching = isCrouching;
         bool wantCrouch = IsCrouchPressed() || isDashing;
 
         if (!wantCrouch && !HasHeadroom())
             wantCrouch = true;
+
+        if (wantCrouch != wasCrouching)
+        {
+            if (wantCrouch)
+            {
+                crouchedByDash = isDashing;
+                if (!isDashing)
+                    playerSfx?.PlayCrouch();
+            }
+            else
+            {
+                bool stoodUpFromDash = crouchedByDash;
+                crouchedByDash = false;
+                if (!stoodUpFromDash)
+                    playerSfx?.PlayCrouch();
+            }
+        }
 
         isCrouching = wantCrouch;
 
@@ -966,7 +1028,10 @@ public class PlayerController : NetworkBehaviour
                 cachedSync = GetComponent<NetworkInventorySync>();
 
             if (cachedSync != null)
+            {
                 cachedSync.LaunchActiveItem(normalized, direction);
+                playerSfx?.PlayThrow();
+            }
         }
     }
 

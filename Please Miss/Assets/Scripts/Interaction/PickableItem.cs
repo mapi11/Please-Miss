@@ -46,6 +46,9 @@ public class PickableItem : Interactable
             return;
         }
 
+        if (player.PlayerSfx != null)
+            player.PlayerSfx.PlayPickup();
+
         SetCanInteract(false);
 
         if (IsSpawned)

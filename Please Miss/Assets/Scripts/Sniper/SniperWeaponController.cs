@@ -12,6 +12,8 @@ public sealed class SniperWeaponController : NetworkBehaviour
     [SerializeField] private Camera aimCamera;
     [SerializeField] private SniperScopeUI scopeUI;
     [SerializeField] private WeaponContentDatabase contentDatabase;
+    [SerializeField] private PlayerSfx playerSfx;
+    [SerializeField] private FarSound farSound;
 
     [Header("Rules")]
     [SerializeField] private bool requireSniperRole = true;
@@ -106,6 +108,19 @@ public sealed class SniperWeaponController : NetworkBehaviour
     private float defRecoilPitchAmount = 0.15f;
     private float defRecoilRecoverySpeed = 3f;
 
+    private enum RifleSound : byte
+    {
+        Shot,
+        Bolt,
+        ScopeIn,
+        ScopeOut,
+        Zoom,
+        BreathHold
+    }
+
+    private bool boltPending;
+    private ulong lastRifleSoundSender;
+
     public int CurrentAmmo => currentAmmo.Value;
     public bool HasRifleEquipped => currentRifleDefinition != null;
     public float CurrentZoomFactor => currentRifleDefinition != null
@@ -131,6 +146,12 @@ public sealed class SniperWeaponController : NetworkBehaviour
 
         if (scopeUI == null)
             scopeUI = GetComponentInChildren<SniperScopeUI>(true);
+
+        if (playerSfx == null)
+            playerSfx = GetComponent<PlayerSfx>();
+
+        if (farSound == null)
+            farSound = GetComponent<FarSound>();
 
         aimCollisionMask &= ~GameLayers.InvisibleWallMask;
 
@@ -190,6 +211,12 @@ public sealed class SniperWeaponController : NetworkBehaviour
         EnsureCurrentWeaponDetected();
         HandleOwnerInput();
         HandleBreath();
+
+        if (boltPending && NetworkManager.ServerTime.Time >= nextAllowedLocalShotTime)
+        {
+            boltPending = false;
+            PlayRifleSoundReplicated(RifleSound.Bolt);
+        }
     }
 
     private void LateUpdate()
@@ -259,13 +286,18 @@ public sealed class SniperWeaponController : NetworkBehaviour
         if (Mathf.Abs(scroll) > 0.01f)
         {
             float direction = Mathf.Sign(scroll);
+            float previousMagnification = currentMagnification;
             currentMagnification = Mathf.Clamp(
                 currentMagnification + direction * currentRifleDefinition.ZoomStep,
                 currentRifleDefinition.MinimumMagnification,
                 currentRifleDefinition.MaximumMagnification
             );
 
-            ApplyMagnification();
+            if (currentMagnification != previousMagnification)
+            {
+                ApplyMagnification();
+                PlayRifleSoundLocal(RifleSound.Zoom);
+            }
         }
 
         GetCameraAim(out Vector3 cameraOrigin, out Vector3 cameraDirection);
@@ -281,7 +313,9 @@ public sealed class SniperWeaponController : NetworkBehaviour
         {
             currentRecoil = defRecoilPitchAmount;
             nextAllowedLocalShotTime = NetworkManager.ServerTime.Time + currentRifleDefinition.SecondsBetweenShots;
+            boltPending = true;
             FireRpc(cameraOrigin, cameraDirection);
+            PlayRifleSoundReplicated(RifleSound.Shot);
         }
     }
 
@@ -322,6 +356,8 @@ public sealed class SniperWeaponController : NetworkBehaviour
         predictedLaserEnd = ComputeLaserEndLocally(origin, direction);
         SetAimingRpc(true, origin, direction);
 
+        PlayRifleSoundLocal(RifleSound.ScopeIn);
+
         OnLocalAimChanged?.Invoke(true);
     }
 
@@ -350,6 +386,8 @@ public sealed class SniperWeaponController : NetworkBehaviour
         if (notifyServer && IsSpawned)
             SetAimingRpc(false, Vector3.zero, Vector3.forward);
 
+        PlayRifleSoundLocal(RifleSound.ScopeOut);
+
         OnLocalAimChanged?.Invoke(false);
     }
 
@@ -361,6 +399,7 @@ public sealed class SniperWeaponController : NetworkBehaviour
             return;
         }
 
+        bool wasHoldingBreath = isHoldingBreath;
         bool altHeld = Keyboard.current != null && Keyboard.current.leftAltKey.isPressed;
 
         if (altHeld && breathAmount > 0f && !breathDepleted)
@@ -401,6 +440,9 @@ public sealed class SniperWeaponController : NetworkBehaviour
                     breathAmount = Mathf.Min(breathAmount + Time.deltaTime * defBreathRecoveryRate, defMaxBreath);
             }
         }
+
+        if (isHoldingBreath && !wasHoldingBreath)
+            PlayRifleSoundLocal(RifleSound.BreathHold);
     }
 
     private void UpdateScopeSway()
@@ -1053,5 +1095,117 @@ public sealed class SniperWeaponController : NetworkBehaviour
     private void OnMagazineBulletIdsChanged(FixedString4096Bytes oldValue, FixedString4096Bytes newValue)
     {
         RefreshScopeUi();
+    }
+
+    private void PlayRifleSoundLocal(RifleSound sound)
+    {
+        AudioClip[] clips = ResolveRifleClips(sound);
+        if (playerSfx != null)
+            playerSfx.PlayOneShot(clips);
+    }
+
+    private void PlayRifleSoundReplicated(RifleSound sound)
+    {
+        AudioClip[] clips = ResolveRifleClips(sound);
+        if (playerSfx == null || clips == null || clips.Length == 0)
+            return;
+
+        if (!IsSpawned)
+        {
+            playerSfx.PlayOneShot(clips);
+            return;
+        }
+
+        if (IsOwner)
+        {
+            playerSfx.PlayOneShot(clips);
+
+            if (IsServer)
+                BroadcastRifleSoundToOthers(sound, NetworkManager.Singleton.LocalClientId);
+            else
+                NotifyRifleSoundServerRpc(sound);
+        }
+        else
+        {
+            playerSfx.PlayOneShot(clips);
+            PlayFarShotIfNeeded(sound);
+
+            if (IsServer)
+                BroadcastRifleSoundToOthers(sound, lastRifleSoundSender);
+        }
+    }
+
+    private void PlayFarShotIfNeeded(RifleSound sound)
+    {
+        if (sound != RifleSound.Shot || farSound == null)
+            return;
+
+        if (currentRifleDefinition == null || currentRifleDefinition.SoundPack == null)
+            return;
+
+        farSound.PlayFarShot(currentRifleDefinition.SoundPack.farShotClips);
+    }
+
+    [Rpc(SendTo.Server)]
+    private void NotifyRifleSoundServerRpc(RifleSound sound, RpcParams rpcParams = default)
+    {
+        lastRifleSoundSender = rpcParams.Receive.SenderClientId;
+        PlayRifleSoundReplicated(sound);
+    }
+
+    [ClientRpc]
+    private void RifleSoundClientRpc(RifleSound sound, ClientRpcParams rpcParams = default)
+    {
+        AudioClip[] clips = ResolveRifleClips(sound);
+        if (playerSfx != null)
+            playerSfx.PlayOneShot(clips);
+
+        PlayFarShotIfNeeded(sound);
+    }
+
+    private void BroadcastRifleSoundToOthers(RifleSound sound, ulong excludeClientId)
+    {
+        ulong localClientId = NetworkManager.Singleton.LocalClientId;
+
+        System.Collections.Generic.List<ulong> targets = new System.Collections.Generic.List<ulong>();
+        foreach (ulong clientId in NetworkManager.Singleton.ConnectedClients.Keys)
+        {
+            if (clientId == excludeClientId || clientId == localClientId)
+                continue;
+
+            targets.Add(clientId);
+        }
+
+        if (targets.Count == 0)
+            return;
+
+        RifleSoundClientRpc(sound, new ClientRpcParams
+        {
+            Send = new ClientRpcSendParams { TargetClientIds = targets }
+        });
+    }
+
+    private AudioClip[] ResolveRifleClips(RifleSound sound)
+    {
+        if (currentRifleDefinition == null || currentRifleDefinition.SoundPack == null)
+            return null;
+
+        switch (sound)
+        {
+            case RifleSound.Shot:
+                return currentRifleDefinition.SoundPack.shotClips;
+            case RifleSound.Bolt:
+                return currentRifleDefinition.SoundPack.boltClips;
+            case RifleSound.ScopeIn:
+                return currentRifleDefinition.SoundPack.scopeInClips;
+            case RifleSound.ScopeOut:
+                return currentRifleDefinition.SoundPack.scopeOutClips;
+            case RifleSound.Zoom:
+                return currentRifleDefinition.SoundPack.zoomClips;
+            case RifleSound.BreathHold:
+                return currentRifleDefinition.SoundPack.breathHoldClips;
+            default:
+                return null;
+        }
     }
 }
