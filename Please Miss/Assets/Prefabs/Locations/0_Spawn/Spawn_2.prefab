@@ -1264,7 +1264,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &7090487156556330237
 Transform:
   m_ObjectHideFlags: 0
@@ -1294,7 +1294,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   targetOverride: {fileID: 7090487156556330237}
-  keepUpright: 1
+  keepUpright: 0
 --- !u!1 &8750242224304250409
 GameObject:
   m_ObjectHideFlags: 0

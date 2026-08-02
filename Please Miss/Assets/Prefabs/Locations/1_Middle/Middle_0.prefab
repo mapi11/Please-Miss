@@ -16,7 +16,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &7670672799192235241
 Transform:
   m_ObjectHideFlags: 0
@@ -45,8 +45,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 872aa53a5ac84fc0ad04d26c6fd6f6ae, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  targetOverride: {fileID: 7670672799192235241}
-  keepUpright: 1
+  targetOverride: {fileID: 0}
+  keepUpright: 0
 --- !u!1 &2724054482791380620
 GameObject:
   m_ObjectHideFlags: 0
@@ -99,11 +99,17 @@ MonoBehaviour:
   endPoint: {fileID: 908667209252779486}
   attachments:
   - slot: {fileID: 939270188035725843}
-    prefab: {fileID: 1960839501645163978, guid: 64af151f458de6f488c9f82c7798af0a, type: 3}
+    spawnChance: 100
+    prefabs:
+    - {fileID: 1960839501645163978, guid: b2b9d566eeb5251479c1bee584aa11e3, type: 3}
   - slot: {fileID: 9046183166729914697}
-    prefab: {fileID: 1960839501645163978, guid: 5f954e5770d15654cae5cf40afe1be83, type: 3}
+    spawnChance: 50
+    prefabs:
+    - {fileID: 1960839501645163978, guid: 5f954e5770d15654cae5cf40afe1be83, type: 3}
   - slot: {fileID: 7552198401365431423}
-    prefab: {fileID: 1960839501645163978, guid: b2b9d566eeb5251479c1bee584aa11e3, type: 3}
+    spawnChance: 0
+    prefabs:
+    - {fileID: 1960839501645163978, guid: 64af151f458de6f488c9f82c7798af0a, type: 3}
 --- !u!1 &3504768292818570677
 GameObject:
   m_ObjectHideFlags: 0

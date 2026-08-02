@@ -50,6 +50,12 @@ public class GameManager : NetworkBehaviour
         NetworkVariableWritePermission.Server
     );
 
+    public readonly NetworkVariable<uint> LocationSeed = new NetworkVariable<uint>(
+        0,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
+
     private float prepareTimer;
     private float gameTimer;
     private readonly Dictionary<ulong, PlayerHealth> trackedRunners = new Dictionary<ulong, PlayerHealth>();

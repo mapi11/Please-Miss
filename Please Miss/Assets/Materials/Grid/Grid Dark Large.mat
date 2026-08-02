@@ -75,7 +75,7 @@ Material:
     - _LineThickness: 0.075
     - _Metallic: 0
     - _Mode: 0
-    - _ODistance: 5
+    - _ODistance: 15
     - _OcclusionStrength: 1
     - _Parallax: 0.02
     - _SmoothnessTextureChannel: 0
@@ -83,7 +83,7 @@ Material:
     - _SrcBlend: 1
     - _SubdivisionTransparency: 0.5
     - _Subdivisions: 8
-    - _TDistance: 15
+    - _TDistance: 20
     - _UVSec: 0
     - _ZWrite: 1
     m_Colors:

@@ -16,7 +16,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &7670672799192235241
 Transform:
   m_ObjectHideFlags: 0
@@ -46,7 +46,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   targetOverride: {fileID: 7670672799192235241}
-  keepUpright: 1
+  keepUpright: 0
 --- !u!1 &2057716511539954456
 GameObject:
   m_ObjectHideFlags: 0
@@ -454,9 +454,13 @@ MonoBehaviour:
   endPoint: {fileID: 908667209252779486}
   attachments:
   - slot: {fileID: 7912345678901234222}
-    prefab: {fileID: 6189976537596541179, guid: 309bd91830b5fda4aa3eccee64e0d9b3, type: 3}
+    spawnChance: 100
+    prefabs:
+    - {fileID: 6189976537596541179, guid: 309bd91830b5fda4aa3eccee64e0d9b3, type: 3}
   - slot: {fileID: 7912345678901234444}
-    prefab: {fileID: 6267312716199036599, guid: a76f567201154e7081ba2b894901e3b0, type: 3}
+    spawnChance: 100
+    prefabs:
+    - {fileID: 6267312716199036599, guid: a76f567201154e7081ba2b894901e3b0, type: 3}
 --- !u!1 &3504768292818570677
 GameObject:
   m_ObjectHideFlags: 0
@@ -513,13 +517,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6844915506395259317}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 1, z: 0, w: 0}
   m_LocalPosition: {x: 0, y: 6.7, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 7452310058695080621}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
 --- !u!114 &2096560992273170539
 MonoBehaviour:
   m_ObjectHideFlags: 0

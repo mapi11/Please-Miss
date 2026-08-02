@@ -29,28 +29,126 @@ public class LocationBuilder : MonoBehaviour
     [SerializeField] private int randomSeed;
 
     private bool networkSetupPending;
+    private bool offlineMode;
+    private bool builtOnce;
+    private float offlineWait;
     private readonly List<Transform> built = new();
-
-    private void Start()
-    {
-        if (buildOnStart)
-            Build();
-    }
+    private readonly List<GameObject> localAttachments = new();
 
     private void Update()
     {
-        if (!networkSetupPending)
+        if (NetworkManager.Singleton != null && offlineMode)
+        {
+            builtOnce = false;
+            RestoreFromOfflinePreview();
+            Clear();
+            return;
+        }
+
+        if (networkSetupPending)
+        {
+            ProcessNetworkSetup();
+            return;
+        }
+
+        if (!buildOnStart || builtOnce)
             return;
 
+        int seed = ResolveSeed();
+
+        if (seed != 0)
+        {
+            builtOnce = true;
+            Build(seed);
+            networkSetupPending = true;
+        }
+    }
+
+    private void ProcessNetworkSetup()
+    {
+        if (NetworkManager.Singleton != null)
+        {
+            networkSetupPending = false;
+            SetupNestedNetworkObjects();
+            return;
+        }
+
+        offlineWait += Time.deltaTime;
+        if (offlineWait >= 2f)
+        {
+            networkSetupPending = false;
+            offlineMode = true;
+            SetupNestedNetworkObjects();
+        }
+    }
+
+    private int ResolveSeed()
+    {
         if (NetworkManager.Singleton == null)
-            return;
+        {
+            if (randomSeed != 0)
+                return randomSeed;
 
-        networkSetupPending = false;
-        SetupNestedNetworkObjects();
+            randomSeed = UnityEngine.Random.Range(1, int.MaxValue);
+            return randomSeed;
+        }
+
+        if (NetworkManager.Singleton.IsServer)
+        {
+            if (GameManager.Instance == null)
+                return 0;
+
+            if (GameManager.Instance.LocationSeed.Value == 0)
+            {
+                GameManager.Instance.LocationSeed.Value =
+                    (uint)(randomSeed != 0 ? randomSeed : UnityEngine.Random.Range(1, int.MaxValue));
+            }
+
+            return (int)GameManager.Instance.LocationSeed.Value;
+        }
+
+        if (GameManager.Instance != null && GameManager.Instance.LocationSeed.Value != 0)
+            return (int)GameManager.Instance.LocationSeed.Value;
+
+        return 0;
+    }
+
+    private void RestoreFromOfflinePreview()
+    {
+        offlineMode = false;
+
+        for (int i = 0; i < localAttachments.Count; i++)
+        {
+            if (localAttachments[i] != null)
+                Destroy(localAttachments[i]);
+        }
+
+        localAttachments.Clear();
     }
 
     [ContextMenu("Build")]
     public void Build()
+    {
+        if (Application.isPlaying)
+        {
+            int seed = ResolveSeed();
+            if (seed == 0)
+            {
+                Debug.LogWarning("LocationBuilder: waiting for synced location seed", this);
+                return;
+            }
+
+            builtOnce = true;
+            Build(seed);
+            networkSetupPending = true;
+            return;
+        }
+
+        Build(randomSeed != 0 ? randomSeed : UnityEngine.Random.Range(1, int.MaxValue));
+        networkSetupPending = true;
+    }
+
+    public void Build(int seed)
     {
         Clear();
 
@@ -60,14 +158,10 @@ public class LocationBuilder : MonoBehaviour
             return;
         }
 
-        int seed = randomSeed;
-
         if (seed == 0)
-        {
             seed = UnityEngine.Random.Range(1, int.MaxValue);
-            randomSeed = seed;
-        }
 
+        Debug.Log($"LocationBuilder: building with seed {seed}", this);
         var random = new System.Random(seed);
         Transform reference = transform;
 
@@ -155,6 +249,29 @@ public class LocationBuilder : MonoBehaviour
         root.position = reference.position - root.rotation * localStart;
     }
 
+    private GameObject InstantiateAttachment(LocationPrefab.Attachment attachment)
+    {
+        if (attachment == null || attachment.slot == null)
+            return null;
+
+        if (attachment.prefabs == null || attachment.prefabs.Length == 0)
+            return null;
+
+        if (UnityEngine.Random.value * 100f > attachment.spawnChance)
+            return null;
+
+        GameObject prefab = attachment.prefabs[UnityEngine.Random.Range(0, attachment.prefabs.Length)];
+        if (prefab == null)
+            return null;
+
+        GameObject instance = Instantiate(prefab, attachment.slot);
+        instance.transform.localPosition = Vector3.zero;
+        instance.transform.localRotation = Quaternion.identity;
+
+        Debug.Log($"LocationBuilder: spawned '{instance.name}' at '{attachment.slot.name}'", instance);
+        return instance;
+    }
+
     private void SpawnAttachments(Transform segmentRoot)
     {
         var locationPrefab = segmentRoot.GetComponent<LocationPrefab>();
@@ -163,12 +280,9 @@ public class LocationBuilder : MonoBehaviour
 
         foreach (var attachment in locationPrefab.Attachments)
         {
-            if (attachment == null || attachment.prefab == null || attachment.slot == null)
+            GameObject instance = InstantiateAttachment(attachment);
+            if (instance == null)
                 continue;
-
-            GameObject instance = Instantiate(attachment.prefab, attachment.slot);
-            instance.transform.localPosition = Vector3.zero;
-            instance.transform.localRotation = Quaternion.identity;
 
             NetworkObject networkObject = instance.GetComponent<NetworkObject>();
             if (networkObject == null)
@@ -181,12 +295,23 @@ public class LocationBuilder : MonoBehaviour
         }
     }
 
-    private void SetupNestedNetworkObjects()
+    private void SpawnAttachmentsLocal(Transform segmentRoot)
     {
-        if (NetworkManager.Singleton == null)
+        var locationPrefab = segmentRoot.GetComponent<LocationPrefab>();
+        if (locationPrefab == null || locationPrefab.Attachments == null)
             return;
 
-        bool isServer = NetworkManager.Singleton.IsServer;
+        foreach (var attachment in locationPrefab.Attachments)
+        {
+            GameObject instance = InstantiateAttachment(attachment);
+            if (instance != null)
+                localAttachments.Add(instance);
+        }
+    }
+
+    private void SetupNestedNetworkObjects()
+    {
+        bool isServer = NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer;
 
         for (int i = 0; i < built.Count; i++)
         {
@@ -207,10 +332,14 @@ public class LocationBuilder : MonoBehaviour
 
                 SpawnAttachments(built[i]);
             }
-            else
+            else if (NetworkManager.Singleton != null)
             {
                 foreach (var networkObject in networkObjects)
                     networkObject.gameObject.SetActive(false);
+            }
+            else
+            {
+                SpawnAttachmentsLocal(built[i]);
             }
         }
     }

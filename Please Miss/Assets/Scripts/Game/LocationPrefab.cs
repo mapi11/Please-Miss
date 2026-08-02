@@ -6,7 +6,8 @@ public class LocationPrefab : MonoBehaviour
     public class Attachment
     {
         public Transform slot;
-        public GameObject prefab;
+        [Range(0f, 100f)] public float spawnChance = 100f;
+        public GameObject[] prefabs;
     }
 
     [SerializeField] private Transform startPoint;
