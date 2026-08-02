@@ -536,7 +536,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &276044376
 Transform:
   m_ObjectHideFlags: 0
@@ -567,7 +567,7 @@ MonoBehaviour:
   menuMusicClips:
   - {fileID: 8300000, guid: 2e2bdec62f2a27340aecb0a3de08258a, type: 3}
   - {fileID: 8300000, guid: 40aef968218bb78418de620381bf0935, type: 3}
-  - {fileID: 8300000, guid: 41512655112b2144a8bc3d92278d5a37, type: 3}
+  - {fileID: 8300000, guid: aa7ba0fb3a203c34da7b1597dab05ca6, type: 3}
   gameMusicClips:
   - {fileID: 8300000, guid: 717ad5850e607d44ba3d4dd9f6fdc608, type: 3}
   - {fileID: 8300000, guid: ecd5713e5226d9b4dbe9d9d2096b3fa7, type: 3}

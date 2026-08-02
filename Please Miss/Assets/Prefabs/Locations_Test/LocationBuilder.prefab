@@ -1,0 +1,75 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &4247426781393233261
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5048524115840956367}
+  - component: {fileID: 5860440554228479784}
+  m_Layer: 0
+  m_Name: LocationBuilder
+  m_TagString: Untagged
+  m_Icon: {fileID: -964228994112308473, guid: 0000000000000000d000000000000000, type: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5048524115840956367
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4247426781393233261}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5860440554228479784
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4247426781393233261}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 72f1dc6ea7c74c14a1bd74d3b515ac16, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  types:
+  - typeName: Spawn
+    variants:
+    - {fileID: 1826809188627934075, guid: 5115ed10dc829bd439335c797cd90236, type: 3}
+    - {fileID: 1826809188627934075, guid: ed06a685e55ff724697202db739de3af, type: 3}
+    - {fileID: 1826809188627934075, guid: 285cc4329b418c24c8bacc1528dcfd0b, type: 3}
+  - typeName: Middle
+    variants:
+    - {fileID: 1826809188627934075, guid: 3dc58573b47b11145be400daedad34a7, type: 3}
+    - {fileID: 1826809188627934075, guid: 6439a0bc8125f1444a421e553218f794, type: 3}
+    - {fileID: 1826809188627934075, guid: a9970d9d73d22ca46be4fa3134e67dba, type: 3}
+    - {fileID: 1826809188627934075, guid: 66b1e48803cea7e4e86813887ee4fd3e, type: 3}
+  - typeName: Win zone
+    variants:
+    - {fileID: 1826809188627934075, guid: fe4a86eb8a9cd004c96f8355e5323668, type: 3}
+  - typeName: End
+    variants:
+    - {fileID: 1826809188627934075, guid: 591430afa734e734b93ff10ac3991789, type: 3}
+  - typeName: Sniper tower
+    variants:
+    - {fileID: 1826809188627934075, guid: c1b412a5831ac1643877c4e152eb02aa, type: 3}
+  sequence:
+  - typeName: Spawn
+  - typeName: Middle
+  - typeName: Win zone
+  - typeName: End
+  - typeName: Sniper tower
+  buildOnStart: 1
+  randomSeed: 0
