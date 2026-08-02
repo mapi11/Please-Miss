@@ -23,6 +23,20 @@ public class PlayerSfx : NetworkBehaviour
     [SerializeField, Range(0f, 1f)] private float volume = 1f;
     [SerializeField, Range(0f, 0.5f)] private float pitchVariation = 0.1f;
 
+    [Header("Who Hears (кто слышит)")]
+    [Tooltip("Слышат ли другие игроки (если выкл — только сам игрок)")]
+    [SerializeField] private bool replicateJump;
+    [SerializeField] private bool replicateCrouch;
+    [SerializeField] private bool replicatePickup;
+    [SerializeField] private bool replicateDash = true;
+    [SerializeField] private bool replicateDamage = true;
+    [SerializeField] private bool replicateLanding = true;
+    [SerializeField] private bool replicateShove = true;
+    [SerializeField] private bool replicateFootstep = true;
+    [SerializeField] private bool replicateThrow = true;
+    [Tooltip("Смерть всегда слышат все — звук играет на каждой машине при синхронизации смерти")]
+    [SerializeField] private bool replicateDeath;
+
     private enum SfxId : byte
     {
         Dash,
@@ -30,7 +44,10 @@ public class PlayerSfx : NetworkBehaviour
         Landing,
         Shove,
         Footstep,
-        Throw
+        Throw,
+        Jump,
+        Crouch,
+        Pickup
     }
 
     private ulong lastSfxSender;
@@ -49,37 +66,37 @@ public class PlayerSfx : NetworkBehaviour
 
     public void PlayJump()
     {
-        PlayRandom(jumpClips);
+        Play(SfxId.Jump, jumpClips);
     }
 
     public void PlayCrouch()
     {
-        PlayRandom(crouchClips);
+        Play(SfxId.Crouch, crouchClips);
     }
 
     public void PlayPickup()
     {
-        PlayRandom(pickupClips);
+        Play(SfxId.Pickup, pickupClips);
     }
 
     public void PlayDash()
     {
-        PlayReplicated(SfxId.Dash, dashClips);
+        Play(SfxId.Dash, dashClips);
     }
 
     public void PlayDamage()
     {
-        PlayReplicated(SfxId.Damage, damageClips);
+        Play(SfxId.Damage, damageClips);
     }
 
     public void PlayLanding()
     {
-        PlayReplicated(SfxId.Landing, landingClips);
+        Play(SfxId.Landing, landingClips);
     }
 
     public void PlayShove()
     {
-        PlayReplicated(SfxId.Shove, shoveClips);
+        Play(SfxId.Shove, shoveClips);
     }
 
     public void PlayDeath()
@@ -89,17 +106,45 @@ public class PlayerSfx : NetworkBehaviour
 
     public void PlayFootstep()
     {
-        PlayReplicated(SfxId.Footstep, footstepClips);
+        Play(SfxId.Footstep, footstepClips);
     }
 
     public void PlayThrow()
     {
-        PlayReplicated(SfxId.Throw, throwClips);
+        Play(SfxId.Throw, throwClips);
     }
 
     public void PlayOneShot(AudioClip[] clips)
     {
         PlayRandom(clips);
+    }
+
+    private void Play(SfxId id, AudioClip[] clips)
+    {
+        if (clips == null || clips.Length == 0)
+            return;
+
+        if (IsReplicated(id))
+            PlayReplicated(id, clips);
+        else
+            PlayRandom(clips);
+    }
+
+    private bool IsReplicated(SfxId id)
+    {
+        switch (id)
+        {
+            case SfxId.Dash: return replicateDash;
+            case SfxId.Damage: return replicateDamage;
+            case SfxId.Landing: return replicateLanding;
+            case SfxId.Shove: return replicateShove;
+            case SfxId.Footstep: return replicateFootstep;
+            case SfxId.Throw: return replicateThrow;
+            case SfxId.Jump: return replicateJump;
+            case SfxId.Crouch: return replicateCrouch;
+            case SfxId.Pickup: return replicatePickup;
+            default: return false;
+        }
     }
 
     private void PlayReplicated(SfxId id, AudioClip[] clips)
@@ -184,6 +229,12 @@ public class PlayerSfx : NetworkBehaviour
                 return footstepClips;
             case SfxId.Throw:
                 return throwClips;
+            case SfxId.Jump:
+                return jumpClips;
+            case SfxId.Crouch:
+                return crouchClips;
+            case SfxId.Pickup:
+                return pickupClips;
             default:
                 return null;
         }

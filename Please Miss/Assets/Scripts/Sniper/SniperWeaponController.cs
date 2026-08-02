@@ -356,7 +356,7 @@ public sealed class SniperWeaponController : NetworkBehaviour
         predictedLaserEnd = ComputeLaserEndLocally(origin, direction);
         SetAimingRpc(true, origin, direction);
 
-        PlayRifleSoundLocal(RifleSound.ScopeIn);
+        PlayRifleSoundReplicated(RifleSound.ScopeIn);
 
         OnLocalAimChanged?.Invoke(true);
     }
@@ -386,7 +386,7 @@ public sealed class SniperWeaponController : NetworkBehaviour
         if (notifyServer && IsSpawned)
             SetAimingRpc(false, Vector3.zero, Vector3.forward);
 
-        PlayRifleSoundLocal(RifleSound.ScopeOut);
+        PlayRifleSoundReplicated(RifleSound.ScopeOut);
 
         OnLocalAimChanged?.Invoke(false);
     }
@@ -1127,7 +1127,9 @@ public sealed class SniperWeaponController : NetworkBehaviour
         }
         else
         {
-            playerSfx.PlayOneShot(clips);
+            if (sound != RifleSound.Shot)
+                playerSfx.PlayOneShot(clips);
+
             PlayFarShotIfNeeded(sound);
 
             if (IsServer)
@@ -1156,9 +1158,12 @@ public sealed class SniperWeaponController : NetworkBehaviour
     [ClientRpc]
     private void RifleSoundClientRpc(RifleSound sound, ClientRpcParams rpcParams = default)
     {
-        AudioClip[] clips = ResolveRifleClips(sound);
-        if (playerSfx != null)
-            playerSfx.PlayOneShot(clips);
+        if (sound != RifleSound.Shot)
+        {
+            AudioClip[] clips = ResolveRifleClips(sound);
+            if (playerSfx != null)
+                playerSfx.PlayOneShot(clips);
+        }
 
         PlayFarShotIfNeeded(sound);
     }

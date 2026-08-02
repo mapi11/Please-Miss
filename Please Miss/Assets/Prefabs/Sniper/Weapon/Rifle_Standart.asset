@@ -38,30 +38,17 @@ MonoBehaviour:
   recoilRecoverySpeed: 3
   soundPack:
     shotClips:
-    - {fileID: 8300000, guid: 9350fce767b373247a79491383eacd47, type: 3}
-    - {fileID: 8300000, guid: f26894bfbb60f3d4a8b661aad24e2b87, type: 3}
-    - {fileID: 8300000, guid: a99cc3f1d4bb77d488bfb38bea750780, type: 3}
+    - {fileID: 8300000, guid: 2ecddd23d50e96f4faf564e57b3548aa, type: 3}
     farShotClips:
-    - {fileID: 8300000, guid: 46a4d8df0a90fc247aedf99e587ce9c4, type: 3}
-    - {fileID: 8300000, guid: 8b8d0af96343c6443aac89b388c58603, type: 3}
-    - {fileID: 8300000, guid: 894a8d2467f5ee546adfced4e8dbb2a5, type: 3}
+    - {fileID: 8300000, guid: b5a56f7459835f14e9f61df33fab41c4, type: 3}
     boltClips:
-    - {fileID: 8300000, guid: 7b2b3442ccfa21f448c281042265b7b0, type: 3}
-    - {fileID: 8300000, guid: bed58e0a45245604c93e747e0c40031a, type: 3}
-    - {fileID: 8300000, guid: 6a021db8bf779f14cb11ece64f992f84, type: 3}
+    - {fileID: 8300000, guid: 6d9abf8bf4ee3ed48a127d7614cb04e4, type: 3}
     scopeInClips:
-    - {fileID: 8300000, guid: 69dd81e56a28ee947814d2208aa7bea6, type: 3}
-    - {fileID: 8300000, guid: d37c1eecf42640d41a7224527cdc2b32, type: 3}
-    - {fileID: 8300000, guid: 69edfda1a4dd97647a4abeab7d3200d6, type: 3}
+    - {fileID: 8300000, guid: f5cfa016ad246404f9041acc9484bb55, type: 3}
     scopeOutClips:
-    - {fileID: 8300000, guid: e3914de724ba59544956e76e15d2e535, type: 3}
-    - {fileID: 8300000, guid: c69271e251e0ad543b78d8e3cf40e98d, type: 3}
-    - {fileID: 8300000, guid: e67fae99093d60e44ac3bec851a1099a, type: 3}
+    - {fileID: 8300000, guid: f5cfa016ad246404f9041acc9484bb55, type: 3}
     zoomClips:
-    - {fileID: 8300000, guid: 0682f177cbf896f46b73099cb2dd7b8c, type: 3}
-    - {fileID: 8300000, guid: bade7fc7874a4e94b9ea7bff41829828, type: 3}
-    - {fileID: 8300000, guid: 7de6cfd749cc5bf48b8df71eccda6ff1, type: 3}
+    - {fileID: 8300000, guid: b319a2e4ff8f5d840b82d8635b645d22, type: 3}
+    - {fileID: 8300000, guid: d14b106713a74b448bcab90869f1706e, type: 3}
     breathHoldClips:
-    - {fileID: 8300000, guid: 56cbcaaed25aaad4e95121b4d1c42a37, type: 3}
-    - {fileID: 8300000, guid: 3433d99bb33f0964cbd9f70323e38f1a, type: 3}
-    - {fileID: 8300000, guid: 37e359fb324198c4a8ed6dc24493455e, type: 3}
+    - {fileID: 8300000, guid: aeccda248bad6ab4fa592d124b305651, type: 3}
