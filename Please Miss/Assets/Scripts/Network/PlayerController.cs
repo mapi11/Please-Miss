@@ -625,7 +625,13 @@ public class PlayerController : NetworkBehaviour
 
         if (!WasCrouchPressedThisFrame()) return;
         if (!IsSprintPressed()) return;
-        if (!CanDash()) return;
+
+        if (!CanDash())
+        {
+            if (stamina != null && !stamina.CanConsume(stamina.DashCost))
+                stamina.NotifyInsufficient();
+            return;
+        }
 
         isDashing = true;
         dashTimer = dashDuration;

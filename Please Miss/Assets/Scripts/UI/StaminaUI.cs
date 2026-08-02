@@ -13,7 +13,13 @@ public class StaminaUI : MonoBehaviour
     [SerializeField] private Color normalColor = Color.white;
     [SerializeField] private Color exhaustedColor = Color.red;
 
+    [Header("Insufficient Flash")]
+    [SerializeField] private Color insufficientColor = Color.red;
+    [SerializeField] private float insufficientDuration = 0.5f;
+
     private Image staminaFill;
+    private bool exhausted;
+    private Coroutine insufficientRoutine;
 
     private void Awake()
     {
@@ -48,10 +54,30 @@ public class StaminaUI : MonoBehaviour
             staminaSlider.value = normalized;
     }
 
-    public void SetExhausted(bool exhausted)
+    public void SetExhausted(bool value)
     {
+        exhausted = value;
         if (staminaFill != null)
-            staminaFill.color = exhausted ? exhaustedColor : normalColor;
+            staminaFill.color = value ? exhaustedColor : normalColor;
+    }
+
+    public void FlashInsufficient()
+    {
+        if (staminaFill == null || !isActiveAndEnabled)
+            return;
+
+        if (insufficientRoutine != null)
+            StopCoroutine(insufficientRoutine);
+
+        insufficientRoutine = StartCoroutine(InsufficientRoutine());
+    }
+
+    private System.Collections.IEnumerator InsufficientRoutine()
+    {
+        staminaFill.color = insufficientColor;
+        yield return new WaitForSecondsRealtime(insufficientDuration);
+        staminaFill.color = exhausted ? exhaustedColor : normalColor;
+        insufficientRoutine = null;
     }
 
     public void UpdateShoveCooldown(float remaining)

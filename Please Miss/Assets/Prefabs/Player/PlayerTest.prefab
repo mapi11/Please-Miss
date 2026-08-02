@@ -2799,6 +2799,8 @@ MonoBehaviour:
   shoveCooldownText: {fileID: 9100000000000000204}
   normalColor: {r: 1, g: 1, b: 1, a: 1}
   exhaustedColor: {r: 1, g: 0, b: 0, a: 1}
+  insufficientColor: {r: 1, g: 0.2750727, b: 0, a: 1}
+  insufficientDuration: 0.5
 --- !u!1 &6818440226341732365
 GameObject:
   m_ObjectHideFlags: 0

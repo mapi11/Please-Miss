@@ -28,6 +28,9 @@ public class Stamina : NetworkBehaviour
     private readonly NetworkVariable<bool> isExhausted = new NetworkVariable<bool>(false,
         NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
+    private readonly NetworkVariable<byte> insufficientCounter = new NetworkVariable<byte>(0,
+        NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
     public float CurrentStamina => currentStamina;
     public float MaxStamina => maxStamina;
     public float Normalized => currentStamina / maxStamina;
@@ -60,6 +63,32 @@ public class Stamina : NetworkBehaviour
             else
                 OnStaminaRecovered?.Invoke();
         };
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+        insufficientCounter.OnValueChanged += OnInsufficientCounterChanged;
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        base.OnNetworkDespawn();
+        insufficientCounter.OnValueChanged -= OnInsufficientCounterChanged;
+    }
+
+    public void NotifyInsufficient()
+    {
+        if (IsSpawned && IsOwner)
+            insufficientCounter.Value = (byte)(insufficientCounter.Value + 1);
+
+        staminaUI?.FlashInsufficient();
+    }
+
+    private void OnInsufficientCounterChanged(byte previous, byte current)
+    {
+        if (current != previous)
+            staminaUI?.FlashInsufficient();
     }
 
     public void Consume(float amount)

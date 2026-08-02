@@ -113,7 +113,11 @@ public class PushController : NetworkBehaviour
 
         if (keyboard.gKey.wasPressedThisFrame)
         {
-            if (stamina != null && !stamina.CanConsume(stamina.ShoveCost)) return;
+            if (stamina != null && !stamina.CanConsume(stamina.ShoveCost))
+            {
+                stamina.NotifyInsufficient();
+                return;
+            }
             if (!TryFindShoveVictim(out _)) return;
 
             shoveReadyTime = Time.time + shoveCooldown;
