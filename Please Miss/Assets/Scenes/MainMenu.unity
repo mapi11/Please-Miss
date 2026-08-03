@@ -536,7 +536,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &276044376
 Transform:
   m_ObjectHideFlags: 0
@@ -575,7 +575,7 @@ MonoBehaviour:
   mainMenuSceneName: MainMenu
   lobbySceneName: Lobby
   gameSceneName: Game
-  volume: 0.001
+  volume: 0.05
   fadeDuration: 1.5
 --- !u!1 &1645520979
 GameObject:

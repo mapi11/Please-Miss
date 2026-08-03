@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
-[RequireComponent(typeof(AudioSource))]
 public class ProximityVoiceSpeaker : NetworkBehaviour
 {
     private static readonly Dictionary<ulong, ProximityVoiceSpeaker> Speakers = new();
@@ -73,17 +72,33 @@ public class ProximityVoiceSpeaker : NetworkBehaviour
         SetupAudioSource();
         StartStreamingAudioClip();
 
+        var health = GetComponent<PlayerHealth>();
+        if (health != null)
+            health.OnDeathStateChanged += OnBodyDied;
+
         Debug.Log($"🎙 Voice speaker registered. OwnerClientId={OwnerClientId}");
     }
 
     public override void OnNetworkDespawn()
     {
+        var health = GetComponent<PlayerHealth>();
+        if (health != null)
+            health.OnDeathStateChanged -= OnBodyDied;
+
         if (Speakers.ContainsKey(OwnerClientId) && Speakers[OwnerClientId] == this)
         {
             Speakers.Remove(OwnerClientId);
         }
 
         StopStreamingAudioClip();
+    }
+
+    private void OnBodyDied(bool dead)
+    {
+        if (!dead)
+            return;
+
+        ShutdownAsBody();
     }
 
     private void OnDestroy()
@@ -93,8 +108,30 @@ public class ProximityVoiceSpeaker : NetworkBehaviour
 
     private void Update()
     {
+        if (HasBeenReplacedBySpectator())
+        {
+            ShutdownAsBody();
+            return;
+        }
+
         UpdateManualDistanceVolume();
         UpdateMouth();
+    }
+
+    private bool HasBeenReplacedBySpectator()
+    {
+        return Speakers.TryGetValue(OwnerClientId, out var current) && current != this;
+    }
+
+    private void ShutdownAsBody()
+    {
+        StopStreamingAudioClip();
+
+        if (mouthTransform != null)
+            mouthTransform.localScale = closedMouthScale;
+
+        targetMouthAmount = 0f;
+        enabled = false;
     }
 
     public void EnqueuePcm16(byte[] pcmData)
