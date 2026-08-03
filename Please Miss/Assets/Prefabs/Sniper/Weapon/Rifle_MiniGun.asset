@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: Sniper Rifle MiniGun
   magazineSize: 100
   defaultBullet: {fileID: 11400000, guid: bb30920cedf2c9a4495c108942a9a55e, type: 2}
-  muzzleVelocity: 20
+  muzzleVelocity: 400
   secondsBetweenShots: 0.01
   projectilePrefab: {fileID: 4956007563087058510, guid: f5e628aaa2c6569409a02aceb51cc9ab, type: 3}
   minimumMagnification: 4
@@ -36,3 +36,11 @@ MonoBehaviour:
   deathTorque: 500
   recoilPitchAmount: 0.15
   recoilRecoverySpeed: 3
+  soundPack:
+    shotClips: []
+    farShotClips: []
+    boltClips: []
+    scopeInClips: []
+    scopeOutClips: []
+    zoomClips: []
+    breathHoldClips: []

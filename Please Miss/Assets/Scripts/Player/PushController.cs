@@ -57,6 +57,7 @@ public class PushController : NetworkBehaviour
 
     private float shoveReadyTime;
     private bool knockdownRoutineRunning;
+    private Coroutine knockdownCoroutine;
 
     public bool IsKnockedDown => knockedDown.Value;
 
@@ -89,11 +90,17 @@ public class PushController : NetworkBehaviour
             staminaUI = GetComponentInChildren<StaminaUI>(true);
 
         knockedDown.OnValueChanged += OnKnockedDownChanged;
+
+        if (playerHealth != null)
+            playerHealth.OnDeathStateChanged += OnDeathStateChanged;
     }
 
     public override void OnNetworkDespawn()
     {
         knockedDown.OnValueChanged -= OnKnockedDownChanged;
+
+        if (playerHealth != null)
+            playerHealth.OnDeathStateChanged -= OnDeathStateChanged;
     }
 
     private void Update()
@@ -216,9 +223,25 @@ public class PushController : NetworkBehaviour
                 if (dir.sqrMagnitude < 0.001f)
                     dir = -transform.forward;
 
-                StartCoroutine(KnockdownRoutine(dir));
+                knockdownCoroutine = StartCoroutine(KnockdownRoutine(dir));
             }
         }
+    }
+
+    private void OnDeathStateChanged(bool dead)
+    {
+        if (!dead) return;
+
+        // Игрок умер во время лежания — прерываем «вставание», тело остаётся лежать
+        if (knockdownCoroutine != null)
+        {
+            StopCoroutine(knockdownCoroutine);
+            knockdownCoroutine = null;
+            knockdownRoutineRunning = false;
+        }
+
+        if (IsServer && IsSpawned && knockedDown.Value)
+            knockedDown.Value = false;
     }
 
     private IEnumerator KnockdownRoutine(Vector3 shoveDir)
@@ -230,6 +253,7 @@ public class PushController : NetworkBehaviour
         finally
         {
             knockdownRoutineRunning = false;
+            knockdownCoroutine = null;
         }
     }
 
@@ -272,6 +296,9 @@ public class PushController : NetworkBehaviour
 
         yield return new WaitForSeconds(knockdownDuration);
 
+        if (playerHealth != null && playerHealth.IsDead)
+            yield break;
+
         if (bodyRigidbody != null)
         {
             bodyRigidbody.isKinematic = true;
@@ -284,6 +311,9 @@ public class PushController : NetworkBehaviour
         float standTimer = 0f;
         while (standTimer < standUpDuration)
         {
+            if (playerHealth != null && playerHealth.IsDead)
+                yield break;
+
             standTimer += Time.deltaTime;
             float t = Mathf.Clamp01(standTimer / standUpDuration);
             transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.Euler(0f, yaw, 0f), t);
