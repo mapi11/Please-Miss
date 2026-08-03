@@ -200,23 +200,26 @@ public class NetworkPlayerSpawnTeleporter : NetworkBehaviour
         if (spawnPoints == null || spawnPoints.Length == 0)
             return null;
 
-        // поочерёдный спавн: каждый игрок идёт на свою точку по индексу (0, 1, 2...)
-        foreach (var sp in spawnPoints)
-        {
-            if (sp.Index == spawnIndex.Value)
-                return sp.transform;
-        }
-
-        // если точек меньше, чем игроков — замыкаем по кругу
-        if (spawnIndex.Value >= spawnPoints.Length)
-            return spawnPoints[spawnIndex.Value % spawnPoints.Length].transform;
+        // делим точки по ролям: снайпер — на точку снайпера, бегуны — на точки бегунов
+        List<PlayerSpawnPoint> sniperPoints = new List<PlayerSpawnPoint>();
+        List<PlayerSpawnPoint> runnerPoints = new List<PlayerSpawnPoint>();
 
         foreach (var sp in spawnPoints)
         {
-            if (sp.Role == role)
-                return sp.transform;
+            if (sp.Role == PlayerRole.Sniper)
+                sniperPoints.Add(sp);
+            else
+                runnerPoints.Add(sp);
         }
 
+        // поочерёдный спавн внутри своей группы (0, 1, 2...), по возрастанию индекса точек
+        List<PlayerSpawnPoint> pool = role == PlayerRole.Sniper ? sniperPoints : runnerPoints;
+        pool.Sort((a, b) => a.Index.CompareTo(b.Index));
+
+        if (pool.Count > 0)
+            return pool[spawnIndex.Value % pool.Count].transform;
+
+        // fallback: если подходящих точек нет
         foreach (var sp in spawnPoints)
         {
             if (sp.Role == PlayerRole.None)

@@ -36,7 +36,7 @@ Material:
     m_Colors:
     - _BaseColour1: {r: 1, g: 1, b: 1, a: 0}
     - _BaseColour2: {r: 1, g: 1, b: 1, a: 0}
-    - _GridColour1: {r: 0.1254902, g: 0.5882353, b: 0.9529412, a: 0.5019608}
-    - _GridColour2: {r: 0.38431373, g: 0.38431373, b: 0.38431373, a: 0.101960786}
+    - _GridColour1: {r: 0.12549016, g: 0.5882353, b: 0.9529411, a: 1}
+    - _GridColour2: {r: 0.5, g: 0.5, b: 0.5, a: 0.5019608}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
