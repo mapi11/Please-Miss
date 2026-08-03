@@ -23,6 +23,18 @@ public class SpectatorController : NetworkBehaviour
     [SerializeField] private GameObject spectatorUI;
     [SerializeField] private Transform headModel;
 
+    [Header("Sniper Visibility")]
+    [Tooltip("Сколько времени голова видна снайперу после нажатия G")]
+    [SerializeField] private float visibilityDuration = 5f;
+    [Tooltip("Перезарядка: слайдер заполняется за это время, пока видимость нельзя включить")]
+    [SerializeField] private float cooldownDuration = 10f;
+
+    private readonly NetworkVariable<float> visibilityTimeLeft = new NetworkVariable<float>(
+        0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
+    private readonly NetworkVariable<float> cooldownTimeLeft = new NetworkVariable<float>(
+        0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
     [Header("Multiplayer")]
     [SerializeField] private int localOnlyLayer = 6;
     [SerializeField] private int spectatorHeadLayer = 9;
@@ -35,6 +47,26 @@ public class SpectatorController : NetworkBehaviour
     private Vector3 smoothPositionVelocity;
 
     public bool IsSpectating => isSpectating;
+
+    public bool VisibilityActive => visibilityTimeLeft.Value > 0f;
+    public bool CooldownActive => cooldownTimeLeft.Value > 0f;
+    public float VisibilityTimeLeft => visibilityTimeLeft.Value;
+    public float CooldownTimeLeft => cooldownTimeLeft.Value;
+
+    /// <summary>Заполнение слайдера на канвасе: видимость убывает, перезарядка прибывает.</summary>
+    public float VisibilitySliderFill
+    {
+        get
+        {
+            if (visibilityTimeLeft.Value > 0f)
+                return visibilityTimeLeft.Value / Mathf.Max(0.0001f, visibilityDuration);
+
+            if (cooldownTimeLeft.Value > 0f)
+                return 1f - cooldownTimeLeft.Value / Mathf.Max(0.0001f, cooldownDuration);
+
+            return 1f;
+        }
+    }
 
     public void SetReferences(Camera cam, GameObject ui)
     {
@@ -104,6 +136,13 @@ public class SpectatorController : NetworkBehaviour
 
     private void Update()
     {
+        if (!IsSpawned) return;
+
+        if (IsServer)
+            UpdateVisibilityServer();
+
+        UpdateSniperVisibility();
+
         if (!isSpectating || !IsOwner) return;
 
         AutoRetarget();
@@ -115,6 +154,8 @@ public class SpectatorController : NetworkBehaviour
                 CycleTarget(-1);
             else if (keyboard.eKey.wasPressedThisFrame)
                 CycleTarget(1);
+            else if (keyboard.gKey.wasPressedThisFrame)
+                RequestVisibilityServerRpc();
         }
 
         var mouse = Mouse.current;
@@ -169,6 +210,52 @@ public class SpectatorController : NetworkBehaviour
     {
         if (NetworkManager.Singleton?.LocalClient?.PlayerObject == null) return null;
         return NetworkManager.Singleton.LocalClient.PlayerObject.GetComponent<SpectatorManager>();
+    }
+
+    private void UpdateVisibilityServer()
+    {
+        if (visibilityTimeLeft.Value > 0f)
+        {
+            visibilityTimeLeft.Value = Mathf.Max(0f, visibilityTimeLeft.Value - Time.deltaTime);
+
+            if (visibilityTimeLeft.Value <= 0f)
+                cooldownTimeLeft.Value = cooldownDuration;
+        }
+        else if (cooldownTimeLeft.Value > 0f)
+        {
+            cooldownTimeLeft.Value = Mathf.Max(0f, cooldownTimeLeft.Value - Time.deltaTime);
+        }
+    }
+
+    [ServerRpc(RequireOwnership = true)]
+    private void RequestVisibilityServerRpc()
+    {
+        if (visibilityTimeLeft.Value > 0f || cooldownTimeLeft.Value > 0f)
+            return;
+
+        visibilityTimeLeft.Value = visibilityDuration;
+    }
+
+    private void UpdateSniperVisibility()
+    {
+        if (headModel == null)
+            return;
+
+        bool localIsSniper = NetworkManager.Singleton?.LocalClient?.PlayerObject != null &&
+                             NetworkManager.Singleton.LocalClient.PlayerObject.GetComponent<NetworkPlayerRole>()?.IsSniper == true;
+
+        if (!localIsSniper)
+        {
+            // бегуны и владелец всегда видят голову
+            if (!headModel.gameObject.activeSelf)
+                headModel.gameObject.SetActive(true);
+            return;
+        }
+
+        // снайпер видит голову только пока активна видимость
+        bool visible = visibilityTimeLeft.Value > 0f;
+        if (headModel.gameObject.activeSelf != visible)
+            headModel.gameObject.SetActive(visible);
     }
 
     private void HideHeadForOwner()

@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: Sniper Rifle Standart
   magazineSize: 4
   defaultBullet: {fileID: 11400000, guid: faa2f9a122382764aaa5934c795b59fb, type: 2}
-  muzzleVelocity: 200
+  muzzleVelocity: 160
   secondsBetweenShots: 1
   projectilePrefab: {fileID: 4956007563087058510, guid: f5e628aaa2c6569409a02aceb51cc9ab, type: 3}
   minimumMagnification: 2

@@ -1,100 +1,57 @@
-using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class EyeTracker : MonoBehaviour
 {
     [Header("Eyes")]
-    [SerializeField] private Transform leftEyeCenter;
-    [SerializeField] private Transform rightEyeCenter;
-    [SerializeField] private Transform leftPupil;
-    [SerializeField] private Transform rightPupil;
-    [Tooltip("Максимальное смещение зрачка от центра глаза (в мировых единицах)")]
-    [SerializeField] private float maxPupilOffset = 0.05f;
+    [SerializeField] private RectTransform leftEyeCenter;
+    [SerializeField] private RectTransform rightEyeCenter;
+    [SerializeField] private RectTransform leftPupil;
+    [SerializeField] private RectTransform rightPupil;
+    [SerializeField] private float maxPupilOffset = 10f;
     [SerializeField] private float eyeTrackingSpeed = 8f;
-
-    [Header("Tracking")]
-    [Tooltip("Дистанция, в пределах которой глаза следят за ближайшим игроком")]
-    [SerializeField] private float trackingDistance = 10f;
 
     private void Update()
     {
         if (leftEyeCenter == null || rightEyeCenter == null || leftPupil == null || rightPupil == null)
             return;
 
-        Transform target = FindNearestPlayer();
-
-        MovePupil(leftPupil, leftEyeCenter, target);
-        MovePupil(rightPupil, rightEyeCenter, target);
+        MovePupil(leftPupil, leftEyeCenter);
+        MovePupil(rightPupil, rightEyeCenter);
     }
 
-    private Transform FindNearestPlayer()
+    private void MovePupil(RectTransform pupil, RectTransform eyeCenter)
     {
-        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
-            return null;
+        Vector2 cursorPos = Mouse.current.position.ReadValue();
+        Canvas canvas = eyeCenter.GetComponentInParent<Canvas>();
 
-        NetworkObject self = GetComponent<NetworkObject>();
-        ulong selfOwner = self != null ? self.OwnerClientId : ulong.MaxValue;
-
-        Transform nearest = null;
-        float nearestDist = trackingDistance;
-
-        // все игроки, включая мёртвых
-        foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
-        {
-            if (client.PlayerObject == null)
-                continue;
-
-            if (self != null && client.PlayerObject == self)
-                continue;
-
-            if (client.PlayerObject.OwnerClientId == selfOwner)
-                continue;
-
-            float dist = Vector3.Distance(transform.position, client.PlayerObject.transform.position);
-            if (dist <= nearestDist)
-            {
-                nearestDist = dist;
-                nearest = client.PlayerObject.transform;
-            }
-        }
-
-        // спектаторы (летающие головы)
-        foreach (var spect in FindObjectsByType<SpectatorController>(FindObjectsSortMode.None))
-        {
-            NetworkObject spectNet = spect.GetComponent<NetworkObject>();
-            if (spectNet == null)
-                continue;
-
-            if (spectNet == self)
-                continue;
-
-            if (spectNet.OwnerClientId == selfOwner)
-                continue;
-
-            float dist = Vector3.Distance(transform.position, spectNet.transform.position);
-            if (dist <= nearestDist)
-            {
-                nearestDist = dist;
-                nearest = spectNet.transform;
-            }
-        }
-
-        return nearest;
-    }
-
-    private void MovePupil(Transform pupil, Transform eyeCenter, Transform target)
-    {
-        if (target == null)
+        if (canvas == null)
             return;
 
-        Vector3 toTarget = target.position - eyeCenter.position;
-        Vector3 localOffset = eyeCenter.InverseTransformDirection(toTarget);
-        localOffset.z = 0f;
+        RectTransform canvasRect = canvas.transform as RectTransform;
+        Camera cam = null;
 
-        if (localOffset.magnitude > maxPupilOffset)
-            localOffset = localOffset.normalized * maxPupilOffset;
+        if (canvas.renderMode != RenderMode.ScreenSpaceOverlay)
+        {
+            cam = canvas.worldCamera;
 
-        Vector3 targetPos = eyeCenter.position + eyeCenter.TransformDirection(localOffset);
-        pupil.position = Vector3.Lerp(pupil.position, targetPos, eyeTrackingSpeed * Time.deltaTime);
+            if (cam == null)
+                cam = Camera.main;
+        }
+
+        if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, cursorPos, cam, out Vector2 canvasPos))
+            return;
+
+        Vector2 eyePos = canvasRect.InverseTransformPoint(eyeCenter.position);
+        Vector2 dir = canvasPos - eyePos;
+        float dist = dir.magnitude;
+
+        if (dist > maxPupilOffset)
+            dir = dir.normalized * maxPupilOffset;
+
+        Vector3 targetPos = pupil.localPosition;
+        targetPos.x = dir.x;
+        targetPos.y = dir.y;
+        pupil.localPosition = Vector3.Lerp(pupil.localPosition, targetPos, eyeTrackingSpeed * Time.deltaTime);
     }
 }
