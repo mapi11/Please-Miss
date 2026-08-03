@@ -1,3 +1,4 @@
+using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -55,7 +56,7 @@ public class PickableItem : Interactable
         {
             var playerNetObj = player.GetComponent<NetworkObject>();
             if (playerNetObj != null)
-                PickupServerRpc(playerNetObj);
+                PickupServerRpc(playerNetObj, new FixedString64Bytes(itemName));
             else
                 NetworkObject.Despawn(true);
         }
@@ -66,9 +67,16 @@ public class PickableItem : Interactable
     }
 
     [ServerRpc(RequireOwnership = false)]
-    private void PickupServerRpc(NetworkObjectReference playerRef)
+    private void PickupServerRpc(NetworkObjectReference playerRef, FixedString64Bytes itemName)
     {
         NetworkObject.Despawn(true);
+
+        if (playerRef.TryGet(out NetworkObject netObj))
+        {
+            var sync = netObj.GetComponent<NetworkInventorySync>();
+            if (sync != null)
+                sync.ServerTrackItem(itemName.ToString());
+        }
     }
 
     public override void OnHandHold(PlayerController player, float deltaTime) { }

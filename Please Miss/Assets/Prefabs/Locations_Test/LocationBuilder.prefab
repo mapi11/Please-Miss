@@ -48,8 +48,6 @@ MonoBehaviour:
   - typeName: Spawn
     variants:
     - {fileID: 1826809188627934075, guid: 5115ed10dc829bd439335c797cd90236, type: 3}
-    - {fileID: 1826809188627934075, guid: ed06a685e55ff724697202db739de3af, type: 3}
-    - {fileID: 1826809188627934075, guid: 285cc4329b418c24c8bacc1528dcfd0b, type: 3}
   - typeName: Middle
     variants:
     - {fileID: 1826809188627934075, guid: 3dc58573b47b11145be400daedad34a7, type: 3}

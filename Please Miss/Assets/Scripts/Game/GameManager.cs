@@ -100,6 +100,8 @@ public class GameManager : NetworkBehaviour
         NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
         NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
 
+        NetworkInventorySync.ClearAllTrackedServer();
+
         foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
             TrackRunner(client.ClientId, client.PlayerObject);
 

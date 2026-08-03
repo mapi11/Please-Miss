@@ -991,7 +991,7 @@ MonoBehaviour:
   spectatorUI: {fileID: 7891304018592429374}
   headModel: {fileID: 5377722550715264432}
   visibilityDuration: 5
-  cooldownDuration: 30
+  cooldownDuration: 25
   localOnlyLayer: 6
   spectatorHeadLayer: 9
 --- !u!114 &5739173490017469499

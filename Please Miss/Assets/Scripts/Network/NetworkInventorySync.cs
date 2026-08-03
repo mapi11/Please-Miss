@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -60,6 +61,213 @@ public class NetworkInventorySync : NetworkBehaviour
 
     private GameObject currentHeldVisual;
 
+    // --- Выпадение предметов при выходе из игры / смерти (сервер) ---
+
+    private class TrackedPlayer
+    {
+        public Dictionary<string, int> Items = new Dictionary<string, int>();
+        public Vector3 LastPosition;
+        public NetworkInventorySync SyncInstance;
+    }
+
+    private struct DropRequest
+    {
+        public Vector3 Position;
+        public Dictionary<string, int> Items;
+    }
+
+    private static readonly Dictionary<ulong, TrackedPlayer> allTrackedItems = new Dictionary<ulong, TrackedPlayer>();
+    private static readonly Queue<DropRequest> pendingServerDrops = new Queue<DropRequest>();
+    private static bool disconnectHookRegistered;
+
+    public static void ClearAllTrackedServer()
+    {
+        allTrackedItems.Clear();
+    }
+
+    public static void ServerTrackItem(ulong clientId, string itemName)
+    {
+        if (string.IsNullOrEmpty(itemName))
+            return;
+
+        if (!allTrackedItems.TryGetValue(clientId, out var entry))
+        {
+            entry = new TrackedPlayer();
+            allTrackedItems[clientId] = entry;
+        }
+
+        entry.Items.TryGetValue(itemName, out int count);
+        entry.Items[itemName] = count + 1;
+    }
+
+    public static void ServerUntrackItem(ulong clientId, string itemName)
+    {
+        if (string.IsNullOrEmpty(itemName) || !allTrackedItems.TryGetValue(clientId, out var entry))
+            return;
+
+        if (entry.Items.TryGetValue(itemName, out int count))
+        {
+            if (count <= 1)
+                entry.Items.Remove(itemName);
+            else
+                entry.Items[itemName] = count - 1;
+        }
+    }
+
+    public void ServerTrackItem(string itemName)
+    {
+        if (!IsServer || string.IsNullOrEmpty(itemName))
+            return;
+
+        ServerTrackItem(OwnerClientId, itemName);
+
+        if (allTrackedItems.TryGetValue(OwnerClientId, out var entry))
+        {
+            entry.SyncInstance = this;
+            entry.LastPosition = transform.position;
+        }
+    }
+
+    public void ServerUntrackItem(string itemName)
+    {
+        if (!IsServer)
+            return;
+
+        ServerUntrackItem(OwnerClientId, itemName);
+    }
+
+    private static void OnDisconnectStatic(ulong clientId)
+    {
+        if (!allTrackedItems.TryGetValue(clientId, out var entry))
+            return;
+
+        allTrackedItems.Remove(clientId);
+
+        // Сервер сбрасывает активный слот отключённого игрока — визуал в руке исчезает
+        // на всех оставшихся клиентах (тот же механизм, что работает при смерти).
+        var sync = entry.SyncInstance;
+        if (sync != null && sync.NetworkObject != null && sync.NetworkObject.IsSpawned)
+            sync.ClearHeldVisualOnServer();
+
+        if (entry.Items.Count == 0 || sync == null)
+            return;
+
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
+            return;
+
+        // Отложенная очередь: спавн вне коллбека отключения (безопаснее для NetworkManager)
+        pendingServerDrops.Enqueue(new DropRequest
+        {
+            Position = entry.LastPosition,
+            Items = new Dictionary<string, int>(entry.Items)
+        });
+    }
+
+    public void ClearHeldVisualOnServer()
+    {
+        if (!IsServer)
+            return;
+
+        if (!networkActiveItemName.Value.IsEmpty)
+            networkActiveItemName.Value = new FixedString64Bytes();
+
+        if (networkActiveSlot.Value != -1)
+            networkActiveSlot.Value = -1;
+    }
+
+    private void ProcessPendingDrops()
+    {
+        while (pendingServerDrops.Count > 0)
+        {
+            DropRequest request = pendingServerDrops.Dequeue();
+            foreach (var kvp in request.Items)
+                SpawnServerDrop(request.Position, kvp.Key, kvp.Value);
+        }
+    }
+
+    private void SpawnServerDrop(Vector3 position, string itemName, int count)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            if (string.IsNullOrEmpty(itemName))
+                continue;
+
+            int idx = GetPrefabIndex(itemName);
+            Quaternion rotation = UnityEngine.Random.rotationUniform;
+            Vector3 spawnPos = position + Vector3.up * 0.3f;
+
+            GameObject dropObject;
+
+            if (idx >= 0 && idx < items.Length && items[idx].WorldDropPrefab != null)
+            {
+                dropObject = Instantiate(items[idx].WorldDropPrefab, spawnPos, rotation);
+            }
+            else
+            {
+                dropObject = BuildDropItem(spawnPos, rotation, null, itemName);
+            }
+
+            NetworkObject netObj = dropObject.GetComponent<NetworkObject>();
+            if (netObj == null)
+                netObj = dropObject.AddComponent<NetworkObject>();
+
+            if (!netObj.IsSpawned)
+                netObj.Spawn(true);
+        }
+    }
+
+    private void DropTrackedItemsOnDeath()
+    {
+        if (!IsServer)
+            return;
+
+        if (!allTrackedItems.TryGetValue(OwnerClientId, out var entry))
+            return;
+
+        var dropped = entry.Items;
+        allTrackedItems.Remove(OwnerClientId);
+
+        if (dropped.Count == 0)
+            return;
+
+        foreach (var kvp in dropped)
+            SpawnServerDrop(transform.position, kvp.Key, kvp.Value);
+
+        // Очистить инвентарь у владельца (визуально предметы выпадают из рук)
+        var rpcParams = new ClientRpcParams
+        {
+            Send = new ClientRpcSendParams
+            {
+                TargetClientIds = new ulong[] { OwnerClientId }
+            }
+        };
+        ClearInventoryClientRpc(rpcParams);
+    }
+
+    [ClientRpc]
+    private void ClearInventoryClientRpc(ClientRpcParams clientRpcParams = default)
+    {
+        if (inventory == null)
+            return;
+
+        for (int i = 0; i < inventory.MaxSlots; i++)
+        {
+            // Runtime-шаблон из BuildVisualFromSelf остаётся на месте подбора (DontDestroyOnLoad)
+            // и без физики — его нужно удалить вместе с предметом.
+            GameObject heldTemplate = inventory.GetSlotHeldPrefab(i);
+            if (inventory.GetItemAtSlot(i) != null)
+                inventory.RemoveItem(i);
+
+            DestroyRuntimeHeldTemplateIfNeeded(heldTemplate);
+        }
+    }
+
+    private void OnDeathStateChanged(bool dead)
+    {
+        if (dead)
+            DropTrackedItemsOnDeath();
+    }
+
     private void OnValidate()
     {
         if (items == null) return;
@@ -98,6 +306,17 @@ public class NetworkInventorySync : NetworkBehaviour
             inventory.OnActiveSlotChanged -= OnLocalActiveSlotChanged;
     }
 
+    private void Update()
+    {
+        if (!IsServer)
+            return;
+
+        ProcessPendingDrops();
+
+        if (allTrackedItems.TryGetValue(OwnerClientId, out var entry) && entry.Items.Count > 0)
+            entry.LastPosition = transform.position;
+    }
+
     public override void OnNetworkSpawn()
     {
         networkActiveSlot.OnValueChanged += OnActiveSlotChanged;
@@ -109,6 +328,27 @@ public class NetworkInventorySync : NetworkBehaviour
             networkActiveItemName.Value.ToString(),
             networkActiveHand.Value
         );
+
+        if (IsServer)
+        {
+            if (!disconnectHookRegistered)
+            {
+                NetworkManager.Singleton.OnClientDisconnectCallback += OnDisconnectStatic;
+                disconnectHookRegistered = true;
+            }
+
+            if (!allTrackedItems.TryGetValue(OwnerClientId, out var entry))
+            {
+                entry = new TrackedPlayer();
+                allTrackedItems[OwnerClientId] = entry;
+            }
+            entry.SyncInstance = this;
+            entry.LastPosition = transform.position;
+
+            var health = GetComponent<PlayerHealth>();
+            if (health != null)
+                health.OnDeathStateChanged += OnDeathStateChanged;
+        }
     }
 
     public override void OnNetworkDespawn()
@@ -116,6 +356,23 @@ public class NetworkInventorySync : NetworkBehaviour
         networkActiveSlot.OnValueChanged -= OnActiveSlotChanged;
         networkActiveItemName.OnValueChanged -= OnActiveItemNameChanged;
         networkActiveHand.OnValueChanged -= OnActiveHandChanged;
+
+        // Явно убираем визуал из руки — он не должен переживать деспавн игрока
+        DestroyCurrentHeldVisual();
+
+        // Локальная очистка: runtime-шаблоны в руках (DontDestroyOnLoad) иначе «застревают» на месте
+        if (inventory != null)
+        {
+            for (int i = 0; i < inventory.MaxSlots; i++)
+                DestroyRuntimeHeldTemplateIfNeeded(inventory.GetSlotHeldPrefab(i));
+        }
+
+        if (IsServer)
+        {
+            var health = GetComponent<PlayerHealth>();
+            if (health != null)
+                health.OnDeathStateChanged -= OnDeathStateChanged;
+        }
     }
 
     private void OnLocalActiveSlotChanged(int slot)
@@ -370,6 +627,9 @@ public class NetworkInventorySync : NetworkBehaviour
 
         if (!netObj.IsSpawned)
             netObj.Spawn(true);
+
+        // предмет улетел в мир — снимаем с отслеживания для дропа при выходе/смерти
+        ServerUntrackItem(name);
     }
 
     public bool TryGetConfiguredPrefabs(
