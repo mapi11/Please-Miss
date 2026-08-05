@@ -21,6 +21,19 @@ public class MusicManager : MonoBehaviour
     [SerializeField, Range(0f, 1f)] private float volume = 0.8f;
     [SerializeField] private float fadeDuration = 1.5f;
 
+    public float Volume => volume;
+
+    public void SetVolume(float value)
+    {
+        volume = Mathf.Clamp01(value);
+
+        if (audioSource != null)
+            audioSource.volume = volume;
+
+        PlayerPrefs.SetFloat("MusicVolume", volume);
+        PlayerPrefs.Save();
+    }
+
     private AudioSource audioSource;
     private Coroutine transitionCoroutine;
     private bool isPlayingMenuMusic;
@@ -35,6 +48,8 @@ public class MusicManager : MonoBehaviour
 
         Instance = this;
         DontDestroyOnLoad(gameObject);
+
+        volume = PlayerPrefs.GetFloat("MusicVolume", volume);
 
         audioSource = gameObject.AddComponent<AudioSource>();
         audioSource.playOnAwake = false;

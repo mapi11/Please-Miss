@@ -678,7 +678,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6262935103999308457, guid: 97f8f1340138a1b4981bde1eb51cd2d0, type: 3}
       propertyPath: m_SizeDelta.y
-      value: 160
+      value: 180
       objectReference: {fileID: 0}
     - target: {fileID: 6262935103999308459, guid: 97f8f1340138a1b4981bde1eb51cd2d0, type: 3}
       propertyPath: m_Color.b

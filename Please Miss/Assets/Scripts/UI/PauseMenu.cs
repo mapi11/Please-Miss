@@ -69,11 +69,10 @@ public class PauseMenu : MonoBehaviour
             return;
 
         if (settingsInstance != null || closingSettings)
-        {
-            if (!closingSettings)
-                CloseSettings();
             return;
-        }
+
+        if (SettingsMenu.Instance != null && SettingsMenu.Instance.IsOpen)
+            return;
 
         if (pauseInstance != null || closingPause)
         {
@@ -185,6 +184,13 @@ public class PauseMenu : MonoBehaviour
         SettingsOpen = false;
         closingSettings = false;
         settingsInstance = null;
+    }
+
+    public void OnSettingsPanelClosedExternally()
+    {
+        closingSettings = false;
+        settingsInstance = null;
+        SettingsOpen = false;
     }
 
     public void ReturnToMainMenu()

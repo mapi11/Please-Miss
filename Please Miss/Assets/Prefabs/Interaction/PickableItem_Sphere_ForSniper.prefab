@@ -262,8 +262,8 @@ MonoBehaviour:
   cancelOnCanInteractFail: 1
   itemName: Sniper`s Sphere
   inventoryIcon: {fileID: 21300000, guid: 9507092dc5072a541abdba2779cf47b9, type: 3}
-  sellPrice: 150
-  buyPrice: 300
+  sellPrice: 155
+  buyPrice: 310
   purpose: 2
   itemClass: 2
   heldVisualPrefab: {fileID: 0}

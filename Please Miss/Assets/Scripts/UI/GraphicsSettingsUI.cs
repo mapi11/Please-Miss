@@ -154,7 +154,7 @@ public class GraphicsSettingsUI : MonoBehaviour
         }
     }
 
-    private void AnimateOut(Action onComplete)
+    public void AnimateOut(Action onComplete)
     {
         transform.DOScale(0.8f, animOutDuration).SetEase(Ease.InBack);
 

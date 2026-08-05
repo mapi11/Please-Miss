@@ -264,8 +264,8 @@ MonoBehaviour:
   cancelOnCanInteractFail: 1
   itemName: Capsule
   inventoryIcon: {fileID: 1081486411, guid: 086762bd07c61634e83a0f3bf49c1533, type: 3}
-  sellPrice: 10
-  buyPrice: 20
+  sellPrice: 100
+  buyPrice: 200
   purpose: 2
   itemClass: 0
   heldVisualPrefab: {fileID: 0}

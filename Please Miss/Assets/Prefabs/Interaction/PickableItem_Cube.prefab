@@ -216,8 +216,8 @@ MonoBehaviour:
   cancelOnCanInteractFail: 1
   itemName: Cube
   inventoryIcon: {fileID: 21300000, guid: 931d3dc4305a1ff488de558297ed9f8b, type: 3}
-  sellPrice: 7
-  buyPrice: 14
+  sellPrice: 75
+  buyPrice: 150
   purpose: 2
   itemClass: 0
   heldVisualPrefab: {fileID: 0}

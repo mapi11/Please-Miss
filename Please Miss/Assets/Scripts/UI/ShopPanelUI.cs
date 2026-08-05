@@ -3,6 +3,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
+using DG.Tweening;
 
 public class ShopPanelUI : MonoBehaviour
 {
@@ -59,6 +60,7 @@ public class ShopPanelUI : MonoBehaviour
     private void OnEnable()
     {
         EnsureWindow();
+        AnimateIn();
         EnsureCloseButtons();
         LocalPlayerSettings.PointsChanged += OnPointsChanged;
         RefreshPoints();
@@ -103,6 +105,34 @@ public class ShopPanelUI : MonoBehaviour
         else
             gameObject.SetActive(false);
     }
+
+    private void AnimateIn()
+    {
+        RectTransform target = windowRoot != null ? windowRoot : transform as RectTransform;
+
+        if (target == null)
+            return;
+
+        CanvasGroup group = target.GetComponent<CanvasGroup>();
+
+        if (group == null)
+            group = target.gameObject.AddComponent<CanvasGroup>();
+
+        target.DOKill();
+        group.DOKill();
+
+        target.localScale = Vector3.one * 0.8f;
+        target.DOScale(1f, animInDuration).SetEase(Ease.OutBack, 1.2f);
+
+        group.alpha = 0f;
+        group.interactable = false;
+        group.DOFade(1f, animInDuration * 0.6f).OnComplete(() =>
+        {
+            group.interactable = true;
+        });
+    }
+
+    private const float animInDuration = 0.35f;
 
     private void EnsureWindow()
     {

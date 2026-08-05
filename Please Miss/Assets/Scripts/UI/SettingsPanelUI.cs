@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.Localization;
 using UnityEngine.Localization.Settings;
 using UnityEngine.UI;
@@ -13,6 +14,10 @@ public class SettingsPanelUI : MonoBehaviour
     [Header("Volume")]
     [SerializeField] private Slider volumeSlider;
     [SerializeField] private TMP_Text volumeValueText;
+
+    [Header("Music")]
+    [SerializeField] private Slider musicVolumeSlider;
+    [SerializeField] private TMP_Text musicVolumeValueText;
 
     [Header("Mouse")]
     [SerializeField] private Slider sensitivitySlider;
@@ -32,36 +37,60 @@ public class SettingsPanelUI : MonoBehaviour
     [Header("Buttons")]
     [SerializeField] private Button backButton;
 
+    [Header("Window")]
+    [Tooltip("Root destroyed when ESC closes the settings window")]
+    [SerializeField] private GameObject settingsRoot;
+
     [Header("Animation")]
     [SerializeField] private float animInDuration = 0.35f;
     [SerializeField] private float animOutDuration = 0.2f;
 
     private CanvasGroup canvasGroup;
+    private CanvasGroup animationGroup;
     private PlayerController playerController;
+    private GameObject graphicsInstance;
+    private bool graphicsOpen;
+
+    private Transform AnimationTarget
+    {
+        get { return settingsRoot != null ? settingsRoot.transform : transform; }
+    }
 
     private void Awake()
     {
         canvasGroup = GetComponent<CanvasGroup>();
 
-        if (canvasGroup != null)
+        Transform target = AnimationTarget;
+        target.localScale = Vector3.one * 0.8f;
+
+        animationGroup = canvasGroup;
+
+        if (settingsRoot != null)
         {
-            canvasGroup.alpha = 0f;
-            canvasGroup.interactable = false;
+            animationGroup = settingsRoot.GetComponent<CanvasGroup>();
+
+            if (animationGroup == null)
+                animationGroup = settingsRoot.AddComponent<CanvasGroup>();
         }
 
-        transform.localScale = Vector3.one * 0.8f;
+        if (animationGroup != null)
+        {
+            animationGroup.alpha = 0f;
+            animationGroup.interactable = false;
+        }
 
         playerController = GetLocalPlayerController();
 
         LocalizationSettings.SelectedLocaleChanged += OnLocaleChanged;
 
         InitVolume();
+        InitMusicVolume();
         InitSensitivity();
         InitMicDropdown();
         InitLanguageDropdown();
 
         if (backButton != null)
-            backButton.onClick.AddListener(() => PauseMenu.Instance.CloseSettings());
+            backButton.onClick.AddListener(OnBack);
 
         if (graphicsButton != null)
             graphicsButton.onClick.AddListener(OpenGraphicsPanel);
@@ -77,26 +106,88 @@ public class SettingsPanelUI : MonoBehaviour
         AnimateIn();
     }
 
+    private void Update()
+    {
+        if (graphicsOpen && graphicsInstance == null)
+        {
+            graphicsOpen = false;
+
+            if (graphicsButton != null)
+                graphicsButton.interactable = true;
+        }
+
+        if (Keyboard.current == null || !Keyboard.current.escapeKey.wasPressedThisFrame)
+            return;
+
+        if (graphicsInstance != null)
+        {
+            var graphicsUI = graphicsInstance.GetComponent<GraphicsSettingsUI>();
+
+            if (graphicsUI != null)
+                graphicsUI.AnimateOut(null);
+            else
+                Destroy(graphicsInstance);
+
+            graphicsInstance = null;
+            graphicsOpen = false;
+
+            if (graphicsButton != null)
+                graphicsButton.interactable = true;
+
+            return;
+        }
+
+        CloseWindow();
+    }
+
+    private void CloseWindow()
+    {
+        if (settingsRoot != null)
+        {
+            if (SettingsMenu.Instance != null && SettingsMenu.Instance.IsOpen)
+                SettingsMenu.Instance.OnPanelClosedExternally();
+            else if (PauseMenu.Instance != null)
+                PauseMenu.Instance.OnSettingsPanelClosedExternally();
+
+            var panel = settingsRoot.GetComponentInChildren<SettingsPanelUI>(true);
+
+            if (panel != null)
+            {
+                panel.AnimateOut(() => Destroy(settingsRoot));
+            }
+            else
+            {
+                Destroy(settingsRoot);
+            }
+
+            return;
+        }
+
+        CloseSelf();
+    }
+
     public void AnimateIn()
     {
-        transform.DOScale(1f, animInDuration).SetEase(Ease.OutBack, 1.2f);
+        Transform target = AnimationTarget;
+        target.DOScale(1f, animInDuration).SetEase(Ease.OutBack, 1.2f);
 
-        if (canvasGroup != null)
+        if (animationGroup != null)
         {
-            canvasGroup.DOFade(1f, animInDuration * 0.6f).OnComplete(() =>
+            animationGroup.DOFade(1f, animInDuration * 0.6f).OnComplete(() =>
             {
-                if (canvasGroup != null)
-                    canvasGroup.interactable = true;
+                if (animationGroup != null)
+                    animationGroup.interactable = true;
             });
         }
     }
 
     public void AnimateOut(Action onComplete)
     {
-        transform.DOScale(0.8f, animOutDuration).SetEase(Ease.InBack);
+        Transform target = AnimationTarget;
+        target.DOScale(0.8f, animOutDuration).SetEase(Ease.InBack);
 
-        if (canvasGroup != null)
-            canvasGroup.DOFade(0f, animOutDuration * 0.6f);
+        if (animationGroup != null)
+            animationGroup.DOFade(0f, animOutDuration * 0.6f);
 
         DOVirtual.DelayedCall(animOutDuration, () =>
         {
@@ -129,6 +220,36 @@ public class SettingsPanelUI : MonoBehaviour
     {
         if (volumeValueText != null)
             volumeValueText.text = Mathf.RoundToInt(value * 100) + "%";
+    }
+
+    private void InitMusicVolume()
+    {
+        if (musicVolumeSlider == null)
+            return;
+
+        float current = MusicManager.Instance != null
+            ? MusicManager.Instance.Volume
+            : PlayerPrefs.GetFloat("MusicVolume", 0.8f);
+
+        musicVolumeSlider.minValue = 0f;
+        musicVolumeSlider.maxValue = 1f;
+        musicVolumeSlider.value = current;
+        UpdateMusicVolumeText(current);
+        musicVolumeSlider.onValueChanged.AddListener(OnMusicVolumeChanged);
+    }
+
+    private void OnMusicVolumeChanged(float value)
+    {
+        if (MusicManager.Instance != null)
+            MusicManager.Instance.SetVolume(value);
+
+        UpdateMusicVolumeText(value);
+    }
+
+    private void UpdateMusicVolumeText(float value)
+    {
+        if (musicVolumeValueText != null)
+            musicVolumeValueText.text = Mathf.RoundToInt(value * 100) + "%";
     }
 
     private void InitSensitivity()
@@ -266,12 +387,34 @@ public class SettingsPanelUI : MonoBehaviour
         }
     }
 
+    private void OnBack()
+    {
+        CloseWindow();
+    }
+
+    private void CloseSelf()
+    {
+        if (SettingsMenu.Instance != null && SettingsMenu.Instance.IsOpen)
+        {
+            SettingsMenu.Instance.Close();
+            return;
+        }
+
+        if (PauseMenu.Instance != null)
+            PauseMenu.Instance.CloseSettings();
+    }
+
     private void OpenGraphicsPanel()
     {
-        if (graphicsPanelPrefab == null) return;
+        if (graphicsPanelPrefab == null || graphicsOpen)
+            return;
 
         Transform parent = graphicsContainer != null ? graphicsContainer : transform;
-        Instantiate(graphicsPanelPrefab, parent);
+        graphicsInstance = Instantiate(graphicsPanelPrefab, parent);
+        graphicsOpen = true;
+
+        if (graphicsButton != null)
+            graphicsButton.interactable = false;
     }
 
     private static PlayerController GetLocalPlayerController()
