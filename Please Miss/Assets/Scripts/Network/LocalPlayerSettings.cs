@@ -28,6 +28,8 @@ public static class LocalPlayerSettings
     private const string PlayerPointsPrefix = "PlayerPoints";
     private const string InventoryItemsPrefix = "InventoryItems";
     private const string EquipmentItemsPrefix = "EquipmentItems";
+    private const string EquipmentRunnerItemsPrefix = "EquipmentRunnerItems";
+    private const string EquipmentSniperItemsPrefix = "EquipmentSniperItems";
 
     private static string storageSuffix = "";
 
@@ -90,6 +92,8 @@ public static class LocalPlayerSettings
         CopySessionToProfile(PlayerPointsPrefix, true);
         CopySessionToProfile(InventoryItemsPrefix, false);
         CopySessionToProfile(EquipmentItemsPrefix, false);
+        CopySessionToProfile(EquipmentRunnerItemsPrefix, false);
+        CopySessionToProfile(EquipmentSniperItemsPrefix, false);
     }
 
     private static void SeedFromProfile()
@@ -99,6 +103,8 @@ public static class LocalPlayerSettings
         CopyProfileToSession(PlayerPointsPrefix, true);
         CopyProfileToSession(InventoryItemsPrefix, false);
         CopyProfileToSession(EquipmentItemsPrefix, false);
+        CopyProfileToSession(EquipmentRunnerItemsPrefix, false);
+        CopyProfileToSession(EquipmentSniperItemsPrefix, false);
     }
 
     private static void CopyProfileToSession(string prefix, bool isInt)
@@ -317,6 +323,56 @@ public static class LocalPlayerSettings
             items[i] = "";
 
         SaveStringList(EquipmentItemsKey, items);
+    }
+
+    private static string EquipmentRunnerItemsKey => MakeKey(EquipmentRunnerItemsPrefix);
+    private static string EquipmentSniperItemsKey => MakeKey(EquipmentSniperItemsPrefix);
+
+    public static List<string> RunnerEquipment => GetStringList(EquipmentRunnerItemsKey);
+    public static List<string> SniperEquipment => GetStringList(EquipmentSniperItemsKey);
+
+    public static void SetRunnerEquipmentSlot(int slotIndex, string itemId)
+    {
+        SetRoleEquipmentSlot(EquipmentRunnerItemsKey, slotIndex, itemId);
+    }
+
+    public static string GetRunnerEquipmentSlot(int slotIndex)
+    {
+        return GetRoleEquipmentSlot(EquipmentRunnerItemsKey, slotIndex);
+    }
+
+    public static void SetSniperEquipmentSlot(int slotIndex, string itemId)
+    {
+        SetRoleEquipmentSlot(EquipmentSniperItemsKey, slotIndex, itemId);
+    }
+
+    public static string GetSniperEquipmentSlot(int slotIndex)
+    {
+        return GetRoleEquipmentSlot(EquipmentSniperItemsKey, slotIndex);
+    }
+
+    private static void SetRoleEquipmentSlot(string key, int slotIndex, string itemId)
+    {
+        if (slotIndex < 0 || slotIndex >= EquipmentSlotsCount)
+            return;
+
+        var items = GetStringList(key);
+
+        while (items.Count <= slotIndex)
+            items.Add("");
+
+        items[slotIndex] = itemId ?? "";
+        SaveStringList(key, items);
+    }
+
+    private static string GetRoleEquipmentSlot(string key, int slotIndex)
+    {
+        var items = GetStringList(key);
+
+        if (slotIndex < 0 || slotIndex >= items.Count)
+            return "";
+
+        return items[slotIndex];
     }
 
     private static List<string> GetStringList(string key)

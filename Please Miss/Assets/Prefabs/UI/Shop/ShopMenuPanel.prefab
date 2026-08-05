@@ -190,11 +190,13 @@ MonoBehaviour:
   - itemPrefab: {fileID: 2490301674227407094, guid: 64af151f458de6f488c9f82c7798af0a, type: 3}
     discountPercent: 0
   - itemPrefab: {fileID: 2490301674227407094, guid: a9b2ed5e23941b04693cc4bbfd76e037, type: 3}
-    discountPercent: 20
+    discountPercent: 0
   - itemPrefab: {fileID: 2490301674227407094, guid: 5f954e5770d15654cae5cf40afe1be83, type: 3}
     discountPercent: 0
   - itemPrefab: {fileID: 2490301674227407094, guid: b2b9d566eeb5251479c1bee584aa11e3, type: 3}
-    discountPercent: 100
+    discountPercent: 0
+  - itemPrefab: {fileID: 2490301674227407094, guid: b8316c03b0933394bbcad138410c2090, type: 3}
+    discountPercent: 0
   windowRoot: {fileID: 230312463410962826}
   closeButton1: {fileID: 7320982004048763359}
   closeButton2: {fileID: 0}
@@ -1171,8 +1173,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+    rgba: 4294153760
+  m_fontColor: {r: 0.1254902, g: 0.5882353, b: 0.9529412, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:

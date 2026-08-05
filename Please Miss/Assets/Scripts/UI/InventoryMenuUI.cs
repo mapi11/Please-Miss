@@ -6,12 +6,32 @@ using UnityEngine.UI;
 
 public class InventoryMenuUI : MonoBehaviour
 {
+    private enum InventoryMode
+    {
+        All,
+        Runner,
+        Sniper
+    }
+
     [Header("References (assigned on the spawned prefab)")]
     [SerializeField] private RectTransform inventorySlotsContainer;
-    [SerializeField] private RectTransform playerSlotsContainer;
     [SerializeField] private GameObject slotPrefab;
     [Tooltip("Optional. If set, player slots are built from this prefab instead of slotPrefab")]
     [SerializeField] private GameObject playerSlotPrefab;
+
+    [Header("Role Mode")]
+    [Tooltip("TMP_Dropdown with options All / Runner / Sniper. Assigned in the Inspector")]
+    [SerializeField] private TMP_Dropdown modeDropdown;
+    [Tooltip("Optional. Darkens the player panel while 'All' is selected")]
+    [SerializeField] private GameObject blockInventory;
+    [Tooltip("Optional. Blocks the Runner container when another mode is active")]
+    [SerializeField] private GameObject blockRunner;
+    [Tooltip("Optional. Blocks the Sniper container when another mode is active")]
+    [SerializeField] private GameObject blockSniper;
+    [Tooltip("Optional. If not assigned, created at runtime next to the Runner container")]
+    [SerializeField] private RectTransform playerRunnerInventoryContainer;
+    [Tooltip("Optional. If not assigned, created at runtime next to the Runner container")]
+    [SerializeField] private RectTransform playerSniperInventoryContainer;
 
     [Header("Window")]
     [SerializeField] private RectTransform windowRoot;
@@ -21,9 +41,13 @@ public class InventoryMenuUI : MonoBehaviour
     [Header("Player")]
     [SerializeField] private Image colorPreview;
 
+    [Header("Points")]
+    [SerializeField] private TMP_Text pointsText;
+
     private Canvas canvas;
     private RectTransform canvasRect;
     private Color32 selectedColor;
+    private InventoryMode mode = InventoryMode.Runner;
 
     private void Start()
     {
@@ -37,6 +61,11 @@ public class InventoryMenuUI : MonoBehaviour
 
         EnsureContainers();
         EnsureWindow();
+        EnsureModeDropdown();
+        InitModeDropdown();
+        EnsureBlockInventory();
+        EnsureRoleContainers();
+        EnsureRoleBlocks();
         EnsureCloseButtons();
         EnsureColorRefs();
         Refresh();
@@ -45,12 +74,30 @@ public class InventoryMenuUI : MonoBehaviour
 
     private void OnEnable()
     {
+        LocalPlayerSettings.PointsChanged += OnPointsChanged;
+        RefreshPoints();
         Refresh();
+    }
+
+    private void OnDisable()
+    {
+        LocalPlayerSettings.PointsChanged -= OnPointsChanged;
     }
 
     private void OnDestroy()
     {
         LocalPlayerSettings.ColorChanged -= OnColorChanged;
+    }
+
+    private void OnPointsChanged(int newPoints)
+    {
+        RefreshPoints();
+    }
+
+    private void RefreshPoints()
+    {
+        if (pointsText != null)
+            pointsText.text = $"Points: {LocalPlayerSettings.PlayerPoints}";
     }
 
     private void Update()
@@ -71,9 +118,138 @@ public class InventoryMenuUI : MonoBehaviour
     {
         if (inventorySlotsContainer == null)
             inventorySlotsContainer = transform.Find("InventorySlotsContainer") as RectTransform;
+    }
 
-        if (playerSlotsContainer == null)
-            playerSlotsContainer = transform.Find("PlayerSlotsContainer") as RectTransform;
+    private void EnsureModeDropdown()
+    {
+        if (modeDropdown != null)
+            return;
+
+        Transform t = FindInChildren(windowRoot != null ? windowRoot : transform, "ModeDropdown");
+        if (t != null)
+            modeDropdown = t.GetComponent<TMP_Dropdown>();
+    }
+
+    private void InitModeDropdown()
+    {
+        if (modeDropdown == null)
+            return;
+
+        modeDropdown.ClearOptions();
+        modeDropdown.AddOptions(new List<string> { "All", "Runner", "Sniper" });
+        modeDropdown.SetValueWithoutNotify((int)mode);
+        modeDropdown.onValueChanged.RemoveAllListeners();
+        modeDropdown.onValueChanged.AddListener(OnModeOptionChanged);
+    }
+
+    private void EnsureBlockInventory()
+    {
+        EnsureBlock(ref blockInventory, "BlockInventory", playerRunnerInventoryContainer);
+    }
+
+    private void EnsureRoleBlocks()
+    {
+        EnsureBlock(ref blockRunner, "BlockRunner", playerRunnerInventoryContainer);
+        EnsureBlock(ref blockSniper, "BlockSniper", playerSniperInventoryContainer);
+    }
+
+    private void EnsureBlock(ref GameObject block, string name, RectTransform container)
+    {
+        if (block != null)
+            return;
+
+        Transform parent = container != null ? container.parent : transform;
+
+        Transform t = FindInChildren(parent, name);
+        if (t != null)
+        {
+            block = t.gameObject;
+            return;
+        }
+
+        if (container == null)
+            return;
+
+        GameObject go = new GameObject(name, typeof(RectTransform));
+        go.transform.SetParent(parent, false);
+
+        RectTransform rect = go.GetComponent<RectTransform>();
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+
+        Image img = go.AddComponent<Image>();
+        img.color = new Color(0f, 0f, 0f, 0.6f);
+
+        block = go;
+    }
+
+    private void EnsureRoleContainers()
+    {
+        EnsureRoleContainer(ref playerRunnerInventoryContainer, "PlayerRunnerInventoryContainer", "PlayerRunnerSlots");
+        EnsureRoleContainer(ref playerSniperInventoryContainer, "PlayerSniperInventoryContainer", "PlayerSniperSlots");
+    }
+
+    private void EnsureRoleContainer(ref RectTransform container, string name, string altName)
+    {
+        if (container != null)
+            return;
+
+        RectTransform reference = playerRunnerInventoryContainer != null
+            ? playerRunnerInventoryContainer
+            : playerSniperInventoryContainer;
+
+        Transform parent = reference != null ? reference.parent : transform;
+
+        Transform t = FindInChildren(parent, name);
+        if (t == null && altName != null)
+            t = FindInChildren(parent, altName);
+
+        if (t != null)
+        {
+            container = t as RectTransform;
+            return;
+        }
+
+        if (reference == null)
+            return;
+
+        GameObject go = new GameObject(name, typeof(RectTransform));
+        go.transform.SetParent(parent, false);
+
+        RectTransform rect = go.GetComponent<RectTransform>();
+        rect.anchorMin = reference.anchorMin;
+        rect.anchorMax = reference.anchorMax;
+        rect.pivot = reference.pivot;
+        rect.anchoredPosition = reference.anchoredPosition;
+        rect.sizeDelta = reference.sizeDelta;
+
+        GridLayoutGroup grid = go.AddComponent<GridLayoutGroup>();
+        grid.cellSize = new Vector2(140f, 140f);
+        grid.spacing = new Vector2(10f, 10f);
+        grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+        grid.constraintCount = 2;
+
+        container = rect;
+    }
+
+    private void OnModeOptionChanged(int index)
+    {
+        InventoryMode newMode;
+
+        if (index == 1)
+            newMode = InventoryMode.Runner;
+        else if (index == 2)
+            newMode = InventoryMode.Sniper;
+        else
+            newMode = InventoryMode.All;
+
+        if (newMode == mode)
+            return;
+
+        mode = newMode;
+        Refresh();
     }
 
     private void EnsureWindow()
@@ -190,21 +366,26 @@ public class InventoryMenuUI : MonoBehaviour
     public void Refresh()
     {
         EnsureContainers();
+        EnsureModeDropdown();
+        EnsureBlockInventory();
+        EnsureRoleContainers();
+        EnsureRoleBlocks();
 
-        if (inventorySlotsContainer == null || playerSlotsContainer == null)
+        if (inventorySlotsContainer == null)
             return;
 
+        ApplyModeVisibility();
+
         ClearChildren(inventorySlotsContainer);
-        ClearChildren(playerSlotsContainer);
+        if (playerRunnerInventoryContainer != null)
+            ClearChildren(playerRunnerInventoryContainer);
+        if (playerSniperInventoryContainer != null)
+            ClearChildren(playerSniperInventoryContainer);
 
-        for (int i = 0; i < LocalPlayerSettings.EquipmentSlotsCount; i++)
-        {
-            string itemId = LocalPlayerSettings.GetEquipmentSlot(i);
-            ItemDefinition def = ItemCatalog.Get(itemId);
-            CreatePlayerSlot(i, itemId, def);
-        }
+        BuildPlayerSlots(playerRunnerInventoryContainer, LocalPlayerSettings.GetRunnerEquipmentSlot);
+        BuildPlayerSlots(playerSniperInventoryContainer, LocalPlayerSettings.GetSniperEquipmentSlot);
 
-        bool playerFull = IsPlayerFull();
+        bool playerFull = IsActivePlayerFull();
 
         List<string> inventory = LocalPlayerSettings.Inventory;
 
@@ -220,7 +401,66 @@ public class InventoryMenuUI : MonoBehaviour
             if (def == null)
                 continue;
 
+            if (!MatchesMode(def))
+                continue;
+
             CreateInventorySlot(itemId, def, playerFull);
+        }
+    }
+
+    private void ApplyModeVisibility()
+    {
+        if (blockInventory != null)
+            blockInventory.SetActive(mode == InventoryMode.All);
+
+        if (blockRunner != null)
+            blockRunner.SetActive(mode != InventoryMode.Runner);
+
+        if (blockSniper != null)
+            blockSniper.SetActive(mode != InventoryMode.Sniper);
+    }
+
+    private string GetActiveEquipmentSlot(int slotIndex)
+    {
+        switch (mode)
+        {
+            case InventoryMode.Runner:
+                return LocalPlayerSettings.GetRunnerEquipmentSlot(slotIndex);
+            case InventoryMode.Sniper:
+                return LocalPlayerSettings.GetSniperEquipmentSlot(slotIndex);
+            default:
+                return "";
+        }
+    }
+
+    private void SetActiveEquipmentSlot(int slotIndex, string itemId)
+    {
+        switch (mode)
+        {
+            case InventoryMode.Runner:
+                LocalPlayerSettings.SetRunnerEquipmentSlot(slotIndex, itemId);
+                break;
+            case InventoryMode.Sniper:
+                LocalPlayerSettings.SetSniperEquipmentSlot(slotIndex, itemId);
+                break;
+        }
+    }
+
+    private void ClearActiveEquipmentSlot(int slotIndex)
+    {
+        SetActiveEquipmentSlot(slotIndex, "");
+    }
+
+    private bool MatchesMode(ItemDefinition def)
+    {
+        switch (mode)
+        {
+            case InventoryMode.Runner:
+                return def.Class == ItemClass.Universal || def.Class == ItemClass.Runner;
+            case InventoryMode.Sniper:
+                return def.Class == ItemClass.Universal || def.Class == ItemClass.Sniper;
+            default:
+                return true;
         }
     }
 
@@ -236,22 +476,35 @@ public class InventoryMenuUI : MonoBehaviour
         return fallback;
     }
 
-    private bool IsPlayerFull()
+    private void BuildPlayerSlots(RectTransform container, System.Func<int, string> getSlot)
+    {
+        if (container == null)
+            return;
+
+        for (int i = 0; i < LocalPlayerSettings.EquipmentSlotsCount; i++)
+        {
+            string itemId = getSlot(i);
+            ItemDefinition def = ItemCatalog.Get(itemId);
+            CreatePlayerSlot(i, itemId, def, container);
+        }
+    }
+
+    private bool IsActivePlayerFull()
     {
         int filled = 0;
 
         for (int i = 0; i < LocalPlayerSettings.EquipmentSlotsCount; i++)
         {
-            if (!string.IsNullOrEmpty(LocalPlayerSettings.GetEquipmentSlot(i)))
+            if (!string.IsNullOrEmpty(GetActiveEquipmentSlot(i)))
                 filled++;
         }
 
         return filled >= LocalPlayerSettings.EquipmentSlotsCount;
     }
 
-    private void CreatePlayerSlot(int slotIndex, string itemId, ItemDefinition def)
+    private void CreatePlayerSlot(int slotIndex, string itemId, ItemDefinition def, RectTransform container)
     {
-        GameObject go = BuildSlot("PlayerSlot_" + slotIndex, playerSlotsContainer, 140f, 140f);
+        GameObject go = BuildSlot("PlayerSlot_" + slotIndex, container, 140f, 140f);
 
         if (def == null)
         {
@@ -273,15 +526,20 @@ public class InventoryMenuUI : MonoBehaviour
 
         ApplyVisuals(go, def);
 
-        string[] options = { "Inventory", "Player", "Sell" };
-        int value = 1;
+        bool roleSlot = container == playerRunnerInventoryContainer || container == playerSniperInventoryContainer;
+
+        string[] options = roleSlot
+            ? new[] { "", "Take off", "Sell" }
+            : new[] { "", "Inventory", "Sell" };
+
+        int value = 0;
 
         CreateDropdown(go, options, value, option =>
         {
-            if (option == "Inventory")
-                MoveToInventory(itemId);
+            if (option == "Take off" || option == "Inventory")
+                MoveToInventory(itemId, slotIndex);
             else if (option == "Sell")
-                SellItem(itemId, true);
+                SellItem(itemId, slotIndex, true);
         });
     }
 
@@ -290,24 +548,29 @@ public class InventoryMenuUI : MonoBehaviour
         GameObject go = BuildSlot("Slot_" + itemId, inventorySlotsContainer, 140f, 140f);
         ApplyVisuals(go, def);
 
-        string[] options = playerFull
-            ? new[] { "Inventory", "Sell" }
-            : new[] { "Inventory", "Player", "Sell" };
+        bool canTake = mode != InventoryMode.All && !playerFull;
+
+        string[] options = canTake
+            ? new[] { "", "Take", "Sell" }
+            : new[] { "", "Sell" };
 
         int value = 0;
 
         CreateDropdown(go, options, value, option =>
         {
-            if (option == "Player")
-                MoveToPlayer(itemId);
+            if (option == "Take")
+                MoveToActiveEquipment(itemId);
             else if (option == "Sell")
-                SellItem(itemId, false);
+                SellItem(itemId, -1, false);
         });
     }
 
     private GameObject BuildSlot(string name, RectTransform parent, float width, float height)
     {
-        GameObject prefab = parent == playerSlotsContainer && playerSlotPrefab != null ? playerSlotPrefab : slotPrefab;
+        bool isPlayerContainer = parent == playerRunnerInventoryContainer ||
+                                 parent == playerSniperInventoryContainer;
+
+        GameObject prefab = isPlayerContainer && playerSlotPrefab != null ? playerSlotPrefab : slotPrefab;
 
         if (prefab != null)
         {
@@ -454,13 +717,13 @@ public class InventoryMenuUI : MonoBehaviour
         custom.onOptionSelected = onOptionSelected;
     }
 
-    private void MoveToPlayer(string itemId)
+    private void MoveToActiveEquipment(string itemId)
     {
         int slot = -1;
 
         for (int i = 0; i < LocalPlayerSettings.EquipmentSlotsCount; i++)
         {
-            if (string.IsNullOrEmpty(LocalPlayerSettings.GetEquipmentSlot(i)))
+            if (string.IsNullOrEmpty(GetActiveEquipmentSlot(i)))
             {
                 slot = i;
                 break;
@@ -471,31 +734,23 @@ public class InventoryMenuUI : MonoBehaviour
             return;
 
         LocalPlayerSettings.RemoveInventoryItem(itemId);
-        LocalPlayerSettings.SetEquipmentSlot(slot, itemId);
+        SetActiveEquipmentSlot(slot, itemId);
         Refresh();
     }
 
-    private void MoveToInventory(string itemId)
+    private void MoveToInventory(string itemId, int slotIndex)
     {
-        for (int i = 0; i < LocalPlayerSettings.EquipmentSlotsCount; i++)
-        {
-            if (LocalPlayerSettings.GetEquipmentSlot(i) == itemId)
-                LocalPlayerSettings.SetEquipmentSlot(i, "");
-        }
-
+        ClearActiveEquipmentSlot(slotIndex);
         LocalPlayerSettings.AddInventoryItem(itemId);
         Refresh();
     }
 
-    private void SellItem(string itemId, bool fromEquipment)
+    private void SellItem(string itemId, int slotIndex, bool fromEquipment)
     {
         if (fromEquipment)
         {
-            for (int i = 0; i < LocalPlayerSettings.EquipmentSlotsCount; i++)
-            {
-                if (LocalPlayerSettings.GetEquipmentSlot(i) == itemId)
-                    LocalPlayerSettings.SetEquipmentSlot(i, "");
-            }
+            if (slotIndex >= 0)
+                ClearActiveEquipmentSlot(slotIndex);
         }
         else
         {
@@ -506,6 +761,28 @@ public class InventoryMenuUI : MonoBehaviour
         LocalPlayerSettings.AddPoints(def != null ? def.SellPrice : 0);
 
         Refresh();
+    }
+
+    private static Transform FindInChildren(Transform root, string name)
+    {
+        if (root == null)
+            return null;
+
+        for (int i = 0; i < root.childCount; i++)
+        {
+            Transform child = root.GetChild(i);
+            if (child == null)
+                continue;
+
+            if (child.name == name)
+                return child;
+
+            Transform nested = FindInChildren(child, name);
+            if (nested != null)
+                return nested;
+        }
+
+        return null;
     }
 
     private Image FindImage(GameObject root, params string[] names)

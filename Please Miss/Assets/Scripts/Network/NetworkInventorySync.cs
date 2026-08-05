@@ -61,6 +61,12 @@ public class NetworkInventorySync : NetworkBehaviour
 
     private GameObject currentHeldVisual;
 
+    // --- Роль-зависимая стартовая экипировка (владелец) ---
+
+    private PlayerRole seededEquipmentRole = PlayerRole.None;
+    private bool equipmentSeeded;
+    private readonly List<string> seededEquipmentItems = new List<string>();
+
     // --- Выпадение предметов при выходе из игры / смерти (сервер) ---
 
     private class TrackedPlayer
@@ -330,7 +336,13 @@ public class NetworkInventorySync : NetworkBehaviour
         );
 
         if (IsOwner)
+        {
             SeedEquipmentFromLocalSettings();
+
+            var roleState = GetComponent<PlayerRoleState>();
+            if (roleState != null && roleState.NetworkRole != null)
+                roleState.NetworkRole.OnRoleChanged += OnRoleChangedForSeeding;
+        }
 
         if (IsServer)
         {
@@ -359,6 +371,13 @@ public class NetworkInventorySync : NetworkBehaviour
         networkActiveSlot.OnValueChanged -= OnActiveSlotChanged;
         networkActiveItemName.OnValueChanged -= OnActiveItemNameChanged;
         networkActiveHand.OnValueChanged -= OnActiveHandChanged;
+
+        if (IsOwner)
+        {
+            var roleState = GetComponent<PlayerRoleState>();
+            if (roleState != null && roleState.NetworkRole != null)
+                roleState.NetworkRole.OnRoleChanged -= OnRoleChangedForSeeding;
+        }
 
         // Явно убираем визуал из руки — он не должен переживать деспавн игрока
         DestroyCurrentHeldVisual();
@@ -400,19 +419,45 @@ public class NetworkInventorySync : NetworkBehaviour
         UpdateActiveSlotServerRpc(slot, new FixedString64Bytes(itemName ?? ""), handIndex);
     }
 
+    private void OnRoleChangedForSeeding(PlayerRole oldRole, PlayerRole newRole)
+    {
+        if (IsOwner)
+            SeedEquipmentFromLocalSettings();
+    }
+
     private void SeedEquipmentFromLocalSettings()
     {
         if (inventory == null)
             return;
 
-        for (int i = 0; i < LocalPlayerSettings.EquipmentSlotsCount; i++)
+        var roleState = GetComponent<PlayerRoleState>();
+        PlayerRole role = roleState != null ? roleState.CurrentRole : PlayerRole.None;
+
+        if (equipmentSeeded && seededEquipmentRole == role)
+            return;
+
+        // Убираем ранее выданную экипировку, чтобы смена роли заменила её целиком
+        foreach (var itemId in seededEquipmentItems)
         {
-            string itemId = LocalPlayerSettings.GetEquipmentSlot(i);
+            for (int i = 0; i < inventory.MaxSlots; i++)
+            {
+                if (inventory.GetItemAtSlot(i) == itemId)
+                {
+                    inventory.RemoveItem(i);
+                    break;
+                }
+            }
+        }
+
+        seededEquipmentItems.Clear();
+
+        List<string> equipment = GetEquipmentForRole(role);
+
+        for (int i = 0; i < equipment.Count && i < LocalPlayerSettings.EquipmentSlotsCount; i++)
+        {
+            string itemId = equipment[i];
 
             if (string.IsNullOrEmpty(itemId))
-                continue;
-
-            if (inventory.GetItemAtSlot(i) != null)
                 continue;
 
             Sprite icon = null;
@@ -433,7 +478,26 @@ public class NetworkInventorySync : NetworkBehaviour
                 dropPrefab = items[prefabIndex].WorldDropPrefab;
             }
 
-            inventory.AddItem(itemId, icon, heldPrefab, dropPrefab);
+            int slot = inventory.AddItem(itemId, icon, heldPrefab, dropPrefab);
+
+            if (slot >= 0)
+                seededEquipmentItems.Add(itemId);
+        }
+
+        seededEquipmentRole = role;
+        equipmentSeeded = true;
+    }
+
+    private static List<string> GetEquipmentForRole(PlayerRole role)
+    {
+        switch (role)
+        {
+            case PlayerRole.Runner:
+                return LocalPlayerSettings.RunnerEquipment;
+            case PlayerRole.Sniper:
+                return LocalPlayerSettings.SniperEquipment;
+            default:
+                return LocalPlayerSettings.Equipment;
         }
     }
 
@@ -505,6 +569,7 @@ public class NetworkInventorySync : NetworkBehaviour
         }
 
         currentHeldVisual = Instantiate(prefab, pivot);
+        StripNetworkComponents(currentHeldVisual);
         currentHeldVisual.transform.localPosition = Vector3.zero;
         currentHeldVisual.transform.localRotation = Quaternion.identity;
         currentHeldVisual.transform.localScale = Vector3.one * heldItemScale;
@@ -512,14 +577,6 @@ public class NetworkInventorySync : NetworkBehaviour
         var renderers = currentHeldVisual.GetComponentsInChildren<MeshRenderer>();
         foreach (var r in renderers)
             r.enabled = true;
-
-        var rigidbodies = currentHeldVisual.GetComponentsInChildren<Rigidbody>();
-        foreach (var rb in rigidbodies)
-            Destroy(rb);
-
-        var colliders = currentHeldVisual.GetComponentsInChildren<Collider>();
-        foreach (var c in colliders)
-            Destroy(c);
 
         OnHeldVisualChanged?.Invoke(currentHeldVisual);
     }
@@ -781,6 +838,7 @@ public class NetworkInventorySync : NetworkBehaviour
         if (heldVisual != null)
         {
             GameObject vis = Instantiate(heldVisual, obj.transform);
+            StripNetworkComponents(vis);
             vis.transform.localPosition = Vector3.zero;
             vis.transform.localRotation = Quaternion.identity;
             vis.transform.localScale = Vector3.one;
@@ -799,5 +857,39 @@ public class NetworkInventorySync : NetworkBehaviour
         pickable.SetupItem(itemName, null);
 
         return obj;
+    }
+
+    private static void StripNetworkComponents(GameObject visual)
+    {
+        if (visual == null)
+            return;
+
+        var networkObjects = visual.GetComponentsInChildren<NetworkObject>(true);
+        for (int i = networkObjects.Length - 1; i >= 0; i--)
+        {
+            if (networkObjects[i] != null)
+                DestroyImmediate(networkObjects[i]);
+        }
+
+        var rigidbodies = visual.GetComponentsInChildren<Rigidbody>(true);
+        for (int i = rigidbodies.Length - 1; i >= 0; i--)
+        {
+            if (rigidbodies[i] != null)
+                DestroyImmediate(rigidbodies[i]);
+        }
+
+        var colliders = visual.GetComponentsInChildren<Collider>(true);
+        for (int i = colliders.Length - 1; i >= 0; i--)
+        {
+            if (colliders[i] != null)
+                DestroyImmediate(colliders[i]);
+        }
+
+        var behaviours = visual.GetComponentsInChildren<NetworkBehaviour>(true);
+        for (int i = behaviours.Length - 1; i >= 0; i--)
+        {
+            if (behaviours[i] != null)
+                DestroyImmediate(behaviours[i]);
+        }
     }
 }
