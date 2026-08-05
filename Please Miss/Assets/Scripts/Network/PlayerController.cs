@@ -1040,6 +1040,7 @@ public class PlayerController : NetworkBehaviour
         if (inventory == null) return false;
         int slot = inventory.ActiveSlot;
         if (slot < 0) return false;
+        if (!inventory.CanThrowFromSlot(slot)) return false;
         return !string.IsNullOrEmpty(inventory.ActiveItemType);
     }
 

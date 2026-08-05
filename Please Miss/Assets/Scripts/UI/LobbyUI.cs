@@ -61,6 +61,7 @@ public class LobbyUI : MonoBehaviour
             shopButton.onClick.AddListener(OnShopButtonClicked);
 
         EnsureShopCatalogRegistered();
+        InventoryMenuUI.WarmUp(inventoryPanelPrefab);
     }
 
     public void RebuildCards()
@@ -146,13 +147,10 @@ public class LobbyUI : MonoBehaviour
         if (inventoryPanelPrefab == null || inventoryContent == null)
             return;
 
-        if (spawnedInventoryPanel == null)
-            spawnedInventoryPanel = Instantiate(inventoryPanelPrefab, inventoryContent);
-        else
-        {
-            bool show = !spawnedInventoryPanel.activeSelf;
-            spawnedInventoryPanel.SetActive(show);
-        }
+        if (spawnedInventoryPanel != null)
+            Destroy(spawnedInventoryPanel);
+
+        spawnedInventoryPanel = Instantiate(inventoryPanelPrefab, inventoryContent);
     }
 
     private void OnShopButtonClicked()

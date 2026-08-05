@@ -2,6 +2,8 @@ using UnityEngine;
 
 public class Inventory : MonoBehaviour
 {
+    public const int RIFLE_SLOT_INDEX = 0;
+
     [SerializeField] private int maxSlots = 5;
 
     private string[] slots;
@@ -52,6 +54,36 @@ public class Inventory : MonoBehaviour
         }
 
         return -1;
+    }
+
+    public bool IsRifleSlot(int slot) => slot == RIFLE_SLOT_INDEX;
+
+    public int AddItemToSlot(int slot, string itemName, Sprite icon = null, GameObject heldPrefab = null, GameObject dropPrefab = null)
+    {
+        if (string.IsNullOrEmpty(itemName)) return -1;
+        if (slot < 0 || slot >= slots.Length || slots[slot] != null) return -1;
+
+        slots[slot] = itemName;
+        slotIcons[slot] = icon;
+        slotHeldPrefabs[slot] = heldPrefab;
+        slotDropPrefabs[slot] = dropPrefab;
+
+        OnSlotChanged?.Invoke(slot, itemName);
+        OnSlotIconChanged?.Invoke(slot, icon);
+
+        if (activeSlot < 0)
+            SetActiveSlot(slot);
+
+        return slot;
+    }
+
+    public bool CanThrowFromSlot(int slot)
+    {
+        if (slot != RIFLE_SLOT_INDEX)
+            return true;
+
+        string item = GetItemAtSlot(slot);
+        return string.IsNullOrEmpty(item) || item != LocalPlayerSettings.SniperRifle;
     }
 
     public bool RemoveItem(int slot)

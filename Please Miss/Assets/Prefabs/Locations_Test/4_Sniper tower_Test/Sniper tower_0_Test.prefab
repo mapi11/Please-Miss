@@ -458,10 +458,6 @@ MonoBehaviour:
   startPoint: {fileID: 4194105451204306042}
   endPoint: {fileID: 908667209252779486}
   attachments:
-  - slot: {fileID: 7912345678901234222}
-    spawnChance: 100
-    prefabs:
-    - {fileID: 6189976537596541179, guid: 309bd91830b5fda4aa3eccee64e0d9b3, type: 3}
   - slot: {fileID: 7912345678901234444}
     spawnChance: 100
     prefabs:
@@ -2667,7 +2663,7 @@ GameObject:
   m_Icon: {fileID: 5721338939258241955, guid: 0000000000000000d000000000000000, type: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &7912345678901234222
 Transform:
   m_ObjectHideFlags: 0

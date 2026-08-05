@@ -8,6 +8,8 @@ public class InventoryUI : MonoBehaviour
     [SerializeField] private Inventory inventory;
     [SerializeField] private Transform slotsParent;
     [SerializeField] private InventorySlot slotPrefab;
+    [Tooltip("Dedicated prefab for the rifle slot (index 0). If null, slotPrefab is used")]
+    [SerializeField] private InventorySlot rifleSlotPrefab;
     [SerializeField] private GameObject inventoryContent;
 
     [Header("Colors")]
@@ -19,6 +21,8 @@ public class InventoryUI : MonoBehaviour
     private bool hasBound;
     private bool forceHidden;
     private SniperWeaponController sniperWeapon;
+    private PlayerRoleState roleState;
+    private PlayerRole lastKnownRole = PlayerRole.None;
 
     private void Awake()
     {
@@ -42,6 +46,44 @@ public class InventoryUI : MonoBehaviour
 
         if (!hasBound)
             TryBind();
+
+        if (hasBound)
+            SyncSlotStyleWithRole();
+    }
+
+    private PlayerRole ResolveRole()
+    {
+        if (roleState == null)
+            roleState = GetComponentInParent<PlayerRoleState>();
+
+        return roleState != null ? roleState.CurrentRole : PlayerRole.None;
+    }
+
+    private void SyncSlotStyleWithRole()
+    {
+        PlayerRole role = ResolveRole();
+
+        if (role == lastKnownRole)
+            return;
+
+        lastKnownRole = role;
+        RebuildSlots();
+    }
+
+    private void RebuildSlots()
+    {
+        CreateSlots();
+
+        if (inventory == null)
+            return;
+
+        for (int i = 0; i < inventory.MaxSlots; i++)
+        {
+            OnSlotChanged(i, inventory.GetItemAtSlot(i));
+            OnSlotIconChanged(i, inventory.GetSlotIcon(i));
+        }
+
+        OnActiveSlotChanged(inventory.ActiveSlot);
     }
 
     private void FindSniperWeapon()
@@ -150,10 +192,10 @@ public class InventoryUI : MonoBehaviour
         for (int i = 0; i < slots.Length; i++)
         {
             InventorySlot slot;
-            if (slotPrefab != null)
-            {
+            if (i == Inventory.RIFLE_SLOT_INDEX && rifleSlotPrefab != null && ResolveRole() == PlayerRole.Sniper)
+                slot = Instantiate(rifleSlotPrefab, slotsParent);
+            else if (slotPrefab != null)
                 slot = Instantiate(slotPrefab, slotsParent);
-            }
             else
             {
                 var obj = new GameObject($"Slot_{i}", typeof(RectTransform));

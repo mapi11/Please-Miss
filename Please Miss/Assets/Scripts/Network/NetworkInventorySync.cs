@@ -451,6 +451,14 @@ public class NetworkInventorySync : NetworkBehaviour
 
         seededEquipmentItems.Clear();
 
+        // Снайперская винтовка выдаётся в выделенный слот 0 (нельзя выбросить)
+        if (role == PlayerRole.Sniper)
+        {
+            string rifleId = LocalPlayerSettings.SniperRifle;
+            if (!string.IsNullOrEmpty(rifleId))
+                SeedItem(Inventory.RIFLE_SLOT_INDEX, rifleId);
+        }
+
         List<string> equipment = GetEquipmentForRole(role);
 
         for (int i = 0; i < equipment.Count && i < LocalPlayerSettings.EquipmentSlotsCount; i++)
@@ -460,32 +468,39 @@ public class NetworkInventorySync : NetworkBehaviour
             if (string.IsNullOrEmpty(itemId))
                 continue;
 
-            Sprite icon = null;
-            ItemDefinition def = ItemCatalog.Get(itemId);
-
-            if (def != null)
-                icon = def.IconSprite;
-
-            GameObject heldPrefab = null;
-            GameObject dropPrefab = null;
-            int prefabIndex = GetPrefabIndex(itemId);
-
-            if (prefabIndex >= 0 && prefabIndex < items.Length)
-            {
-                heldPrefab = items[prefabIndex].HeldVisualPrefab != null
-                    ? items[prefabIndex].HeldVisualPrefab
-                    : items[prefabIndex].WorldDropPrefab;
-                dropPrefab = items[prefabIndex].WorldDropPrefab;
-            }
-
-            int slot = inventory.AddItem(itemId, icon, heldPrefab, dropPrefab);
-
-            if (slot >= 0)
-                seededEquipmentItems.Add(itemId);
+            SeedItem(-1, itemId);
         }
 
         seededEquipmentRole = role;
         equipmentSeeded = true;
+    }
+
+    private void SeedItem(int slot, string itemId)
+    {
+        Sprite icon = null;
+        ItemDefinition def = ItemCatalog.Get(itemId);
+
+        if (def != null)
+            icon = def.IconSprite;
+
+        GameObject heldPrefab = null;
+        GameObject dropPrefab = null;
+        int prefabIndex = GetPrefabIndex(itemId);
+
+        if (prefabIndex >= 0 && prefabIndex < items.Length)
+        {
+            heldPrefab = items[prefabIndex].HeldVisualPrefab != null
+                ? items[prefabIndex].HeldVisualPrefab
+                : items[prefabIndex].WorldDropPrefab;
+            dropPrefab = items[prefabIndex].WorldDropPrefab;
+        }
+
+        int resultSlot = slot >= 0
+            ? inventory.AddItemToSlot(slot, itemId, icon, heldPrefab, dropPrefab)
+            : inventory.AddItem(itemId, icon, heldPrefab, dropPrefab);
+
+        if (resultSlot >= 0)
+            seededEquipmentItems.Add(itemId);
     }
 
     private static List<string> GetEquipmentForRole(PlayerRole role)
@@ -607,6 +622,9 @@ public class NetworkInventorySync : NetworkBehaviour
         if (string.IsNullOrEmpty(itemName))
             return;
 
+        if (!inventory.CanThrowFromSlot(slot))
+            return;
+
         Vector3 position = GetLaunchPosition();
         if (IsPositionBlocked(position))
             return;
@@ -677,6 +695,9 @@ public class NetworkInventorySync : NetworkBehaviour
         string itemName = inventory.GetItemAtSlot(slot);
 
         if (string.IsNullOrEmpty(itemName))
+            return false;
+
+        if (!inventory.CanThrowFromSlot(slot))
             return false;
 
         return true;

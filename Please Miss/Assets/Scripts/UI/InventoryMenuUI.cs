@@ -7,79 +7,89 @@ using DG.Tweening;
 
 public class InventoryMenuUI : MonoBehaviour
 {
-    private enum InventoryMode
+    [System.Serializable]
+    public sealed class RifleEntry
     {
-        All,
+        [Tooltip("Rifle prefab (PickableItem). Only sniper rifles should be added here")]
+        public PickableItem riflePrefab;
+    }
+
+    private enum Tab
+    {
         Runner,
         Sniper
     }
 
-    [Header("References (assigned on the spawned prefab)")]
-    [SerializeField] private RectTransform inventorySlotsContainer;
-    [SerializeField] private GameObject slotPrefab;
-    [Tooltip("Optional. If set, player slots are built from this prefab instead of slotPrefab")]
-    [SerializeField] private GameObject playerSlotPrefab;
+    [Header("Tabs")]
+    [SerializeField] private Button runnerTabButton;
+    [SerializeField] private Button sniperTabButton;
+    [SerializeField] private GameObject runnerView;
+    [SerializeField] private GameObject sniperView;
 
-    [Header("Role Mode")]
-    [Tooltip("TMP_Dropdown with options All / Runner / Sniper. Assigned in the Inspector")]
-    [SerializeField] private TMP_Dropdown modeDropdown;
-    [Tooltip("Optional. Darkens the player panel while 'All' is selected")]
-    [SerializeField] private GameObject blockInventory;
-    [Tooltip("Optional. Blocks the Runner container when another mode is active")]
-    [SerializeField] private GameObject blockRunner;
-    [Tooltip("Optional. Blocks the Sniper container when another mode is active")]
-    [SerializeField] private GameObject blockSniper;
-    [Tooltip("Optional. If not assigned, created at runtime next to the Runner container")]
-    [SerializeField] private RectTransform playerRunnerInventoryContainer;
-    [Tooltip("Optional. If not assigned, created at runtime next to the Runner container")]
-    [SerializeField] private RectTransform playerSniperInventoryContainer;
+    [Header("Containers")]
+    [Tooltip("Shared inventory grid: shows Universal+Runner on Runner tab, Universal+Sniper on Sniper tab")]
+    [SerializeField] private RectTransform inventoryContainer;
+    [SerializeField] private RectTransform runnerSlotsContainer;
+    [SerializeField] private RectTransform sniperSlotsContainer;
+    [SerializeField] private RectTransform rifleListContainer;
+    [SerializeField] private RectTransform rifleSlotContainer;
+    [Tooltip("Sniper rifle prefabs shown as cards with an Equip dropdown")]
+    [SerializeField] private List<RifleEntry> rifleItems = new List<RifleEntry>();
+    [Tooltip("Panel prefab with icon, name and Equip button. If null, cards are built at runtime with a dropdown")]
+    [SerializeField] private SniperRifleItemPanel rifleItemPanelPrefab;
 
     [Header("Window")]
     [SerializeField] private RectTransform windowRoot;
     [SerializeField] private Button closeButton1;
     [SerializeField] private Button closeButton2;
 
-    [Header("Player")]
-    [SerializeField] private Image colorPreview;
-
     [Header("Points")]
     [SerializeField] private TMP_Text pointsText;
 
-    private Canvas canvas;
-    private RectTransform canvasRect;
-    private Color32 selectedColor;
-    private InventoryMode mode = InventoryMode.Runner;
+    [Header("Slots")]
+    [SerializeField] private GameObject slotPrefab;
 
-    private void Start()
+    private const string LastTabKey = "InventoryLastTab";
+    private const float animInDuration = 0.35f;
+
+    private Canvas canvas;
+    private Tab currentTab;
+
+    /// <summary>
+    /// Registers rifle items in the catalog and ensures a default rifle is set,
+    /// without showing the menu. Must be called once before the game starts.
+    /// </summary>
+    public static void WarmUp(GameObject panelPrefab)
+    {
+        if (panelPrefab == null)
+            return;
+
+        GameObject go = Instantiate(panelPrefab);
+
+        if (!go.activeSelf)
+            go.SetActive(true);
+
+        Destroy(go);
+    }
+
+    private void Awake()
     {
         canvas = GetComponentInParent<Canvas>();
-
-        if (canvas != null)
-            canvasRect = canvas.transform as RectTransform;
-
-        selectedColor = LocalPlayerSettings.PlayerColor;
-        LocalPlayerSettings.ColorChanged += OnColorChanged;
-
-        EnsureContainers();
-        EnsureWindow();
-        EnsureModeDropdown();
-        InitModeDropdown();
-        EnsureBlockInventory();
-        EnsureRoleContainers();
-        EnsureRoleBlocks();
-        EnsureCloseButtons();
-        EnsureColorRefs();
-        Refresh();
-        RefreshColor();
+        RegisterRifleItems();
+        EnsureDefaultRifle();
     }
 
     private void OnEnable()
     {
         LocalPlayerSettings.PointsChanged += OnPointsChanged;
+
         EnsureWindow();
+        EnsureContainers();
+        EnsureTabs();
+        EnsureCloseButtons();
+        ApplyTab(LoadSavedTab());
         AnimateIn();
         RefreshPoints();
-        Refresh();
     }
 
     private void OnDisable()
@@ -87,34 +97,10 @@ public class InventoryMenuUI : MonoBehaviour
         LocalPlayerSettings.PointsChanged -= OnPointsChanged;
     }
 
-    private void OnDestroy()
-    {
-        LocalPlayerSettings.ColorChanged -= OnColorChanged;
-    }
-
-    private void OnPointsChanged(int newPoints)
-    {
-        RefreshPoints();
-    }
-
-    private void RefreshPoints()
-    {
-        if (pointsText != null)
-            pointsText.text = $"Points: {LocalPlayerSettings.PlayerPoints}";
-    }
-
     private void Update()
     {
         if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
             Close();
-    }
-
-    public void Close()
-    {
-        if (windowRoot != null)
-            windowRoot.gameObject.SetActive(false);
-        else
-            gameObject.SetActive(false);
     }
 
     private void AnimateIn()
@@ -143,144 +129,20 @@ public class InventoryMenuUI : MonoBehaviour
         });
     }
 
-    private const float animInDuration = 0.35f;
-
-    private void EnsureContainers()
+    public void Close()
     {
-        if (inventorySlotsContainer == null)
-            inventorySlotsContainer = transform.Find("InventorySlotsContainer") as RectTransform;
+        Destroy(gameObject);
     }
 
-    private void EnsureModeDropdown()
+    private void OnPointsChanged(int newPoints)
     {
-        if (modeDropdown != null)
-            return;
-
-        Transform t = FindInChildren(windowRoot != null ? windowRoot : transform, "ModeDropdown");
-        if (t != null)
-            modeDropdown = t.GetComponent<TMP_Dropdown>();
+        RefreshPoints();
     }
 
-    private void InitModeDropdown()
+    private void RefreshPoints()
     {
-        if (modeDropdown == null)
-            return;
-
-        modeDropdown.ClearOptions();
-        modeDropdown.AddOptions(new List<string> { "All", "Runner", "Sniper" });
-        modeDropdown.SetValueWithoutNotify((int)mode);
-        modeDropdown.onValueChanged.RemoveAllListeners();
-        modeDropdown.onValueChanged.AddListener(OnModeOptionChanged);
-    }
-
-    private void EnsureBlockInventory()
-    {
-        EnsureBlock(ref blockInventory, "BlockInventory", playerRunnerInventoryContainer);
-    }
-
-    private void EnsureRoleBlocks()
-    {
-        EnsureBlock(ref blockRunner, "BlockRunner", playerRunnerInventoryContainer);
-        EnsureBlock(ref blockSniper, "BlockSniper", playerSniperInventoryContainer);
-    }
-
-    private void EnsureBlock(ref GameObject block, string name, RectTransform container)
-    {
-        if (block != null)
-            return;
-
-        Transform parent = container != null ? container.parent : transform;
-
-        Transform t = FindInChildren(parent, name);
-        if (t != null)
-        {
-            block = t.gameObject;
-            return;
-        }
-
-        if (container == null)
-            return;
-
-        GameObject go = new GameObject(name, typeof(RectTransform));
-        go.transform.SetParent(parent, false);
-
-        RectTransform rect = go.GetComponent<RectTransform>();
-        rect.anchorMin = Vector2.zero;
-        rect.anchorMax = Vector2.one;
-        rect.offsetMin = Vector2.zero;
-        rect.offsetMax = Vector2.zero;
-
-        Image img = go.AddComponent<Image>();
-        img.color = new Color(0f, 0f, 0f, 0.6f);
-
-        block = go;
-    }
-
-    private void EnsureRoleContainers()
-    {
-        EnsureRoleContainer(ref playerRunnerInventoryContainer, "PlayerRunnerInventoryContainer", "PlayerRunnerSlots");
-        EnsureRoleContainer(ref playerSniperInventoryContainer, "PlayerSniperInventoryContainer", "PlayerSniperSlots");
-    }
-
-    private void EnsureRoleContainer(ref RectTransform container, string name, string altName)
-    {
-        if (container != null)
-            return;
-
-        RectTransform reference = playerRunnerInventoryContainer != null
-            ? playerRunnerInventoryContainer
-            : playerSniperInventoryContainer;
-
-        Transform parent = reference != null ? reference.parent : transform;
-
-        Transform t = FindInChildren(parent, name);
-        if (t == null && altName != null)
-            t = FindInChildren(parent, altName);
-
-        if (t != null)
-        {
-            container = t as RectTransform;
-            return;
-        }
-
-        if (reference == null)
-            return;
-
-        GameObject go = new GameObject(name, typeof(RectTransform));
-        go.transform.SetParent(parent, false);
-
-        RectTransform rect = go.GetComponent<RectTransform>();
-        rect.anchorMin = reference.anchorMin;
-        rect.anchorMax = reference.anchorMax;
-        rect.pivot = reference.pivot;
-        rect.anchoredPosition = reference.anchoredPosition;
-        rect.sizeDelta = reference.sizeDelta;
-
-        GridLayoutGroup grid = go.AddComponent<GridLayoutGroup>();
-        grid.cellSize = new Vector2(140f, 140f);
-        grid.spacing = new Vector2(10f, 10f);
-        grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-        grid.constraintCount = 2;
-
-        container = rect;
-    }
-
-    private void OnModeOptionChanged(int index)
-    {
-        InventoryMode newMode;
-
-        if (index == 1)
-            newMode = InventoryMode.Runner;
-        else if (index == 2)
-            newMode = InventoryMode.Sniper;
-        else
-            newMode = InventoryMode.All;
-
-        if (newMode == mode)
-            return;
-
-        mode = newMode;
-        Refresh();
+        if (pointsText != null)
+            pointsText.text = $"Points: {LocalPlayerSettings.PlayerPoints}";
     }
 
     private void EnsureWindow()
@@ -289,134 +151,212 @@ public class InventoryMenuUI : MonoBehaviour
             windowRoot = transform as RectTransform;
     }
 
-    private void EnsureCloseButtons()
+    private void EnsureContainers()
     {
-        if (closeButton1 != null && closeButton2 != null)
-        {
-            BindCloseButton(closeButton1);
-            BindCloseButton(closeButton2);
-            return;
-        }
-
         Transform root = windowRoot != null ? windowRoot : transform;
 
-        if (closeButton1 == null)
+        if (runnerView == null)
         {
-            Transform t = root.Find("CloseButton");
+            Transform t = FindInChildren(root, "RunnerView");
             if (t != null)
-                closeButton1 = t.GetComponent<Button>();
+                runnerView = t.gameObject;
         }
 
-        if (closeButton2 == null)
+        if (sniperView == null)
         {
-            Transform t = root.Find("CloseButton2");
+            Transform t = FindInChildren(root, "SniperView");
             if (t != null)
-                closeButton2 = t.GetComponent<Button>();
+                sniperView = t.gameObject;
         }
 
-        if (closeButton1 == null)
-            closeButton1 = CreateCloseButton("CloseButton", new Vector2(1f, 1f), new Vector2(-10f, -10f), "X", 40f, 40f);
+        if (inventoryContainer == null)
+            inventoryContainer = FindInChildren(root, "InventoryContainer") as RectTransform;
 
-        if (closeButton2 == null)
-            closeButton2 = CreateCloseButton("CloseButton2", new Vector2(1f, 0f), new Vector2(-10f, 10f), "Close", 110f, 40f);
+        if (runnerSlotsContainer == null)
+            runnerSlotsContainer = FindInChildren(root, "RunnerSlotsContainer") as RectTransform;
 
-        BindCloseButton(closeButton1);
-        BindCloseButton(closeButton2);
+        if (sniperSlotsContainer == null)
+            sniperSlotsContainer = FindInChildren(root, "SniperSlotsContainer") as RectTransform;
+
+        if (rifleListContainer == null)
+            rifleListContainer = FindInChildren(root, "RifleListContainer") as RectTransform;
+
+        if (rifleSlotContainer == null)
+            rifleSlotContainer = FindInChildren(root, "RifleSlotContainer") as RectTransform;
     }
 
-    private Button CreateCloseButton(string name, Vector2 anchor, Vector2 position, string label, float width, float height)
+    private void EnsureTabs()
     {
-        RectTransform root = windowRoot != null ? windowRoot : transform as RectTransform;
+        if (runnerTabButton != null)
+            BindTab(runnerTabButton, Tab.Runner);
 
-        GameObject go = new GameObject(name, typeof(RectTransform));
-        go.transform.SetParent(root, false);
-
-        RectTransform rect = go.GetComponent<RectTransform>();
-        rect.anchorMin = anchor;
-        rect.anchorMax = anchor;
-        rect.pivot = new Vector2(0.5f, 0.5f);
-        rect.anchoredPosition = position;
-        rect.sizeDelta = new Vector2(width, height);
-
-        Image image = go.AddComponent<Image>();
-        image.color = new Color(0.2f, 0.2f, 0.25f, 1f);
-
-        Button button = go.AddComponent<Button>();
-        button.targetGraphic = image;
-
-        GameObject labelGo = new GameObject("Label", typeof(RectTransform));
-        labelGo.transform.SetParent(go.transform, false);
-
-        RectTransform labelRect = labelGo.GetComponent<RectTransform>();
-        labelRect.anchorMin = Vector2.zero;
-        labelRect.anchorMax = Vector2.one;
-        labelRect.offsetMin = Vector2.zero;
-        labelRect.offsetMax = Vector2.zero;
-
-        TMP_Text text = labelGo.AddComponent<TextMeshProUGUI>();
-        text.text = label;
-        text.alignment = TextAlignmentOptions.Center;
-        text.fontSize = 24f;
-        text.color = Color.white;
-        text.font = FindFont();
-
-        return button;
+        if (sniperTabButton != null)
+            BindTab(sniperTabButton, Tab.Sniper);
     }
 
-    private void BindCloseButton(Button button)
+    private void BindTab(Button button, Tab tab)
     {
-        if (button == null)
+        button.onClick.RemoveAllListeners();
+        button.onClick.AddListener(() => ApplyTab(tab));
+    }
+
+    private void ApplyTab(Tab tab)
+    {
+        currentTab = tab;
+
+        if (runnerView != null)
+            runnerView.SetActive(tab == Tab.Runner);
+
+        if (sniperView != null)
+            sniperView.SetActive(tab == Tab.Sniper);
+
+        if (runnerTabButton != null)
+            runnerTabButton.interactable = tab != Tab.Runner;
+
+        if (sniperTabButton != null)
+            sniperTabButton.interactable = tab != Tab.Sniper;
+
+        PlayerPrefs.SetString(LastTabKey, tab == Tab.Sniper ? "Sniper" : "Runner");
+        PlayerPrefs.Save();
+
+        Refresh();
+    }
+
+    private Tab LoadSavedTab()
+    {
+        return PlayerPrefs.GetString(LastTabKey, "Runner") == "Sniper" ? Tab.Sniper : Tab.Runner;
+    }
+
+    private void RegisterRifleItems()
+    {
+        foreach (RifleEntry entry in rifleItems)
+        {
+            if (entry == null || entry.riflePrefab == null)
+                continue;
+
+            PickableItem rifle = entry.riflePrefab;
+
+            if (string.IsNullOrEmpty(rifle.ItemName) || ItemCatalog.Get(rifle.ItemName) != null)
+                continue;
+
+            ItemDefinition def = new ItemDefinition(
+                rifle.ItemName,
+                rifle.ItemName,
+                rifle.Purpose,
+                new Color(0.7f, 0.8f, 0.4f, 1f))
+            {
+                IconSprite = rifle.InventoryIcon,
+                SellPrice = rifle.SellPrice,
+                Class = rifle.ItemClass
+            };
+
+            ItemCatalog.Register(def);
+        }
+    }
+
+    private void EnsureDefaultRifle()
+    {
+        if (!string.IsNullOrEmpty(LocalPlayerSettings.SniperRifle))
             return;
 
-        button.onClick.RemoveAllListeners();
-        button.onClick.AddListener(Close);
-    }
-
-    private void EnsureColorRefs()
-    {
-        if (colorPreview == null)
+        foreach (RifleEntry entry in rifleItems)
         {
-            Transform t = transform.Find("ColorPreview");
-            if (t != null)
-                colorPreview = t.GetComponent<Image>();
+            if (entry != null && entry.riflePrefab != null && !string.IsNullOrEmpty(entry.riflePrefab.ItemName))
+            {
+                LocalPlayerSettings.SetSniperRifle(entry.riflePrefab.ItemName);
+                return;
+            }
         }
-    }
-
-    private void RefreshColor()
-    {
-        if (colorPreview != null)
-            colorPreview.color = selectedColor;
-    }
-
-    private void OnColorChanged(Color32 newColor)
-    {
-        selectedColor = newColor;
-        RefreshColor();
     }
 
     public void Refresh()
     {
-        EnsureContainers();
-        EnsureModeDropdown();
-        EnsureBlockInventory();
-        EnsureRoleContainers();
-        EnsureRoleBlocks();
+        if (currentTab == Tab.Runner)
+            RefreshRunner();
+        else
+            RefreshSniper();
+    }
 
-        if (inventorySlotsContainer == null)
-            return;
+    private void RefreshRunner()
+    {
+        if (runnerSlotsContainer != null)
+            BuildEquipmentSlots(runnerSlotsContainer, LocalPlayerSettings.GetRunnerEquipmentSlot, LocalPlayerSettings.SetRunnerEquipmentSlot);
 
-        ApplyModeVisibility();
+        if (inventoryContainer != null)
+            BuildInventoryGrid(inventoryContainer, Tab.Runner);
+    }
 
-        ClearChildren(inventorySlotsContainer);
-        if (playerRunnerInventoryContainer != null)
-            ClearChildren(playerRunnerInventoryContainer);
-        if (playerSniperInventoryContainer != null)
-            ClearChildren(playerSniperInventoryContainer);
+    private void RefreshSniper()
+    {
+        if (sniperSlotsContainer != null)
+            BuildEquipmentSlots(sniperSlotsContainer, LocalPlayerSettings.GetSniperEquipmentSlot, LocalPlayerSettings.SetSniperEquipmentSlot);
 
-        BuildPlayerSlots(playerRunnerInventoryContainer, LocalPlayerSettings.GetRunnerEquipmentSlot);
-        BuildPlayerSlots(playerSniperInventoryContainer, LocalPlayerSettings.GetSniperEquipmentSlot);
+        if (inventoryContainer != null)
+            BuildInventoryGrid(inventoryContainer, Tab.Sniper);
 
-        bool playerFull = IsActivePlayerFull();
+        if (rifleSlotContainer != null)
+            BuildRifleSlot(rifleSlotContainer);
+
+        if (rifleListContainer != null)
+            BuildRifleCards(rifleListContainer);
+    }
+
+    private void BuildEquipmentSlots(RectTransform container, System.Func<int, string> getSlot, System.Action<int, string> setSlot)
+    {
+        ClearChildren(container);
+
+        for (int i = 0; i < LocalPlayerSettings.EquipmentSlotsCount; i++)
+        {
+            string itemId = getSlot(i);
+            ItemDefinition def = ItemCatalog.Get(itemId);
+
+            GameObject go = BuildSlot("EquipmentSlot_" + i, container, 140f, 140f);
+
+            if (def == null)
+            {
+                TMP_Text emptyName = FindText(go, "Name", "ItemNameTxt");
+                if (emptyName != null)
+                    emptyName.text = "Empty";
+
+                InventorySlot invSlot = go.GetComponent<InventorySlot>();
+
+                if (invSlot != null && invSlot.LocationDropdown != null)
+                    invSlot.LocationDropdown.gameObject.SetActive(false);
+
+                Transform drop = go.transform.Find("Dropdown");
+                if (drop != null)
+                    drop.gameObject.SetActive(false);
+
+                continue;
+            }
+
+            ApplyVisuals(go, def);
+
+            int slotIndex = i;
+
+            CreateDropdown(go, new[] { "", "Take off", "Sell - " + def.SellPrice }, 0, option =>
+            {
+                if (option == "Take off")
+                {
+                    setSlot(slotIndex, "");
+                    LocalPlayerSettings.AddInventoryItem(itemId);
+                    Refresh();
+                }
+                else if (option.StartsWith("Sell"))
+                {
+                    setSlot(slotIndex, "");
+                    LocalPlayerSettings.AddPoints(def.SellPrice);
+                    Refresh();
+                }
+            });
+        }
+    }
+
+    private void BuildInventoryGrid(RectTransform container, Tab tab)
+    {
+        ClearChildren(container);
+
+        bool playerFull = IsRoleFull(tab);
 
         List<string> inventory = LocalPlayerSettings.Inventory;
 
@@ -432,67 +372,178 @@ public class InventoryMenuUI : MonoBehaviour
             if (def == null)
                 continue;
 
-            if (!MatchesMode(def))
+            if (!MatchesTab(def, tab))
                 continue;
 
-            CreateInventorySlot(itemId, def, playerFull);
+            CreateInventorySlot(itemId, def, container, tab, playerFull);
         }
     }
 
-    private void ApplyModeVisibility()
+    private bool MatchesTab(ItemDefinition def, Tab tab)
     {
-        if (blockInventory != null)
-            blockInventory.SetActive(mode == InventoryMode.All);
+        if (def.Class == ItemClass.Universal)
+            return true;
 
-        if (blockRunner != null)
-            blockRunner.SetActive(mode != InventoryMode.Runner);
-
-        if (blockSniper != null)
-            blockSniper.SetActive(mode != InventoryMode.Sniper);
+        return tab == Tab.Runner ? def.Class == ItemClass.Runner : def.Class == ItemClass.Sniper;
     }
 
-    private string GetActiveEquipmentSlot(int slotIndex)
+    private bool IsRoleFull(Tab tab)
     {
-        switch (mode)
+        int filled = 0;
+
+        for (int i = 0; i < LocalPlayerSettings.EquipmentSlotsCount; i++)
         {
-            case InventoryMode.Runner:
-                return LocalPlayerSettings.GetRunnerEquipmentSlot(slotIndex);
-            case InventoryMode.Sniper:
-                return LocalPlayerSettings.GetSniperEquipmentSlot(slotIndex);
-            default:
-                return "";
+            string itemId = tab == Tab.Runner
+                ? LocalPlayerSettings.GetRunnerEquipmentSlot(i)
+                : LocalPlayerSettings.GetSniperEquipmentSlot(i);
+
+            if (!string.IsNullOrEmpty(itemId))
+                filled++;
         }
+
+        return filled >= LocalPlayerSettings.EquipmentSlotsCount;
     }
 
-    private void SetActiveEquipmentSlot(int slotIndex, string itemId)
+    private void CreateInventorySlot(string itemId, ItemDefinition def, RectTransform container, Tab tab, bool playerFull)
     {
-        switch (mode)
+        GameObject go = BuildSlot("Slot_" + itemId, container, 140f, 140f);
+        ApplyVisuals(go, def);
+
+        string[] options = playerFull
+            ? new[] { "", "Sell - " + def.SellPrice }
+            : new[] { "", "Take", "Sell - " + def.SellPrice };
+
+        CreateDropdown(go, options, 0, option =>
         {
-            case InventoryMode.Runner:
-                LocalPlayerSettings.SetRunnerEquipmentSlot(slotIndex, itemId);
-                break;
-            case InventoryMode.Sniper:
-                LocalPlayerSettings.SetSniperEquipmentSlot(slotIndex, itemId);
-                break;
-        }
+            if (option == "Take")
+                MoveToActiveEquipment(itemId, tab);
+            else if (option.StartsWith("Sell"))
+                SellItem(itemId, def);
+        });
     }
 
-    private void ClearActiveEquipmentSlot(int slotIndex)
+    private void MoveToActiveEquipment(string itemId, Tab tab)
     {
-        SetActiveEquipmentSlot(slotIndex, "");
-    }
-
-    private bool MatchesMode(ItemDefinition def)
-    {
-        switch (mode)
+        for (int i = 0; i < LocalPlayerSettings.EquipmentSlotsCount; i++)
         {
-            case InventoryMode.Runner:
-                return def.Class == ItemClass.Universal || def.Class == ItemClass.Runner;
-            case InventoryMode.Sniper:
-                return def.Class == ItemClass.Universal || def.Class == ItemClass.Sniper;
-            default:
-                return true;
+            string current = tab == Tab.Runner
+                ? LocalPlayerSettings.GetRunnerEquipmentSlot(i)
+                : LocalPlayerSettings.GetSniperEquipmentSlot(i);
+
+            if (!string.IsNullOrEmpty(current))
+                continue;
+
+            if (tab == Tab.Runner)
+                LocalPlayerSettings.SetRunnerEquipmentSlot(i, itemId);
+            else
+                LocalPlayerSettings.SetSniperEquipmentSlot(i, itemId);
+
+            LocalPlayerSettings.RemoveInventoryItem(itemId);
+            Refresh();
+            return;
         }
+    }
+
+    private void SellItem(string itemId, ItemDefinition def)
+    {
+        LocalPlayerSettings.RemoveInventoryItem(itemId);
+        LocalPlayerSettings.AddPoints(def != null ? def.SellPrice : 0);
+        Refresh();
+    }
+
+    private void BuildRifleSlot(RectTransform container)
+    {
+        ClearChildren(container);
+
+        string rifleId = LocalPlayerSettings.SniperRifle;
+        ItemDefinition def = ItemCatalog.Get(rifleId);
+        PickableItem rifle = FindRiflePrefab(rifleId);
+
+        if (rifleItemPanelPrefab != null && (rifle != null || def == null))
+        {
+            SniperRifleItemPanel panel = Instantiate(rifleItemPanelPrefab, container);
+            panel.Setup(rifle, false, "Equip", null);
+            return;
+        }
+
+        GameObject go = BuildSlot("RifleSlot", container, 140f, 140f);
+
+        if (def == null)
+        {
+            TMP_Text emptyName = FindText(go, "Name", "ItemNameTxt");
+            if (emptyName != null)
+                emptyName.text = "Empty";
+
+            return;
+        }
+
+        ApplyVisuals(go, def);
+    }
+
+    private void BuildRifleCards(RectTransform container)
+    {
+        ClearChildren(container);
+
+        foreach (RifleEntry entry in rifleItems)
+        {
+            if (entry == null || entry.riflePrefab == null)
+                continue;
+
+            PickableItem rifle = entry.riflePrefab;
+            string rifleId = rifle.ItemName;
+
+            ItemDefinition def = ItemCatalog.Get(rifleId);
+
+            if (def == null)
+                continue;
+
+            bool equipped = LocalPlayerSettings.SniperRifle == rifleId;
+
+            if (rifleItemPanelPrefab != null)
+            {
+                SniperRifleItemPanel panel = Instantiate(rifleItemPanelPrefab, container);
+                panel.Setup(rifle, !equipped, "Equip", () =>
+                {
+                    LocalPlayerSettings.SetSniperRifle(rifleId);
+                    Refresh();
+                });
+                continue;
+            }
+
+            GameObject go = BuildSlot("RifleCard_" + rifleId, container, 140f, 140f);
+            ApplyVisuals(go, def);
+
+            if (equipped)
+            {
+                InventorySlot invSlot = go.GetComponent<InventorySlot>();
+
+                if (invSlot != null && invSlot.LocationDropdown != null)
+                    invSlot.LocationDropdown.gameObject.SetActive(false);
+
+                Transform drop = go.transform.Find("Dropdown");
+                if (drop != null)
+                    drop.gameObject.SetActive(false);
+
+                continue;
+            }
+
+            CreateDropdown(go, new[] { "", "Equip" }, 0, option =>
+            {
+                LocalPlayerSettings.SetSniperRifle(rifleId);
+                Refresh();
+            });
+        }
+    }
+
+    private PickableItem FindRiflePrefab(string rifleId)
+    {
+        foreach (RifleEntry entry in rifleItems)
+        {
+            if (entry != null && entry.riflePrefab != null && entry.riflePrefab.ItemName == rifleId)
+                return entry.riflePrefab;
+        }
+
+        return null;
     }
 
     private ItemDefinition ResolveDef(string itemId)
@@ -507,105 +558,11 @@ public class InventoryMenuUI : MonoBehaviour
         return fallback;
     }
 
-    private void BuildPlayerSlots(RectTransform container, System.Func<int, string> getSlot)
-    {
-        if (container == null)
-            return;
-
-        for (int i = 0; i < LocalPlayerSettings.EquipmentSlotsCount; i++)
-        {
-            string itemId = getSlot(i);
-            ItemDefinition def = ItemCatalog.Get(itemId);
-            CreatePlayerSlot(i, itemId, def, container);
-        }
-    }
-
-    private bool IsActivePlayerFull()
-    {
-        int filled = 0;
-
-        for (int i = 0; i < LocalPlayerSettings.EquipmentSlotsCount; i++)
-        {
-            if (!string.IsNullOrEmpty(GetActiveEquipmentSlot(i)))
-                filled++;
-        }
-
-        return filled >= LocalPlayerSettings.EquipmentSlotsCount;
-    }
-
-    private void CreatePlayerSlot(int slotIndex, string itemId, ItemDefinition def, RectTransform container)
-    {
-        GameObject go = BuildSlot("PlayerSlot_" + slotIndex, container, 140f, 140f);
-
-        if (def == null)
-        {
-            TMP_Text emptyName = FindText(go, "Name", "ItemNameTxt");
-            if (emptyName != null)
-                emptyName.text = "Empty";
-
-            InventorySlot invSlot = go.GetComponent<InventorySlot>();
-
-            if (invSlot != null && invSlot.LocationDropdown != null)
-                invSlot.LocationDropdown.gameObject.SetActive(false);
-
-            Transform drop = go.transform.Find("Dropdown");
-            if (drop != null)
-                drop.gameObject.SetActive(false);
-
-            return;
-        }
-
-        ApplyVisuals(go, def);
-
-        bool roleSlot = container == playerRunnerInventoryContainer || container == playerSniperInventoryContainer;
-
-        string[] options = roleSlot
-            ? new[] { "", "Take off", "Sell" }
-            : new[] { "", "Inventory", "Sell" };
-
-        int value = 0;
-
-        CreateDropdown(go, options, value, option =>
-        {
-            if (option == "Take off" || option == "Inventory")
-                MoveToInventory(itemId, slotIndex);
-            else if (option == "Sell")
-                SellItem(itemId, slotIndex, true);
-        });
-    }
-
-    private void CreateInventorySlot(string itemId, ItemDefinition def, bool playerFull)
-    {
-        GameObject go = BuildSlot("Slot_" + itemId, inventorySlotsContainer, 140f, 140f);
-        ApplyVisuals(go, def);
-
-        bool canTake = mode != InventoryMode.All && !playerFull;
-
-        string[] options = canTake
-            ? new[] { "", "Take", "Sell" }
-            : new[] { "", "Sell" };
-
-        int value = 0;
-
-        CreateDropdown(go, options, value, option =>
-        {
-            if (option == "Take")
-                MoveToActiveEquipment(itemId);
-            else if (option == "Sell")
-                SellItem(itemId, -1, false);
-        });
-    }
-
     private GameObject BuildSlot(string name, RectTransform parent, float width, float height)
     {
-        bool isPlayerContainer = parent == playerRunnerInventoryContainer ||
-                                 parent == playerSniperInventoryContainer;
-
-        GameObject prefab = isPlayerContainer && playerSlotPrefab != null ? playerSlotPrefab : slotPrefab;
-
-        if (prefab != null)
+        if (slotPrefab != null)
         {
-            GameObject go = Instantiate(prefab);
+            GameObject go = Instantiate(slotPrefab);
             go.name = name;
             go.transform.SetParent(parent, false);
             return go;
@@ -748,50 +705,87 @@ public class InventoryMenuUI : MonoBehaviour
         custom.onOptionSelected = onOptionSelected;
     }
 
-    private void MoveToActiveEquipment(string itemId)
+    private void EnsureCloseButtons()
     {
-        int slot = -1;
-
-        for (int i = 0; i < LocalPlayerSettings.EquipmentSlotsCount; i++)
+        if (closeButton1 != null && closeButton2 != null)
         {
-            if (string.IsNullOrEmpty(GetActiveEquipmentSlot(i)))
-            {
-                slot = i;
-                break;
-            }
+            BindCloseButton(closeButton1);
+            BindCloseButton(closeButton2);
+            return;
         }
 
-        if (slot < 0)
+        Transform root = windowRoot != null ? windowRoot : transform;
+
+        if (closeButton1 == null)
+        {
+            Transform t = root.Find("CloseButton");
+            if (t != null)
+                closeButton1 = t.GetComponent<Button>();
+        }
+
+        if (closeButton2 == null)
+        {
+            Transform t = root.Find("CloseButton2");
+            if (t != null)
+                closeButton2 = t.GetComponent<Button>();
+        }
+
+        if (closeButton1 == null)
+            closeButton1 = CreateCloseButton("CloseButton", new Vector2(1f, 1f), new Vector2(-10f, -10f), "X", 40f, 40f);
+
+        if (closeButton2 == null)
+            closeButton2 = CreateCloseButton("CloseButton2", new Vector2(1f, 0f), new Vector2(-10f, 10f), "Close", 110f, 40f);
+
+        BindCloseButton(closeButton1);
+        BindCloseButton(closeButton2);
+    }
+
+    private Button CreateCloseButton(string name, Vector2 anchor, Vector2 position, string label, float width, float height)
+    {
+        RectTransform root = windowRoot != null ? windowRoot : transform as RectTransform;
+
+        GameObject go = new GameObject(name, typeof(RectTransform));
+        go.transform.SetParent(root, false);
+
+        RectTransform rect = go.GetComponent<RectTransform>();
+        rect.anchorMin = anchor;
+        rect.anchorMax = anchor;
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = position;
+        rect.sizeDelta = new Vector2(width, height);
+
+        Image image = go.AddComponent<Image>();
+        image.color = new Color(0.2f, 0.2f, 0.25f, 1f);
+
+        Button button = go.AddComponent<Button>();
+        button.targetGraphic = image;
+
+        GameObject labelGo = new GameObject("Label", typeof(RectTransform));
+        labelGo.transform.SetParent(go.transform, false);
+
+        RectTransform labelRect = labelGo.GetComponent<RectTransform>();
+        labelRect.anchorMin = Vector2.zero;
+        labelRect.anchorMax = Vector2.one;
+        labelRect.offsetMin = Vector2.zero;
+        labelRect.offsetMax = Vector2.zero;
+
+        TMP_Text text = labelGo.AddComponent<TextMeshProUGUI>();
+        text.text = label;
+        text.alignment = TextAlignmentOptions.Center;
+        text.fontSize = 24f;
+        text.color = Color.white;
+        text.font = FindFont();
+
+        return button;
+    }
+
+    private void BindCloseButton(Button button)
+    {
+        if (button == null)
             return;
 
-        LocalPlayerSettings.RemoveInventoryItem(itemId);
-        SetActiveEquipmentSlot(slot, itemId);
-        Refresh();
-    }
-
-    private void MoveToInventory(string itemId, int slotIndex)
-    {
-        ClearActiveEquipmentSlot(slotIndex);
-        LocalPlayerSettings.AddInventoryItem(itemId);
-        Refresh();
-    }
-
-    private void SellItem(string itemId, int slotIndex, bool fromEquipment)
-    {
-        if (fromEquipment)
-        {
-            if (slotIndex >= 0)
-                ClearActiveEquipmentSlot(slotIndex);
-        }
-        else
-        {
-            LocalPlayerSettings.RemoveInventoryItem(itemId);
-        }
-
-        ItemDefinition def = ItemCatalog.Get(itemId);
-        LocalPlayerSettings.AddPoints(def != null ? def.SellPrice : 0);
-
-        Refresh();
+        button.onClick.RemoveAllListeners();
+        button.onClick.AddListener(Close);
     }
 
     private static Transform FindInChildren(Transform root, string name)

@@ -30,6 +30,7 @@ public static class LocalPlayerSettings
     private const string EquipmentItemsPrefix = "EquipmentItems";
     private const string EquipmentRunnerItemsPrefix = "EquipmentRunnerItems";
     private const string EquipmentSniperItemsPrefix = "EquipmentSniperItems";
+    private const string SniperRiflePrefix = "SniperRifleItems";
 
     private static string storageSuffix = "";
 
@@ -94,6 +95,7 @@ public static class LocalPlayerSettings
         CopySessionToProfile(EquipmentItemsPrefix, false);
         CopySessionToProfile(EquipmentRunnerItemsPrefix, false);
         CopySessionToProfile(EquipmentSniperItemsPrefix, false);
+        CopySessionToProfile(SniperRiflePrefix, false);
     }
 
     private static void SeedFromProfile()
@@ -105,6 +107,7 @@ public static class LocalPlayerSettings
         CopyProfileToSession(EquipmentItemsPrefix, false);
         CopyProfileToSession(EquipmentRunnerItemsPrefix, false);
         CopyProfileToSession(EquipmentSniperItemsPrefix, false);
+        CopyProfileToSession(SniperRiflePrefix, false);
     }
 
     private static void CopyProfileToSession(string prefix, bool isInt)
@@ -373,6 +376,16 @@ public static class LocalPlayerSettings
             return "";
 
         return items[slotIndex];
+    }
+
+    private static string SniperRifleKey => MakeKey(SniperRiflePrefix);
+
+    public static string SniperRifle => PlayerPrefs.GetString(SniperRifleKey, "");
+
+    public static void SetSniperRifle(string itemId)
+    {
+        PlayerPrefs.SetString(SniperRifleKey, itemId ?? "");
+        PlayerPrefs.Save();
     }
 
     private static List<string> GetStringList(string key)

@@ -1956,9 +1956,10 @@ MonoBehaviour:
   inventory: {fileID: 2571829687392854606}
   slotsParent: {fileID: 6103528355119033430}
   slotPrefab: {fileID: 6724756703270889554, guid: 83be591289d39e84e9b0e4184bbee242, type: 3}
+  rifleSlotPrefab: {fileID: 6724756703270889554, guid: 93f41aade6154f0e93dce6a070a834d8, type: 3}
   inventoryContent: {fileID: 7391984328134665578}
   activeSlotColor: {r: 1, g: 1, b: 1, a: 1}
-  inactiveSlotColor: {r: 0.3, g: 0.3, b: 0.3, a: 0.8}
+  inactiveSlotColor: {r: 0.5, g: 0.5, b: 0.5, a: 0.8}
   emptySlotColor: {r: 0.15, g: 0.15, b: 0.15, a: 0.5}
 --- !u!1 &3322079352937051056
 GameObject:
@@ -3422,7 +3423,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &6103528355119033430
 RectTransform:
   m_ObjectHideFlags: 0
@@ -3460,8 +3461,8 @@ MonoBehaviour:
     m_Top: 0
     m_Bottom: 0
   m_ChildAlignment: 4
-  m_Spacing: 0
-  m_ChildForceExpandWidth: 1
+  m_Spacing: 20
+  m_ChildForceExpandWidth: 0
   m_ChildForceExpandHeight: 1
   m_ChildControlWidth: 0
   m_ChildControlHeight: 0
@@ -3672,13 +3673,13 @@ MonoBehaviour:
   sniperElements:
   - {fileID: 1791738333781288381}
   runnerElements:
-  - {fileID: 3031294992037351145}
   - {fileID: 9146988073033541282}
   - {fileID: 6773934745301745552}
   commonElements:
   - {fileID: 2338472475098032452}
   - {fileID: 9201828631824376735}
   - {fileID: 1451024436036735188}
+  - {fileID: 3031294992037351145}
   hideOnDeathElements: []
   spectatorElements: []
 --- !u!1 &7602605808175928514
