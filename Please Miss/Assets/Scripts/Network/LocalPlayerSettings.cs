@@ -31,6 +31,7 @@ public static class LocalPlayerSettings
     private const string EquipmentRunnerItemsPrefix = "EquipmentRunnerItems";
     private const string EquipmentSniperItemsPrefix = "EquipmentSniperItems";
     private const string SniperRiflePrefix = "SniperRifleItems";
+    private const string OwnedSniperRiflesPrefix = "OwnedSniperRifleItems";
 
     private static string storageSuffix = "";
 
@@ -96,6 +97,7 @@ public static class LocalPlayerSettings
         CopySessionToProfile(EquipmentRunnerItemsPrefix, false);
         CopySessionToProfile(EquipmentSniperItemsPrefix, false);
         CopySessionToProfile(SniperRiflePrefix, false);
+        CopySessionToProfile(OwnedSniperRiflesPrefix, false);
     }
 
     private static void SeedFromProfile()
@@ -108,6 +110,7 @@ public static class LocalPlayerSettings
         CopyProfileToSession(EquipmentRunnerItemsPrefix, false);
         CopyProfileToSession(EquipmentSniperItemsPrefix, false);
         CopyProfileToSession(SniperRiflePrefix, false);
+        CopyProfileToSession(OwnedSniperRiflesPrefix, false);
     }
 
     private static void CopyProfileToSession(string prefix, bool isInt)
@@ -386,6 +389,32 @@ public static class LocalPlayerSettings
     {
         PlayerPrefs.SetString(SniperRifleKey, itemId ?? "");
         PlayerPrefs.Save();
+    }
+
+    private static string OwnedSniperRiflesKey => MakeKey(OwnedSniperRiflesPrefix);
+
+    public static List<string> OwnedSniperRifles => GetStringList(OwnedSniperRiflesKey);
+
+    public static bool IsSniperRifleOwned(string rifleId)
+    {
+        if (string.IsNullOrEmpty(rifleId))
+            return false;
+
+        return OwnedSniperRifles.Contains(rifleId);
+    }
+
+    public static void AddOwnedSniperRifle(string rifleId)
+    {
+        if (string.IsNullOrEmpty(rifleId))
+            return;
+
+        var owned = GetStringList(OwnedSniperRiflesKey);
+
+        if (owned.Contains(rifleId))
+            return;
+
+        owned.Add(rifleId);
+        SaveStringList(OwnedSniperRiflesKey, owned);
     }
 
     private static List<string> GetStringList(string key)

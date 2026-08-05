@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 125f643140c473f43b6aff0be652d2e6, type: 3}
   m_Name: Rifle_Standart
   m_EditorClassIdentifier: 
-  rifleId: Rifle_Standart
+  rifleId: Rifle Standart
   displayName: Sniper Rifle Standart
   magazineSize: 4
   defaultBullet: {fileID: 11400000, guid: faa2f9a122382764aaa5934c795b59fb, type: 2}

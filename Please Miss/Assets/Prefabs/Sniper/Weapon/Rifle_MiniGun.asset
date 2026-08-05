@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 125f643140c473f43b6aff0be652d2e6, type: 3}
   m_Name: Rifle_MiniGun
   m_EditorClassIdentifier: 
-  rifleId: Rifle_MiniGun
+  rifleId: Rifle MiniGun
   displayName: Sniper Rifle MiniGun
   magazineSize: 100
   defaultBullet: {fileID: 11400000, guid: bb30920cedf2c9a4495c108942a9a55e, type: 2}

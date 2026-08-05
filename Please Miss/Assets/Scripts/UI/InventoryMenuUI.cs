@@ -252,18 +252,41 @@ public class InventoryMenuUI : MonoBehaviour
 
             ItemCatalog.Register(def);
         }
+
+        foreach (RifleCatalog.RifleInfo info in RifleCatalog.All)
+        {
+            if (string.IsNullOrEmpty(info.RifleId) || ItemCatalog.Get(info.RifleId) != null)
+                continue;
+
+            ItemDefinition def = new ItemDefinition(
+                info.RifleId,
+                info.DisplayName,
+                ItemPurpose.Boost,
+                new Color(0.7f, 0.8f, 0.4f, 1f))
+            {
+                IconSprite = info.Icon,
+                SellPrice = 0,
+                Class = ItemClass.Sniper
+            };
+
+            ItemCatalog.Register(def);
+        }
     }
 
     private void EnsureDefaultRifle()
     {
         if (!string.IsNullOrEmpty(LocalPlayerSettings.SniperRifle))
+        {
+            LocalPlayerSettings.AddOwnedSniperRifle(LocalPlayerSettings.SniperRifle);
             return;
+        }
 
         foreach (RifleEntry entry in rifleItems)
         {
             if (entry != null && entry.riflePrefab != null && !string.IsNullOrEmpty(entry.riflePrefab.ItemName))
             {
                 LocalPlayerSettings.SetSniperRifle(entry.riflePrefab.ItemName);
+                LocalPlayerSettings.AddOwnedSniperRifle(entry.riflePrefab.ItemName);
                 return;
             }
         }
@@ -458,17 +481,18 @@ public class InventoryMenuUI : MonoBehaviour
         string rifleId = LocalPlayerSettings.SniperRifle;
         ItemDefinition def = ItemCatalog.Get(rifleId);
         PickableItem rifle = FindRiflePrefab(rifleId);
+        RifleCatalog.RifleInfo info = RifleCatalog.Get(rifleId);
 
-        if (rifleItemPanelPrefab != null && (rifle != null || def == null))
+        if (rifleItemPanelPrefab != null && (rifle != null || info != null || def == null))
         {
             SniperRifleItemPanel panel = Instantiate(rifleItemPanelPrefab, container);
-            panel.Setup(rifle, false, "Equip", null);
+            panel.Setup(GetRifleName(rifle, info), GetRifleIcon(rifle, info), false, "Equip", null, info != null ? info.Definition : null);
             return;
         }
 
         GameObject go = BuildSlot("RifleSlot", container, 140f, 140f);
 
-        if (def == null)
+        if (def == null && info == null && rifle == null)
         {
             TMP_Text emptyName = FindText(go, "Name", "ItemNameTxt");
             if (emptyName != null)
@@ -477,6 +501,9 @@ public class InventoryMenuUI : MonoBehaviour
             return;
         }
 
+        if (def == null)
+            def = CreateFallbackDef(rifle, info);
+
         ApplyVisuals(go, def);
     }
 
@@ -484,31 +511,53 @@ public class InventoryMenuUI : MonoBehaviour
     {
         ClearChildren(container);
 
-        foreach (RifleEntry entry in rifleItems)
+        List<RifleCatalog.RifleInfo> entries = new List<RifleCatalog.RifleInfo>();
+
+        if (RifleCatalog.All.Count > 0)
         {
-            if (entry == null || entry.riflePrefab == null)
+            entries.AddRange(RifleCatalog.All);
+        }
+        else
+        {
+            foreach (RifleEntry entry in rifleItems)
+            {
+                if (entry == null || entry.riflePrefab == null)
+                    continue;
+
+                entries.Add(new RifleCatalog.RifleInfo
+                {
+                    RifleId = entry.riflePrefab.ItemName,
+                    DisplayName = entry.riflePrefab.ItemName,
+                    Icon = entry.riflePrefab.InventoryIcon
+                });
+            }
+        }
+
+        foreach (RifleCatalog.RifleInfo info in entries)
+        {
+            if (info == null || string.IsNullOrEmpty(info.RifleId))
                 continue;
 
-            PickableItem rifle = entry.riflePrefab;
-            string rifleId = rifle.ItemName;
+            string rifleId = info.RifleId;
 
-            ItemDefinition def = ItemCatalog.Get(rifleId);
-
-            if (def == null)
+            if (!LocalPlayerSettings.IsSniperRifleOwned(rifleId))
                 continue;
 
+            PickableItem rifle = FindRiflePrefab(rifleId);
             bool equipped = LocalPlayerSettings.SniperRifle == rifleId;
 
             if (rifleItemPanelPrefab != null)
             {
                 SniperRifleItemPanel panel = Instantiate(rifleItemPanelPrefab, container);
-                panel.Setup(rifle, !equipped, "Equip", () =>
+                panel.Setup(GetRifleName(rifle, info), GetRifleIcon(rifle, info), !equipped, "Equip", () =>
                 {
                     LocalPlayerSettings.SetSniperRifle(rifleId);
                     Refresh();
-                });
+                }, info != null ? info.Definition : null);
                 continue;
             }
+
+            ItemDefinition def = ItemCatalog.Get(rifleId) ?? CreateFallbackDef(rifle, info);
 
             GameObject go = BuildSlot("RifleCard_" + rifleId, container, 140f, 140f);
             ApplyVisuals(go, def);
@@ -544,6 +593,41 @@ public class InventoryMenuUI : MonoBehaviour
         }
 
         return null;
+    }
+
+    private static string GetRifleName(PickableItem rifle, RifleCatalog.RifleInfo info)
+    {
+        if (info != null && !string.IsNullOrEmpty(info.DisplayName))
+            return info.DisplayName;
+
+        return rifle != null ? rifle.ItemName : "Empty";
+    }
+
+    private static Sprite GetRifleIcon(PickableItem rifle, RifleCatalog.RifleInfo info)
+    {
+        if (info != null && info.Icon != null)
+            return info.Icon;
+
+        return rifle != null ? rifle.InventoryIcon : null;
+    }
+
+    private ItemDefinition CreateFallbackDef(PickableItem rifle, RifleCatalog.RifleInfo info)
+    {
+        string id = GetRifleName(rifle, info);
+
+        ItemDefinition def = new ItemDefinition(
+            id,
+            GetRifleName(rifle, info),
+            ItemPurpose.Boost,
+            new Color(0.7f, 0.8f, 0.4f, 1f))
+        {
+            IconSprite = GetRifleIcon(rifle, info),
+            SellPrice = 0,
+            Class = ItemClass.Sniper
+        };
+
+        ItemCatalog.Register(def);
+        return def;
     }
 
     private ItemDefinition ResolveDef(string itemId)

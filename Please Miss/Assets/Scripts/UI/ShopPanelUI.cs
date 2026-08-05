@@ -14,10 +14,28 @@ public class ShopPanelUI : MonoBehaviour
         [Range(0f, 100f)] public int discountPercent;
     }
 
+    [System.Serializable]
+    public sealed class GunEntry
+    {
+        public SniperRifleHeldVisual heldPrefab;
+        [Tooltip("Иконка для карточки в магазине")]
+        public Sprite icon;
+        [Min(0)] public int buyPrice;
+    }
+
     [Header("Content")]
     [SerializeField] private RectTransform shopItemsContainer;
     [SerializeField] private BuyItemSlot buyItemSlotPrefab;
     [SerializeField] private List<ShopItemEntry> shopItems = new List<ShopItemEntry>();
+
+    [Header("Guns Tab")]
+    [SerializeField] private Button itemsTabButton;
+    [SerializeField] private Button gunsTabButton;
+    [SerializeField] private RectTransform itemsRoot;
+    [SerializeField] private RectTransform gunsRoot;
+    [SerializeField] private RectTransform gunsContainer;
+    [SerializeField] private GunShopCard gunCardPrefab;
+    [SerializeField] private List<GunEntry> gunItems = new List<GunEntry>();
 
     [Header("Window")]
     [SerializeField] private RectTransform windowRoot;
@@ -25,9 +43,23 @@ public class ShopPanelUI : MonoBehaviour
     [SerializeField] private Button closeButton2;
     [SerializeField] private TMP_Text pointsText;
 
+    private bool gunsTabOpen;
+
     private void Awake()
     {
         RegisterCatalogItems();
+        RegisterRifleCatalog();
+    }
+
+    private void RegisterRifleCatalog()
+    {
+        foreach (GunEntry entry in gunItems)
+        {
+            if (entry == null || entry.heldPrefab == null)
+                continue;
+
+            RifleCatalog.Register(entry.heldPrefab, entry.icon);
+        }
     }
 
     private void RegisterCatalogItems()
@@ -62,9 +94,12 @@ public class ShopPanelUI : MonoBehaviour
         EnsureWindow();
         AnimateIn();
         EnsureCloseButtons();
+        BindTabs();
+        ShowGunsTab(false);
         LocalPlayerSettings.PointsChanged += OnPointsChanged;
         RefreshPoints();
         Refresh();
+        RebuildGunCards();
     }
 
     private void OnDisable()
@@ -76,6 +111,106 @@ public class ShopPanelUI : MonoBehaviour
     {
         RefreshPoints();
         RefreshSlotsInteractable();
+        RefreshGunCards();
+    }
+
+    private void BindTabs()
+    {
+        if (itemsTabButton == null)
+        {
+            Transform t = transform.Find("ItemsButton");
+            if (t != null)
+                itemsTabButton = t.GetComponent<Button>();
+        }
+
+        if (gunsTabButton == null)
+        {
+            Transform t = transform.Find("GunsButton");
+            if (t != null)
+                gunsTabButton = t.GetComponent<Button>();
+        }
+
+        if (itemsTabButton != null)
+        {
+            itemsTabButton.onClick.RemoveAllListeners();
+            itemsTabButton.onClick.AddListener(() => ShowGunsTab(false));
+        }
+
+        if (gunsTabButton != null)
+        {
+            gunsTabButton.onClick.RemoveAllListeners();
+            gunsTabButton.onClick.AddListener(() => ShowGunsTab(true));
+        }
+    }
+
+    private void ShowGunsTab(bool open)
+    {
+        gunsTabOpen = open;
+
+        if (itemsRoot != null)
+            itemsRoot.gameObject.SetActive(!open);
+
+        if (gunsRoot != null)
+            gunsRoot.gameObject.SetActive(open);
+
+        if (itemsTabButton != null)
+            itemsTabButton.interactable = open;
+
+        if (gunsTabButton != null)
+            gunsTabButton.interactable = !open;
+    }
+
+    private void RebuildGunCards()
+    {
+        if (gunsContainer == null || gunCardPrefab == null)
+            return;
+
+        ClearChildren(gunsContainer);
+
+        foreach (GunEntry entry in gunItems)
+        {
+            if (entry == null || entry.heldPrefab == null)
+                continue;
+
+            GunShopCard card = Instantiate(gunCardPrefab, gunsContainer);
+            card.Setup(entry.heldPrefab, entry.icon, () => BuyRifle(entry), Mathf.Max(0, entry.buyPrice));
+        }
+    }
+
+    private void RefreshGunCards()
+    {
+        if (gunsContainer == null)
+            return;
+
+        for (int i = 0; i < gunsContainer.childCount; i++)
+        {
+            GunShopCard card = gunsContainer.GetChild(i).GetComponent<GunShopCard>();
+            if (card != null)
+                card.OnPlayerPointsChanged();
+        }
+    }
+
+    private void BuyRifle(GunEntry entry)
+    {
+        if (entry == null || entry.heldPrefab == null)
+            return;
+
+        string rifleId = entry.heldPrefab.Definition != null
+            ? entry.heldPrefab.Definition.RifleId
+            : entry.heldPrefab.name;
+
+        if (string.IsNullOrEmpty(rifleId) || LocalPlayerSettings.IsSniperRifleOwned(rifleId))
+            return;
+
+        int price = Mathf.Max(0, entry.buyPrice);
+
+        if (LocalPlayerSettings.PlayerPoints < price)
+            return;
+
+        LocalPlayerSettings.SetPoints(LocalPlayerSettings.PlayerPoints - price);
+        LocalPlayerSettings.AddOwnedSniperRifle(rifleId);
+        LocalPlayerSettings.SetSniperRifle(rifleId);
+        RebuildGunCards();
     }
 
     private void RefreshSlotsInteractable()
