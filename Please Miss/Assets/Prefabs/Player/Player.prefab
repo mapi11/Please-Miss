@@ -5286,6 +5286,9 @@ MonoBehaviour:
   - Name: Sphere
     WorldDropPrefab: {fileID: 1960839501645163978, guid: b2b9d566eeb5251479c1bee584aa11e3, type: 3}
     HeldVisualPrefab: {fileID: 0}
+  - Name: Sniper`s Sphere
+    WorldDropPrefab: {fileID: 1960839501645163978, guid: b8316c03b0933394bbcad138410c2090, type: 3}
+    HeldVisualPrefab: {fileID: 0}
   - Name: Capsule
     WorldDropPrefab: {fileID: 1960839501645163978, guid: 64af151f458de6f488c9f82c7798af0a, type: 3}
     HeldVisualPrefab: {fileID: 0}

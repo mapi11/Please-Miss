@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public static class LocalPlayerSettings
@@ -6,6 +7,8 @@ public static class LocalPlayerSettings
 
     public static string ProfileId { get; private set; } = DefaultProfileId;
     public static string PlayerName { get; private set; } = "Player";
+    public static event System.Action<Color32> ColorChanged;
+
     public static Color32 PlayerColor { get; private set; } = new Color32(255, 255, 255, 255);
 
     private static readonly Color32[] ColorPalette =
@@ -20,8 +23,118 @@ public static class LocalPlayerSettings
         new Color32(255, 120, 190, 255),
     };
 
-    private static string PlayerNameKey => $"PlayerName_{ProfileId}";
-    private static string PlayerColorKey => $"PlayerColor_{ProfileId}";
+    private const string PlayerNamePrefix = "PlayerName";
+    private const string PlayerColorPrefix = "PlayerColor";
+    private const string PlayerPointsPrefix = "PlayerPoints";
+    private const string InventoryItemsPrefix = "InventoryItems";
+    private const string EquipmentItemsPrefix = "EquipmentItems";
+
+    private static string storageSuffix = "";
+
+    private static string MakeKey(string prefix)
+    {
+        return $"{prefix}_{ProfileId}{storageSuffix}";
+    }
+
+    private static string MakeProfileKey(string prefix)
+    {
+        return $"{prefix}_{ProfileId}";
+    }
+
+    private static string PlayerNameKey => MakeKey(PlayerNamePrefix);
+    private static string PlayerColorKey => MakeKey(PlayerColorPrefix);
+    private static string PlayerPointsKey => MakeKey(PlayerPointsPrefix);
+
+    /// <summary>
+    /// Переводит хранилище в изолированное пространство ключей сетевой сессии:
+    /// у каждого игрока своё хранилище, даже когда игроки запущены на одной машине.
+    /// Данные профиля копируются в пространство сессии при первом входе.
+    /// </summary>
+    public static void EnterSession(string sessionId)
+    {
+        if (string.IsNullOrEmpty(sessionId))
+            return;
+
+        string suffix = $"_{sessionId}";
+
+        if (storageSuffix == suffix)
+            return;
+
+        storageSuffix = suffix;
+        SeedFromProfile();
+    }
+
+    /// <summary>
+    /// Гарантирует наличие сессионного пространства ключей: если его ещё нет,
+    /// создаёт новое с уникальным id. Повторный вызов сохраняет текущую сессию
+    /// (меню → лобби → игра используют одно пространство).
+    /// </summary>
+    public static void EnsureSession()
+    {
+        if (!string.IsNullOrEmpty(storageSuffix))
+            return;
+
+        EnterSession(System.Guid.NewGuid().ToString("N"));
+    }
+
+    public static void ExitSession()
+    {
+        MergeToProfile();
+        storageSuffix = "";
+    }
+
+    private static void MergeToProfile()
+    {
+        CopySessionToProfile(PlayerNamePrefix, false);
+        CopySessionToProfile(PlayerColorPrefix, true);
+        CopySessionToProfile(PlayerPointsPrefix, true);
+        CopySessionToProfile(InventoryItemsPrefix, false);
+        CopySessionToProfile(EquipmentItemsPrefix, false);
+    }
+
+    private static void SeedFromProfile()
+    {
+        CopyProfileToSession(PlayerNamePrefix, false);
+        CopyProfileToSession(PlayerColorPrefix, true);
+        CopyProfileToSession(PlayerPointsPrefix, true);
+        CopyProfileToSession(InventoryItemsPrefix, false);
+        CopyProfileToSession(EquipmentItemsPrefix, false);
+    }
+
+    private static void CopyProfileToSession(string prefix, bool isInt)
+    {
+        string sessionKey = MakeKey(prefix);
+
+        if (PlayerPrefs.HasKey(sessionKey))
+            return;
+
+        CopyKey(MakeProfileKey(prefix), sessionKey, isInt);
+    }
+
+    private static void CopySessionToProfile(string prefix, bool isInt)
+    {
+        string sessionKey = MakeKey(prefix);
+
+        if (!PlayerPrefs.HasKey(sessionKey))
+            return;
+
+        CopyKey(sessionKey, MakeProfileKey(prefix), isInt);
+    }
+
+    private static void CopyKey(string fromKey, string toKey, bool isInt)
+    {
+        if (!PlayerPrefs.HasKey(fromKey))
+            return;
+
+        // Копирование должно сохранять тип значения: int-ключи (цвет, очки)
+        // нельзя переносить через SetString/GetString — Unity вернёт мусор при GetInt.
+        if (isInt)
+            PlayerPrefs.SetInt(toKey, PlayerPrefs.GetInt(fromKey));
+        else
+            PlayerPrefs.SetString(toKey, PlayerPrefs.GetString(fromKey));
+
+        PlayerPrefs.Save();
+    }
 
     public static void Load()
     {
@@ -37,6 +150,13 @@ public static class LocalPlayerSettings
         if (PlayerPrefs.HasKey(PlayerColorKey))
         {
             PlayerColor = UnpackColor(PlayerPrefs.GetInt(PlayerColorKey));
+
+            // Лечение повреждённых данных от старых версий: строка-копия int-значения
+            // читалась как 0 (чёрный с альфой 0) — перегенерируем случайный цвет.
+            if (PlayerColor.a == 0)
+            {
+                GenerateAndSaveRandomColor();
+            }
         }
         else
         {
@@ -93,6 +213,7 @@ public static class LocalPlayerSettings
         PlayerColor = color;
         PlayerPrefs.SetInt(PlayerColorKey, PackColor(PlayerColor));
         PlayerPrefs.Save();
+        ColorChanged?.Invoke(color);
     }
 
     public static int PackColor(Color32 color)
@@ -107,5 +228,116 @@ public static class LocalPlayerSettings
         byte b = (byte)((packed >> 8) & 0xFF);
         byte a = (byte)(packed & 0xFF);
         return new Color32(r, g, b, a);
+    }
+
+    public const int DefaultPlayerPoints = 500;
+
+    public static event System.Action<int> PointsChanged;
+
+    public static int PlayerPoints => PlayerPrefs.GetInt(PlayerPointsKey, DefaultPlayerPoints);
+
+    public static void SetPoints(int value)
+    {
+        PlayerPrefs.SetInt(PlayerPointsKey, Mathf.Max(0, value));
+        PlayerPrefs.Save();
+        PointsChanged?.Invoke(PlayerPoints);
+    }
+
+    public static void AddPoints(int value)
+    {
+        if (value <= 0)
+            return;
+
+        PlayerPrefs.SetInt(PlayerPointsKey, Mathf.Max(0, PlayerPoints + value));
+        PlayerPrefs.Save();
+        PointsChanged?.Invoke(PlayerPoints);
+    }
+
+    public const int EquipmentSlotsCount = 2;
+
+    private static string InventoryItemsKey => MakeKey(InventoryItemsPrefix);
+    private static string EquipmentItemsKey => MakeKey(EquipmentItemsPrefix);
+
+    public static List<string> Inventory => GetStringList(InventoryItemsKey);
+
+    public static bool HasSavedInventory => PlayerPrefs.HasKey(InventoryItemsKey);
+
+    public static List<string> Equipment => GetStringList(EquipmentItemsKey);
+
+    public static void AddInventoryItem(string itemId)
+    {
+        if (string.IsNullOrEmpty(itemId))
+            return;
+
+        var items = GetStringList(InventoryItemsKey);
+        items.Add(itemId);
+        SaveStringList(InventoryItemsKey, items);
+    }
+
+    public static bool RemoveInventoryItem(string itemId)
+    {
+        var items = GetStringList(InventoryItemsKey);
+        bool removed = items.Remove(itemId);
+
+        if (removed)
+            SaveStringList(InventoryItemsKey, items);
+
+        return removed;
+    }
+
+    public static void SetEquipmentSlot(int slotIndex, string itemId)
+    {
+        if (slotIndex < 0 || slotIndex >= EquipmentSlotsCount)
+            return;
+
+        var items = GetStringList(EquipmentItemsKey);
+
+        while (items.Count <= slotIndex)
+            items.Add("");
+
+        items[slotIndex] = itemId ?? "";
+        SaveStringList(EquipmentItemsKey, items);
+    }
+
+    public static string GetEquipmentSlot(int slotIndex)
+    {
+        var items = GetStringList(EquipmentItemsKey);
+
+        if (slotIndex < 0 || slotIndex >= items.Count)
+            return "";
+
+        return items[slotIndex];
+    }
+
+    public static void ClearEquipment()
+    {
+        var items = GetStringList(EquipmentItemsKey);
+
+        for (int i = 0; i < items.Count; i++)
+            items[i] = "";
+
+        SaveStringList(EquipmentItemsKey, items);
+    }
+
+    private static List<string> GetStringList(string key)
+    {
+        string raw = PlayerPrefs.GetString(key, "");
+        var list = new List<string>();
+
+        if (string.IsNullOrEmpty(raw))
+            return list;
+
+        string[] parts = raw.Split('|');
+
+        foreach (string part in parts)
+            list.Add(part);
+
+        return list;
+    }
+
+    private static void SaveStringList(string key, List<string> items)
+    {
+        PlayerPrefs.SetString(key, string.Join("|", items.ToArray()));
+        PlayerPrefs.Save();
     }
 }

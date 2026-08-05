@@ -744,15 +744,28 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5088723814254350273, guid: 1def75c2af8c26e4582c5107abfa6a90, type: 3}
+      propertyPath: inventoryContent
+      value: 
+      objectReference: {fileID: 1987148160}
     - target: {fileID: 5883614785666581365, guid: 1def75c2af8c26e4582c5107abfa6a90, type: 3}
       propertyPath: m_Name
       value: MainMenuCanvas
+      objectReference: {fileID: 0}
+    - target: {fileID: 6565148236476111799, guid: 1def75c2af8c26e4582c5107abfa6a90, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 1def75c2af8c26e4582c5107abfa6a90, type: 3}
+--- !u!224 &1987148160 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 2920480843839608001, guid: 1def75c2af8c26e4582c5107abfa6a90, type: 3}
+  m_PrefabInstance: {fileID: 1987148159}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

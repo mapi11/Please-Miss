@@ -119,8 +119,14 @@ public class NetworkConnectionManager : MonoBehaviour
     public void ApplyPlayerSettings(string profileId, string playerName, Color32 playerColor)
     {
         LocalPlayerSettings.SetProfileId(profileId);
+        LocalPlayerSettings.EnsureSession();
         LocalPlayerSettings.SetPlayerName(playerName);
         LocalPlayerSettings.SetPlayerColor(playerColor);
+    }
+
+    private void OnApplicationQuit()
+    {
+        LocalPlayerSettings.ExitSession();
     }
 
     public void RandomizePlayerColor(string profileId)
@@ -358,6 +364,7 @@ public class NetworkConnectionManager : MonoBehaviour
         if (NetworkManager.Singleton != null)
             NetworkManager.Singleton.Shutdown();
 
+        LocalPlayerSettings.ExitSession();
         ResetSessionState();
         SetStatus("Shutdown");
     }
@@ -382,6 +389,57 @@ public class NetworkConnectionManager : MonoBehaviour
 
         foreach (var screen in FindObjectsOfType<ConnectionScreenManager>())
             screen.Dismiss();
+
+        PurgeBrokenSpawnedObjects();
+    }
+
+    private static void PurgeBrokenSpawnedObjects()
+    {
+        var networkManager = NetworkManager.Singleton;
+        if (networkManager == null)
+            return;
+
+        var spawnManager = networkManager.SpawnManager;
+        if (spawnManager == null)
+            return;
+
+        try
+        {
+            var broken = new List<NetworkObject>();
+            foreach (var networkObject in spawnManager.SpawnedObjectsList)
+            {
+                if (networkObject == null || networkObject.gameObject == null || !networkObject.IsSpawned)
+                    broken.Add(networkObject);
+            }
+
+            if (broken.Count == 0)
+                return;
+
+            foreach (var networkObject in broken)
+            {
+                spawnManager.SpawnedObjects.Remove(networkObject.NetworkObjectId);
+                spawnManager.SpawnedObjectsList.Remove(networkObject);
+            }
+
+            var details = new System.Text.StringBuilder();
+            foreach (var networkObject in broken)
+            {
+                try
+                {
+                    details.Append($"  '{networkObject.name}' id={networkObject.NetworkObjectId} destroyed={networkObject.gameObject == null} spawned={networkObject.IsSpawned}\n");
+                }
+                catch (Exception exception)
+                {
+                    details.Append($"  <unreadable> id={networkObject.NetworkObjectId}: {exception.GetType().Name}\n");
+                }
+            }
+
+            Debug.LogWarning($"NetworkConnectionManager: removed {broken.Count} stale spawned object(s) from the SpawnManager:\n{details}");
+        }
+        catch (Exception exception)
+        {
+            Debug.LogError($"NetworkConnectionManager: failed to purge stale spawned objects: {exception.Message}");
+        }
     }
 
     public static string GetConnectionPayloadId()
@@ -581,6 +639,8 @@ public class NetworkConnectionManager : MonoBehaviour
         NetworkManager.ConnectionApprovalRequest request,
         NetworkManager.ConnectionApprovalResponse response)
     {
+        PurgeBrokenSpawnedObjects();
+
         string profileId = System.Text.Encoding.UTF8.GetString(request.Payload);
         if (string.IsNullOrEmpty(profileId))
             profileId = "Unknown";

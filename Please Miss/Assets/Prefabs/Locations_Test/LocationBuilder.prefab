@@ -63,7 +63,6 @@ MonoBehaviour:
   - typeName: Sniper tower
     variants:
     - {fileID: 1826809188627934075, guid: c1b412a5831ac1643877c4e152eb02aa, type: 3}
-    - {fileID: 1826809188627934075, guid: 2ca37fae077845c4d93a42bbbf19217e, type: 3}
   sequence:
   - typeName: Spawn
   - typeName: Middle

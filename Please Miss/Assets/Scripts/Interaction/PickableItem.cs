@@ -8,11 +8,29 @@ public class PickableItem : Interactable
     [SerializeField] private string itemName = "Item";
     [SerializeField] private Sprite inventoryIcon;
 
+    [Header("Sell")]
+    [Tooltip("Points received when this item is sold from the inventory menu")]
+    [SerializeField] private int sellPrice = 10;
+
+    [Header("Buy")]
+    [Tooltip("Points required to buy this item")]
+    [SerializeField] private int buyPrice = 20;
+
+    [Header("Purpose & Class")]
+    [Tooltip("What the item is used for")]
+    [SerializeField] private ItemPurpose purpose = ItemPurpose.Boost;
+    [Tooltip("Which class of player the item is meant for")]
+    [SerializeField] private ItemClass itemClass = ItemClass.Universal;
+
     [Header("Held Visual")]
     [SerializeField] private GameObject heldVisualPrefab;
 
     public string ItemName => itemName;
     public Sprite InventoryIcon => inventoryIcon;
+    public int SellPrice => sellPrice;
+    public int BuyPrice => buyPrice;
+    public ItemPurpose Purpose => purpose;
+    public ItemClass ItemClass => itemClass;
     public GameObject HeldVisualPrefab => heldVisualPrefab;
 
     public void SetupItem(string name, Sprite icon)
@@ -21,8 +39,40 @@ public class PickableItem : Interactable
         inventoryIcon = icon;
     }
 
+    public override bool CanInteract(PlayerController player)
+    {
+        if (!base.CanInteract(player) || player == null)
+            return false;
+
+        return CanPickupForRole(player);
+    }
+
+    private bool CanPickupForRole(PlayerController player)
+    {
+        if (itemClass == ItemClass.Universal)
+            return true;
+
+        PlayerRoleState roleState = player != null ? player.GetComponent<PlayerRoleState>() : null;
+
+        if (roleState == null)
+            return false;
+
+        switch (itemClass)
+        {
+            case ItemClass.Runner:
+                return roleState.IsRunner;
+            case ItemClass.Sniper:
+                return roleState.IsSniper;
+            default:
+                return false;
+        }
+    }
+
     public override void OnHandBegin(PlayerController player)
     {
+        if (!CanInteract(player))
+            return;
+
         var inventory = player.PlayerInventory;
         if (inventory == null) return;
 

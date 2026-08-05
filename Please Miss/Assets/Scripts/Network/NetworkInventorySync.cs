@@ -329,6 +329,9 @@ public class NetworkInventorySync : NetworkBehaviour
             networkActiveHand.Value
         );
 
+        if (IsOwner)
+            SeedEquipmentFromLocalSettings();
+
         if (IsServer)
         {
             if (!disconnectHookRegistered)
@@ -395,6 +398,43 @@ public class NetworkInventorySync : NetworkBehaviour
             return;
 
         UpdateActiveSlotServerRpc(slot, new FixedString64Bytes(itemName ?? ""), handIndex);
+    }
+
+    private void SeedEquipmentFromLocalSettings()
+    {
+        if (inventory == null)
+            return;
+
+        for (int i = 0; i < LocalPlayerSettings.EquipmentSlotsCount; i++)
+        {
+            string itemId = LocalPlayerSettings.GetEquipmentSlot(i);
+
+            if (string.IsNullOrEmpty(itemId))
+                continue;
+
+            if (inventory.GetItemAtSlot(i) != null)
+                continue;
+
+            Sprite icon = null;
+            ItemDefinition def = ItemCatalog.Get(itemId);
+
+            if (def != null)
+                icon = def.IconSprite;
+
+            GameObject heldPrefab = null;
+            GameObject dropPrefab = null;
+            int prefabIndex = GetPrefabIndex(itemId);
+
+            if (prefabIndex >= 0 && prefabIndex < items.Length)
+            {
+                heldPrefab = items[prefabIndex].HeldVisualPrefab != null
+                    ? items[prefabIndex].HeldVisualPrefab
+                    : items[prefabIndex].WorldDropPrefab;
+                dropPrefab = items[prefabIndex].WorldDropPrefab;
+            }
+
+            inventory.AddItem(itemId, icon, heldPrefab, dropPrefab);
+        }
     }
 
     [ServerRpc]

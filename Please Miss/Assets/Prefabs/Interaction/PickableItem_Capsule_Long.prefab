@@ -263,7 +263,11 @@ MonoBehaviour:
   canInteract: 1
   cancelOnCanInteractFail: 1
   itemName: Capsule long
-  inventoryIcon: {fileID: 21300000, guid: e820caf92cf153e4e9c454f03ec19ab1, type: 3}
+  inventoryIcon: {fileID: 1081486411, guid: 086762bd07c61634e83a0f3bf49c1533, type: 3}
+  sellPrice: 15
+  buyPrice: 30
+  purpose: 2
+  itemClass: 0
   heldVisualPrefab: {fileID: 3685833382113716179, guid: a91c74aff4f61a9409dc272facdf762b, type: 3}
 --- !u!1 &4287457239238957265
 GameObject:

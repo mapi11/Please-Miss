@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -36,8 +37,25 @@ public class MainMenuUI : MonoBehaviour
     [SerializeField] private TMP_Text statusText;
     [SerializeField] private TMP_Text footerText;
 
+    [Header("Points")]
+    [SerializeField] private TMP_Text pointsText;
+    [SerializeField] private Button addPointsButton;
+    [SerializeField] private Button removePointsButton;
+
+    [Header("Inventory")]
+    [SerializeField] private Button inventoryButton;
+    [SerializeField] private RectTransform inventoryContent;
+    [SerializeField] private GameObject inventoryPanelPrefab;
+
+    [Header("Shop")]
+    [SerializeField] private Button shopButton;
+    [SerializeField] private RectTransform shopContent;
+    [SerializeField] private GameObject shopPanelPrefab;
+
     private Color32 selectedColor;
     private NetworkConnectionManager connectionManager;
+    private GameObject spawnedInventoryPanel;
+    private GameObject spawnedShopPanel;
 
     private void Awake()
     {
@@ -56,18 +74,36 @@ public class MainMenuUI : MonoBehaviour
         }
 
         connectionManager.StatusChanged += OnStatusChanged;
+        LocalPlayerSettings.PointsChanged += OnPointsChanged;
 
         InitializeFields();
+        EnsureTestButtons();
         BindButtons();
+        EnsureShopCatalogRegistered();
         RefreshColor();
         RefreshFooter();
+        RefreshPoints();
         SetStatus(connectionManager.Status);
+    }
+
+    private void EnsureShopCatalogRegistered()
+    {
+        if (shopPanelPrefab == null || shopContent == null)
+            return;
+
+        if (spawnedShopPanel == null)
+        {
+            spawnedShopPanel = Instantiate(shopPanelPrefab, shopContent);
+            spawnedShopPanel.SetActive(false);
+        }
     }
 
     private void OnDestroy()
     {
         if (connectionManager != null)
             connectionManager.StatusChanged -= OnStatusChanged;
+
+        LocalPlayerSettings.PointsChanged -= OnPointsChanged;
     }
 
     private void InitializeFields()
@@ -75,6 +111,7 @@ public class MainMenuUI : MonoBehaviour
         string profileId = GetProfileId();
 
         LocalPlayerSettings.Load(profileId);
+        LocalPlayerSettings.EnsureSession();
         selectedColor = LocalPlayerSettings.PlayerColor;
 
         int savedIndex = PlayerPrefs.GetInt($"PlayerColorIndex_{LocalPlayerSettings.ProfileId}", -1);
@@ -161,6 +198,109 @@ public class MainMenuUI : MonoBehaviour
 
         if (testProfile4Button != null)
             testProfile4Button.onClick.AddListener(() => ApplyTestProfile(4));
+
+        if (addPointsButton != null)
+            addPointsButton.onClick.AddListener(OnAddPointsClicked);
+
+        if (removePointsButton != null)
+            removePointsButton.onClick.AddListener(OnRemovePointsClicked);
+
+        if (inventoryButton != null)
+            inventoryButton.onClick.AddListener(OnInventoryButtonClicked);
+
+        if (shopButton != null)
+            shopButton.onClick.AddListener(OnShopButtonClicked);
+    }
+
+    private void OnInventoryButtonClicked()
+    {
+        if (inventoryPanelPrefab == null || inventoryContent == null)
+            return;
+
+        if (spawnedInventoryPanel == null)
+        {
+            spawnedInventoryPanel = Instantiate(inventoryPanelPrefab, inventoryContent);
+        }
+        else
+        {
+            bool show = !spawnedInventoryPanel.activeSelf;
+            spawnedInventoryPanel.SetActive(show);
+        }
+    }
+
+    private void OnShopButtonClicked()
+    {
+        if (shopPanelPrefab == null || shopContent == null)
+            return;
+
+        if (spawnedShopPanel == null)
+        {
+            spawnedShopPanel = Instantiate(shopPanelPrefab, shopContent);
+        }
+        else
+        {
+            bool show = !spawnedShopPanel.activeSelf;
+            spawnedShopPanel.SetActive(show);
+        }
+    }
+
+    private void OnAddPointsClicked()
+    {
+        LocalPlayerSettings.SetPoints(LocalPlayerSettings.PlayerPoints + 100);
+        RefreshPoints();
+    }
+
+    private void OnRemovePointsClicked()
+    {
+        LocalPlayerSettings.SetPoints(LocalPlayerSettings.PlayerPoints - 100);
+        RefreshPoints();
+    }
+
+    private void EnsureTestButtons()
+    {
+        EnsurePointButton(ref addPointsButton, "+100", 1);
+        EnsurePointButton(ref removePointsButton, "-100", 2);
+    }
+
+    private void EnsurePointButton(ref Button button, string label, int column)
+    {
+        if (button != null)
+            return;
+
+        Canvas canvas = GetComponentInParent<Canvas>();
+        Transform parent = canvas != null ? canvas.transform : transform;
+
+        GameObject go = new GameObject($"TestPoints_{label}", typeof(RectTransform));
+        go.transform.SetParent(parent, false);
+
+        RectTransform rect = go.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(1f, 1f);
+        rect.anchorMax = new Vector2(1f, 1f);
+        rect.pivot = new Vector2(1f, 1f);
+        rect.anchoredPosition = new Vector2(-20f - (column - 1) * 120f, -70f);
+        rect.sizeDelta = new Vector2(110f, 40f);
+
+        Image image = go.AddComponent<Image>();
+        image.color = new Color(0.2f, 0.2f, 0.25f, 1f);
+
+        button = go.AddComponent<Button>();
+        button.targetGraphic = image;
+
+        GameObject labelGo = new GameObject("Label", typeof(RectTransform));
+        labelGo.transform.SetParent(go.transform, false);
+
+        RectTransform labelRect = labelGo.GetComponent<RectTransform>();
+        labelRect.anchorMin = Vector2.zero;
+        labelRect.anchorMax = Vector2.one;
+        labelRect.offsetMin = Vector2.zero;
+        labelRect.offsetMax = Vector2.zero;
+
+        TMP_Text text = labelGo.AddComponent<TextMeshProUGUI>();
+        text.text = label;
+        text.alignment = TextAlignmentOptions.Center;
+        text.fontSize = 24f;
+        text.color = Color.white;
+        text.font = FindAnyFontAsset();
     }
 
     private void ApplyTestProfile(int index)
@@ -279,9 +419,60 @@ public class MainMenuUI : MonoBehaviour
             footerText.text = $"{GameSessionData.GameVersion}";
     }
 
+    private void RefreshPoints()
+    {
+        if (pointsText == null)
+            pointsText = CreatePointsText();
+
+        if (pointsText != null)
+            pointsText.text = $"Points: {LocalPlayerSettings.PlayerPoints}";
+    }
+
+    private TMP_Text CreatePointsText()
+    {
+        Canvas canvas = GetComponentInParent<Canvas>();
+        Transform parent = canvas != null ? canvas.transform : transform;
+
+        GameObject go = new GameObject("PointsText", typeof(RectTransform));
+        go.transform.SetParent(parent, false);
+
+        RectTransform rect = go.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(1f, 1f);
+        rect.anchorMax = new Vector2(1f, 1f);
+        rect.pivot = new Vector2(1f, 1f);
+        rect.anchoredPosition = new Vector2(-20f, -20f);
+        rect.sizeDelta = new Vector2(300f, 40f);
+
+        TMP_Text text = go.AddComponent<TextMeshProUGUI>();
+        text.alignment = TextAlignmentOptions.Right;
+        text.fontSize = 28f;
+        text.color = Color.white;
+        text.font = FindAnyFontAsset();
+        return text;
+    }
+
+    private static TMP_FontAsset FindAnyFontAsset()
+    {
+        if (TMP_Settings.defaultFontAsset != null)
+            return TMP_Settings.defaultFontAsset;
+
+        foreach (var text in Resources.FindObjectsOfTypeAll<TextMeshProUGUI>())
+        {
+            if (text != null && text.font != null)
+                return text.font;
+        }
+
+        return null;
+    }
+
     private void OnStatusChanged(string newStatus)
     {
         SetStatus(newStatus);
+    }
+
+    private void OnPointsChanged(int newPoints)
+    {
+        RefreshPoints();
     }
 
     private void SetStatus(string value)

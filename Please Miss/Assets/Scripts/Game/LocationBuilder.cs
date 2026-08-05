@@ -212,15 +212,31 @@ public class LocationBuilder : MonoBehaviour
     [ContextMenu("Clear")]
     public void Clear()
     {
+        bool isServer = NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer;
+
         for (int i = 0; i < built.Count; i++)
         {
             if (built[i] == null)
                 continue;
 
             if (Application.isPlaying)
+            {
+                if (isServer)
+                {
+                    var networkObjects = built[i].GetComponentsInChildren<NetworkObject>(true);
+                    foreach (var networkObject in networkObjects)
+                    {
+                        if (networkObject != null && networkObject.IsSpawned)
+                            networkObject.Despawn();
+                    }
+                }
+
                 Destroy(built[i].gameObject);
+            }
             else
+            {
                 DestroyImmediate(built[i].gameObject);
+            }
         }
 
         built.Clear();
@@ -291,7 +307,7 @@ public class LocationBuilder : MonoBehaviour
                 continue;
             }
 
-            networkObject.Spawn();
+            networkObject.Spawn(true);
         }
     }
 
@@ -327,7 +343,7 @@ public class LocationBuilder : MonoBehaviour
                     if (networkObject == null || networkObject.IsSpawned)
                         continue;
 
-                    networkObject.Spawn();
+                    networkObject.Spawn(true);
                 }
 
                 SpawnAttachments(built[i]);

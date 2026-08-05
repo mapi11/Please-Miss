@@ -259,8 +259,13 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   handTarget: {fileID: 2896586145720827315}
   canInteract: 1
+  cancelOnCanInteractFail: 1
   itemName: Sphere
   inventoryIcon: {fileID: 21300000, guid: 9507092dc5072a541abdba2779cf47b9, type: 3}
+  sellPrice: 30
+  buyPrice: 60
+  purpose: 2
+  itemClass: 0
   heldVisualPrefab: {fileID: 0}
 --- !u!1 &4287457239238957265
 GameObject:

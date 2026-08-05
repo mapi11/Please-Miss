@@ -29,7 +29,19 @@ public class LobbyUI : MonoBehaviour
     [Header("Fast Start")]
     [SerializeField] private Button fastStartButton;
 
+    [Header("Inventory")]
+    [SerializeField] private Button inventoryButton;
+    [SerializeField] private RectTransform inventoryContent;
+    [SerializeField] private GameObject inventoryPanelPrefab;
+
+    [Header("Shop")]
+    [SerializeField] private Button shopButton;
+    [SerializeField] private RectTransform shopContent;
+    [SerializeField] private GameObject shopPanelPrefab;
+
     private readonly Dictionary<ulong, LobbyPlayerCard> activeCards = new();
+    private GameObject spawnedInventoryPanel;
+    private GameObject spawnedShopPanel;
 
     private void Start()
     {
@@ -41,6 +53,14 @@ public class LobbyUI : MonoBehaviour
 
         if (fastStartButton != null)
             fastStartButton.onClick.AddListener(FastStartTest);
+
+        if (inventoryButton != null)
+            inventoryButton.onClick.AddListener(OnInventoryButtonClicked);
+
+        if (shopButton != null)
+            shopButton.onClick.AddListener(OnShopButtonClicked);
+
+        EnsureShopCatalogRegistered();
     }
 
     public void RebuildCards()
@@ -119,6 +139,46 @@ public class LobbyUI : MonoBehaviour
     {
         if (LobbyManager.Instance != null)
             LobbyManager.Instance.FastStartTest();
+    }
+
+    private void OnInventoryButtonClicked()
+    {
+        if (inventoryPanelPrefab == null || inventoryContent == null)
+            return;
+
+        if (spawnedInventoryPanel == null)
+            spawnedInventoryPanel = Instantiate(inventoryPanelPrefab, inventoryContent);
+        else
+        {
+            bool show = !spawnedInventoryPanel.activeSelf;
+            spawnedInventoryPanel.SetActive(show);
+        }
+    }
+
+    private void OnShopButtonClicked()
+    {
+        if (shopPanelPrefab == null || shopContent == null)
+            return;
+
+        if (spawnedShopPanel == null)
+            spawnedShopPanel = Instantiate(shopPanelPrefab, shopContent);
+        else
+        {
+            bool show = !spawnedShopPanel.activeSelf;
+            spawnedShopPanel.SetActive(show);
+        }
+    }
+
+    private void EnsureShopCatalogRegistered()
+    {
+        if (shopPanelPrefab == null || shopContent == null)
+            return;
+
+        if (spawnedShopPanel == null)
+        {
+            spawnedShopPanel = Instantiate(shopPanelPrefab, shopContent);
+            spawnedShopPanel.SetActive(false);
+        }
     }
 
     public void LeaveLobby()
