@@ -456,7 +456,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.8, g: 0.015686275, b: 0, a: 1}
+  m_Color: {r: 0.25098038, g: 1, b: 0.28674856, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 0
@@ -867,8 +867,8 @@ MonoBehaviour:
   outlineReady: {fileID: 2717771950558064468}
   localCardColor: {r: 0.1254902, g: 0.5882353, b: 0.9529412, a: 1}
   otherCardColor: {r: 0.18039216, g: 0.18039216, b: 0.18039216, a: 1}
-  readyColor: {r: 0.11764706, g: 0.8, b: 0, a: 1}
-  notReadyColor: {r: 0.8, g: 0.015686275, b: 0, a: 1}
+  readyColor: {r: 0.25098038, g: 1, b: 0.28674856, a: 1}
+  notReadyColor: {r: 1, g: 0.25, b: 0.25, a: 1}
   roleIcon: {fileID: 7257926704669838539}
   runnerIcon: {fileID: 2000315798, guid: 95c902fa1b8d73d4f9c439640648c918, type: 3}
   sniperIcon: {fileID: 821522537, guid: 95c902fa1b8d73d4f9c439640648c918, type: 3}

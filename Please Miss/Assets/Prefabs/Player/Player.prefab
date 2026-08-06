@@ -5529,22 +5529,26 @@ MonoBehaviour:
   allowProjectileDamageWhenRoleIsNoneForTesting: 1
   preventSelfDamage: 1
   hitZones:
-  - zoneName: Left Hand
+  - zoneType: 0
     hitCollider: {fileID: 8140779001215389115}
     damageMode: 0
     damageValue: 0.5
-  - zoneName: Right Hand
+    killPoints: 10
+  - zoneType: 1
     hitCollider: {fileID: 2916929415615240095}
     damageMode: 0
     damageValue: 0.5
-  - zoneName: Head
+    killPoints: 10
+  - zoneType: 2
     hitCollider: {fileID: 1704822315875028964}
     damageMode: 0
     damageValue: 2
-  - zoneName: Body
+    killPoints: 50
+  - zoneType: 3
     hitCollider: {fileID: 6500536504009098620}
     damageMode: 0
     damageValue: 1
+    killPoints: 25
   playerSfx: {fileID: 0}
   debugHealthStep: 10
 --- !u!114 &2807886825379859501
@@ -6820,6 +6824,30 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: -120
       objectReference: {fileID: 0}
+    - target: {fileID: 3308328696068990119, guid: 060d14d7ad9952e4494dc98b276dfe96, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3308328696068990119, guid: 060d14d7ad9952e4494dc98b276dfe96, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3633929919175235369, guid: 060d14d7ad9952e4494dc98b276dfe96, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: -1620
+      objectReference: {fileID: 0}
+    - target: {fileID: 3838955054198017113, guid: 060d14d7ad9952e4494dc98b276dfe96, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3838955054198017113, guid: 060d14d7ad9952e4494dc98b276dfe96, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3838955054198017113, guid: 060d14d7ad9952e4494dc98b276dfe96, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: -17
+      objectReference: {fileID: 0}
     - target: {fileID: 5492054713300102014, guid: 060d14d7ad9952e4494dc98b276dfe96, type: 3}
       propertyPath: m_AnchorMax.y
       value: 1
@@ -6922,6 +6950,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6799413236824926856, guid: 060d14d7ad9952e4494dc98b276dfe96, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6996934067455353440, guid: 060d14d7ad9952e4494dc98b276dfe96, type: 3}
+      propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []

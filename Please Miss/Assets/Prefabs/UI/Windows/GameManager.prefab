@@ -833,7 +833,7 @@ MonoBehaviour:
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
-  m_InScenePlaced: 1
+  m_InScenePlaced: 0
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
@@ -856,6 +856,9 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   prepareDuration: 2
   gameDuration: 180
+  sniperKillReward: 50
+  runnerFinishReward: 250
+  runnerDeathReward: 50
   startWalls: []
   timerText: {fileID: 5439097589659916810}
   timerPanel: {fileID: 937186013804972568}
@@ -1335,13 +1338,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 1523733025
+  GlobalObjectIdHash: 2130161194
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
-  m_InScenePlaced: 1
+  m_InScenePlaced: 0
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1

@@ -11,6 +11,9 @@ public class SniperEndPanelUI : MonoBehaviour
     [SerializeField] private RectTransform cardsContainer;
     [SerializeField] private GameObject diedPlayerPanelPrefab;
     [SerializeField] private Button exitButton;
+    [SerializeField] private TMP_Text pointsText;
+    [SerializeField] private RectTransform rewardsContainer;
+    [SerializeField] private GameObject rewardPanelPrefab;
 
     private bool panelHidden;
 
@@ -36,18 +39,24 @@ public class SniperEndPanelUI : MonoBehaviour
 
         if (GameManager.Instance != null)
             GameManager.Instance.OnSniperKillRecorded -= OnSniperKillRecorded;
+
+        LocalPlayerSettings.PointsChanged -= OnPointsChanged;
     }
 
     private void OnEnable()
     {
         if (GameManager.Instance != null)
             GameManager.Instance.OnSniperKillRecorded += OnSniperKillRecorded;
+
+        LocalPlayerSettings.PointsChanged += OnPointsChanged;
     }
 
     private void OnDisable()
     {
         if (GameManager.Instance != null)
             GameManager.Instance.OnSniperKillRecorded -= OnSniperKillRecorded;
+
+        LocalPlayerSettings.PointsChanged -= OnPointsChanged;
     }
 
     private void Update()
@@ -65,12 +74,25 @@ public class SniperEndPanelUI : MonoBehaviour
         {
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
+            RefreshPointsText();
         }
     }
 
-    private void OnSniperKillRecorded(string playerName, Color32 color, float survivedTime, string hitZone)
+    private void OnPointsChanged(int newPoints)
+    {
+        RefreshPointsText();
+    }
+
+    private void RefreshPointsText()
+    {
+        if (pointsText != null)
+            pointsText.text = $"Points: {LocalPlayerSettings.PlayerPoints}";
+    }
+
+    private void OnSniperKillRecorded(string playerName, Color32 color, float survivedTime, string hitZone, int mainPoints, int bonusPoints)
     {
         SpawnDiedPlayerCard(playerName, color, survivedTime, hitZone);
+        SpawnRewardCard(mainPoints, bonusPoints, hitZone);
     }
 
     private void SpawnDiedPlayerCard(string playerName, Color32 color, float survivedTime, string hitZone)
@@ -90,6 +112,47 @@ public class SniperEndPanelUI : MonoBehaviour
         var panel = cardObject.GetComponent<DiedPlayerPanel>();
         if (panel != null)
             panel.Setup(playerName, color, survivedTime, hitZone);
+    }
+
+    private void SpawnRewardCard(int mainPoints, int bonusPoints, string hitZone)
+    {
+        RectTransform container = ResolveRewardsContainer();
+
+        GameObject cardObject;
+        if (rewardPanelPrefab != null)
+        {
+            cardObject = Instantiate(rewardPanelPrefab, container, false);
+        }
+        else
+        {
+            cardObject = CreateRewardCardFallback(container);
+        }
+
+        var panel = cardObject.GetComponent<RewardPanel>();
+        if (panel != null)
+            panel.Setup(mainPoints, "Kill", bonusPoints, hitZone);
+    }
+
+    private GameObject CreateRewardCardFallback(Transform parent)
+    {
+        GameObject go = new GameObject("RewardPanel", typeof(RectTransform));
+        go.transform.SetParent(parent, false);
+
+        RectTransform rect = go.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0f, 1f);
+        rect.anchorMax = new Vector2(1f, 1f);
+        rect.pivot = new Vector2(0.5f, 1f);
+        rect.sizeDelta = new Vector2(0f, 40f);
+        rect.anchoredPosition = Vector2.zero;
+
+        Image background = go.AddComponent<Image>();
+        background.color = new Color(0.1f, 0.55f, 0.2f, 0.85f);
+
+        CreateFallbackText(go.transform, "MainPointsText", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(10f, -5f), new Vector2(200f, 24f), TextAlignmentOptions.Left);
+        CreateFallbackText(go.transform, "BonusPointsText", new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-10f, -5f), new Vector2(200f, 24f), TextAlignmentOptions.Right);
+
+        go.AddComponent<RewardPanel>();
+        return go;
     }
 
     private GameObject CreateCardFallback(Transform parent)
@@ -185,13 +248,32 @@ public class SniperEndPanelUI : MonoBehaviour
             }
         }
 
-        cardsContainer = CreateContainer(sniperEndPanel != null ? sniperEndPanel.transform : transform);
+        cardsContainer = CreateContainer(sniperEndPanel != null ? sniperEndPanel.transform : transform, "CardsContainer");
         return cardsContainer;
     }
 
-    private RectTransform CreateContainer(Transform parent)
+    private RectTransform ResolveRewardsContainer()
     {
-        GameObject go = new GameObject("CardsContainer", typeof(RectTransform));
+        if (rewardsContainer != null)
+            return rewardsContainer;
+
+        if (sniperEndPanel != null)
+        {
+            Transform t = FindChildRecursive(sniperEndPanel.transform, "RewardsContainer");
+            if (t is RectTransform rect)
+            {
+                rewardsContainer = rect;
+                return rect;
+            }
+        }
+
+        rewardsContainer = CreateContainer(sniperEndPanel != null ? sniperEndPanel.transform : transform, "RewardsContainer");
+        return rewardsContainer;
+    }
+
+    private RectTransform CreateContainer(Transform parent, string containerName)
+    {
+        GameObject go = new GameObject(containerName, typeof(RectTransform));
         go.transform.SetParent(parent, false);
 
         RectTransform rect = go.GetComponent<RectTransform>();
@@ -232,8 +314,38 @@ public class SniperEndPanelUI : MonoBehaviour
         if (exitButton == null)
             exitButton = CreateExitButton();
 
+        if (pointsText == null)
+        {
+            Transform t = FindChildRecursive(sniperEndPanel.transform, "PointsText");
+            if (t != null)
+                pointsText = t.GetComponent<TMP_Text>();
+        }
+
+        if (pointsText == null)
+            pointsText = CreatePointsText();
+
         if (cardsContainer == null)
             ResolveContainer();
+    }
+
+    private TMP_Text CreatePointsText()
+    {
+        GameObject go = new GameObject("PointsText", typeof(RectTransform));
+        go.transform.SetParent(sniperEndPanel.transform, false);
+
+        RectTransform rect = go.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0.5f, 1f);
+        rect.anchorMax = new Vector2(0.5f, 1f);
+        rect.pivot = new Vector2(0.5f, 1f);
+        rect.anchoredPosition = new Vector2(0f, -10f);
+        rect.sizeDelta = new Vector2(400f, 30f);
+
+        TMP_Text text = go.AddComponent<TextMeshProUGUI>();
+        text.alignment = TextAlignmentOptions.Center;
+        text.fontSize = 26f;
+        text.color = Color.white;
+        text.font = FindAnyFontAsset();
+        return text;
     }
 
     private static Transform FindChildRecursive(Transform root, string name)

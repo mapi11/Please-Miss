@@ -11,6 +11,14 @@ public class RunnerEndPanelUI : MonoBehaviour
     [SerializeField] private TMP_Text survivedTimeText;
     [SerializeField] private Button exitButton;
     [SerializeField] private Button spectateButton;
+    [SerializeField] private RectTransform rewardsContainer;
+    [SerializeField] private GameObject rewardPanelPrefab;
+
+    [Header("Survived Time Colors")]
+    [Tooltip("Цвет текста времени, когда игрок выжил")]
+    [SerializeField] private Color survivedColor = new Color(0.25f, 0.55f, 1f, 1f);
+    [Tooltip("Цвет текста времени, когда игрок умер")]
+    [SerializeField] private Color diedColor = new Color(1f, 0.25f, 0.25f, 1f);
 
     private SpectatorManager spectatorManager;
     private bool panelHidden;
@@ -44,6 +52,21 @@ public class RunnerEndPanelUI : MonoBehaviour
             exitButton.onClick.RemoveListener(OnExitGame);
         if (spectateButton != null)
             spectateButton.onClick.RemoveListener(OnSpectate);
+
+        if (GameManager.Instance != null)
+            GameManager.Instance.OnRunnerRewardRecorded -= OnRunnerRewardRecorded;
+    }
+
+    private void OnEnable()
+    {
+        if (GameManager.Instance != null)
+            GameManager.Instance.OnRunnerRewardRecorded += OnRunnerRewardRecorded;
+    }
+
+    private void OnDisable()
+    {
+        if (GameManager.Instance != null)
+            GameManager.Instance.OnRunnerRewardRecorded -= OnRunnerRewardRecorded;
     }
 
     private void Update()
@@ -107,7 +130,9 @@ public class RunnerEndPanelUI : MonoBehaviour
                         GameManager.Instance.GameDuration - GameManager.Instance.GameTimeRemaining.Value);
                 }
 
-                survivedTimeText.text = "You survived: " + FormatTime(survivedTime);
+                string resultLabel = dead ? "You died" : "You survived";
+                survivedTimeText.text = resultLabel + ": " + FormatTime(survivedTime);
+                survivedTimeText.color = dead ? diedColor : survivedColor;
             }
             else if (!show)
             {
@@ -135,6 +160,79 @@ public class RunnerEndPanelUI : MonoBehaviour
             if (btn != exitButton && btn != spectateButton)
                 Destroy(btn.gameObject);
         }
+    }
+
+    private void OnRunnerRewardRecorded(int reward, string reason)
+    {
+        SpawnRewardCard(reward, reason);
+    }
+
+    private void SpawnRewardCard(int reward, string reason)
+    {
+        RectTransform container = ResolveRewardsContainer();
+
+        GameObject cardObject;
+        if (rewardPanelPrefab != null)
+        {
+            cardObject = Instantiate(rewardPanelPrefab, container, false);
+        }
+        else
+        {
+            cardObject = CreateRewardCardFallback(container);
+        }
+
+        var panel = cardObject.GetComponent<RewardPanel>();
+        if (panel != null)
+            panel.Setup(reward, reason, 0, "");
+    }
+
+    private GameObject CreateRewardCardFallback(Transform parent)
+    {
+        GameObject go = new GameObject("RewardPanel", typeof(RectTransform));
+        go.transform.SetParent(parent, false);
+
+        RectTransform rect = go.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0f, 1f);
+        rect.anchorMax = new Vector2(1f, 1f);
+        rect.pivot = new Vector2(0.5f, 1f);
+        rect.sizeDelta = new Vector2(0f, 40f);
+        rect.anchoredPosition = Vector2.zero;
+
+        Image background = go.AddComponent<Image>();
+        background.color = new Color(0.1f, 0.45f, 0.75f, 0.85f);
+
+        CreateFallbackText(go.transform, "MainPointsText", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(10f, -5f), new Vector2(300f, 24f), TextAlignmentOptions.Left);
+        CreateFallbackText(go.transform, "BonusPointsText", new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-10f, -5f), new Vector2(200f, 24f), TextAlignmentOptions.Right);
+
+        go.AddComponent<RewardPanel>();
+        return go;
+    }
+
+    private TMP_Text CreateFallbackText(
+        Transform parent,
+        string name,
+        Vector2 anchorMin,
+        Vector2 anchorMax,
+        Vector2 anchoredPosition,
+        Vector2 sizeDelta,
+        TextAlignmentOptions alignment)
+    {
+        GameObject go = new GameObject(name, typeof(RectTransform));
+        go.transform.SetParent(parent, false);
+
+        RectTransform rect = go.GetComponent<RectTransform>();
+        rect.anchorMin = anchorMin;
+        rect.anchorMax = anchorMax;
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = anchoredPosition;
+        rect.sizeDelta = sizeDelta;
+
+        TMP_Text text = go.AddComponent<TextMeshProUGUI>();
+        text.alignment = alignment;
+        text.fontSize = 20f;
+        text.color = Color.white;
+        text.font = FindAnyFontAsset();
+        return text;
     }
 
     private void OnSpectate()
@@ -274,6 +372,49 @@ public class RunnerEndPanelUI : MonoBehaviour
 
         if (exitButton == null)
             exitButton = CreateExitButton();
+
+        if (rewardsContainer == null)
+        {
+            Transform t = FindChildRecursive(runnerEndPanel.transform, "RewardsContainer");
+            if (t is RectTransform rect)
+                rewardsContainer = rect;
+        }
+
+        if (rewardsContainer == null)
+            rewardsContainer = CreateRewardsContainer();
+    }
+
+    private RectTransform CreateRewardsContainer()
+    {
+        GameObject go = new GameObject("RewardsContainer", typeof(RectTransform));
+        go.transform.SetParent(runnerEndPanel.transform, false);
+
+        RectTransform rect = go.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0f, 0f);
+        rect.anchorMax = new Vector2(1f, 1f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.offsetMin = new Vector2(40f, 90f);
+        rect.offsetMax = new Vector2(-40f, -60f);
+        return rect;
+    }
+
+    private RectTransform ResolveRewardsContainer()
+    {
+        if (rewardsContainer != null)
+            return rewardsContainer;
+
+        if (runnerEndPanel != null)
+        {
+            Transform t = FindChildRecursive(runnerEndPanel.transform, "RewardsContainer");
+            if (t is RectTransform rect)
+            {
+                rewardsContainer = rect;
+                return rect;
+            }
+        }
+
+        rewardsContainer = CreateRewardsContainer();
+        return rewardsContainer;
     }
 
     private static Transform FindChildRecursive(Transform root, string name)

@@ -12,18 +12,47 @@ public enum HitZoneDamageMode : byte
     FixedDamage
 }
 
+public enum BodyZoneType : byte
+{
+    [InspectorName("Left Hand")] LeftHand,
+    [InspectorName("Right Hand")] RightHand,
+    [InspectorName("Head")] Head,
+    [InspectorName("Body")] Body,
+    [InspectorName("Left Eye")] LeftEye,
+    [InspectorName("Right Eye")] RightEye
+}
+
 [Serializable]
 public sealed class PlayerHitZone
 {
-    [SerializeField] private string zoneName = "Body";
+    [Tooltip("Часть тела, в которую попадает пуля")]
+    [SerializeField] private BodyZoneType zoneType = BodyZoneType.Body;
     [SerializeField] private Collider hitCollider;
     [SerializeField] private HitZoneDamageMode damageMode = HitZoneDamageMode.BulletDamageMultiplier;
     [Min(0f)] [SerializeField] private float damageValue = 1f;
+    [Tooltip("Дополнительные очки за убийство в эту часть тела")]
+    [Min(0)] [SerializeField] private int killPoints = 0;
 
-    public string ZoneName => string.IsNullOrWhiteSpace(zoneName) ? "Unnamed" : zoneName;
+    public string ZoneName => GetZoneDisplayName(zoneType);
+    public BodyZoneType ZoneType => zoneType;
     public Collider HitCollider => hitCollider;
     public HitZoneDamageMode DamageMode => damageMode;
     public float DamageValue => Mathf.Max(0f, damageValue);
+    public int KillPoints => Mathf.Max(0, killPoints);
+
+    public static string GetZoneDisplayName(BodyZoneType type)
+    {
+        switch (type)
+        {
+            case BodyZoneType.LeftHand: return "Left Hand";
+            case BodyZoneType.RightHand: return "Right Hand";
+            case BodyZoneType.Head: return "Head";
+            case BodyZoneType.Body: return "Body";
+            case BodyZoneType.LeftEye: return "Left Eye";
+            case BodyZoneType.RightEye: return "Right Eye";
+            default: return "Body";
+        }
+    }
 
     public float CalculateDamage(float bulletDamage)
     {

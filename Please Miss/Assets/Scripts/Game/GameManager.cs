@@ -12,7 +12,10 @@ public class GameManager : NetworkBehaviour
     public static bool LocalRunnerFinished { get; set; }
 
     /// <summary>Raised on clients that are the sniper when a runner is killed by the sniper.</summary>
-    public event Action<string, Color32, float, string> OnSniperKillRecorded;
+    public event Action<string, Color32, float, string, int, int> OnSniperKillRecorded;
+
+    /// <summary>Raised on clients that are runners when their end-of-game reward is granted.</summary>
+    public event Action<int, string> OnRunnerRewardRecorded;
 
     public enum GameState : byte
     {
@@ -26,6 +29,14 @@ public class GameManager : NetworkBehaviour
     [SerializeField] private float gameDuration = 180f;
 
     public float GameDuration => gameDuration;
+
+    [Header("Rewards")]
+    [Tooltip("Сколько очков снайпер получает за каждое убийство бегуна в конце игры")]
+    [SerializeField] private int sniperKillReward = 50;
+    [Tooltip("Сколько очков бегун получает за добегание до победной зоны")]
+    [SerializeField] private int runnerFinishReward = 250;
+    [Tooltip("Сколько очков бегун получает за смерть")]
+    [SerializeField] private int runnerDeathReward = 100;
 
     [Header("References")]
     [SerializeField] private GameObject[] startWalls;
@@ -58,6 +69,8 @@ public class GameManager : NetworkBehaviour
 
     private float prepareTimer;
     private float gameTimer;
+    private int sniperKills;
+    private int sniperBonusPoints;
     private readonly Dictionary<ulong, PlayerHealth> trackedRunners = new Dictionary<ulong, PlayerHealth>();
 
     private readonly Dictionary<ulong, Action<bool>> runnerDeathCallbacks = new Dictionary<ulong, Action<bool>>();
@@ -65,6 +78,7 @@ public class GameManager : NetworkBehaviour
         new Dictionary<ulong, Action<DamageInfo, float, string>>();
     private readonly Dictionary<ulong, DamageInfo> lastRunnerDamage = new Dictionary<ulong, DamageInfo>();
     private readonly Dictionary<ulong, string> lastRunnerZone = new Dictionary<ulong, string>();
+    private readonly Dictionary<ulong, int> lastRunnerBonusPoints = new Dictionary<ulong, int>();
 
     public readonly NetworkList<ulong> FinishedRunners = new NetworkList<ulong>();
     private ulong? sniperClientId;
@@ -191,6 +205,7 @@ public class GameManager : NetworkBehaviour
             runnerDamageCallbacks.Remove(clientId);
             lastRunnerDamage.Remove(clientId);
             lastRunnerZone.Remove(clientId);
+            lastRunnerBonusPoints.Remove(clientId);
             trackedRunners.Remove(clientId);
         }
     }
@@ -234,6 +249,18 @@ public class GameManager : NetworkBehaviour
     {
         lastRunnerDamage[clientId] = damageInfo;
         lastRunnerZone[clientId] = zoneName;
+
+        int bonus = 0;
+
+        if (trackedRunners.TryGetValue(clientId, out var health) && health != null &&
+            damageInfo.HitCollider != null)
+        {
+            PlayerHitZone zone = health.FindHitZone(damageInfo.HitCollider);
+            if (zone != null)
+                bonus = zone.KillPoints;
+        }
+
+        lastRunnerBonusPoints[clientId] = bonus;
     }
 
     private void OnRunnerDeathStateChanged(ulong clientId, bool dead)
@@ -254,6 +281,13 @@ public class GameManager : NetworkBehaviour
 
         if (!lastRunnerDamage.TryGetValue(runnerClientId, out var damageInfo)) return;
         if (damageInfo.AttackerClientId != sniperClientId.Value) return;
+
+        sniperKills++;
+
+        int bonus = lastRunnerBonusPoints.TryGetValue(runnerClientId, out var storedBonus)
+            ? storedBonus
+            : 0;
+        sniperBonusPoints += bonus;
 
         string playerName = "Player";
         Color32 color = Color.white;
@@ -289,6 +323,8 @@ public class GameManager : NetworkBehaviour
             LocalPlayerSettings.PackColor(color),
             survivedTime,
             new FixedString32Bytes(zoneName),
+            sniperKillReward,
+            bonus,
             rpcParams
         );
     }
@@ -299,13 +335,17 @@ public class GameManager : NetworkBehaviour
         int packedColor,
         float survivedTime,
         FixedString32Bytes zoneName,
+        int mainPoints,
+        int bonusPoints,
         ClientRpcParams rpcParams = default)
     {
         OnSniperKillRecorded?.Invoke(
             playerName.ToString(),
             LocalPlayerSettings.UnpackColor(packedColor),
             survivedTime,
-            zoneName.ToString()
+            zoneName.ToString(),
+            mainPoints,
+            bonusPoints
         );
     }
 
@@ -458,12 +498,84 @@ public class GameManager : NetworkBehaviour
         State.Value = GameState.Ended;
         KillAllRunners();
         SniperWinsClientRpc();
+        SendSniperReward();
+        SendRunnerRewards();
     }
 
     private void RunnerWins()
     {
         State.Value = GameState.Ended;
         RunnerWinsClientRpc();
+        SendSniperReward();
+        SendRunnerRewards();
+    }
+
+    private void SendRunnerRewards()
+    {
+        if (NetworkManager.Singleton == null) return;
+
+        foreach (var kvp in trackedRunners)
+        {
+            ulong clientId = kvp.Key;
+            int reward = 0;
+            string reason = "";
+
+            if (FinishedRunners.Contains(clientId))
+            {
+                reward = runnerFinishReward;
+                reason = "Finish";
+            }
+            else if (kvp.Value != null && kvp.Value.IsDead)
+            {
+                reward = runnerDeathReward;
+                reason = "Death";
+            }
+
+            if (reward <= 0) continue;
+
+            ClientRpcParams rpcParams = new ClientRpcParams
+            {
+                Send = new ClientRpcSendParams
+                {
+                    TargetClientIds = new ulong[] { clientId }
+                }
+            };
+
+            RunnerRewardClientRpc(reward, new FixedString32Bytes(reason), rpcParams);
+        }
+    }
+
+    [ClientRpc]
+    private void RunnerRewardClientRpc(int reward, FixedString32Bytes reason, ClientRpcParams rpcParams = default)
+    {
+        if (reward <= 0) return;
+
+        LocalPlayerSettings.AddPoints(reward);
+        OnRunnerRewardRecorded?.Invoke(reward, reason.ToString());
+    }
+
+    private void SendSniperReward()
+    {
+        if (!sniperClientId.HasValue || (sniperKills <= 0 && sniperBonusPoints <= 0)) return;
+
+        ClientRpcParams rpcParams = new ClientRpcParams
+        {
+            Send = new ClientRpcSendParams
+            {
+                TargetClientIds = new ulong[] { sniperClientId.Value }
+            }
+        };
+
+        SniperRewardClientRpc(sniperKills, sniperKillReward, sniperBonusPoints, rpcParams);
+    }
+
+    [ClientRpc]
+    private void SniperRewardClientRpc(int totalKills, int rewardPerKill, int totalBonus, ClientRpcParams rpcParams = default)
+    {
+        if (totalKills <= 0 && totalBonus <= 0) return;
+        if (rewardPerKill < 0) return;
+
+        LocalPlayerSettings.AddPoints(totalKills * rewardPerKill + totalBonus);
     }
 
     private void ConfigureAllPlayers()
