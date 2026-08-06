@@ -103,6 +103,7 @@ MonoBehaviour:
   buyButton: {fileID: 7902208215712733283}
   buyButtonText: {fileID: 8590165152053936964}
   definition: {fileID: 0}
+  purchasedButtonColor: {r: 0.25, g: 0.55, b: 0.3, a: 1}
 --- !u!1 &200000
 GameObject:
   m_ObjectHideFlags: 0
@@ -137,7 +138,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 122}
+  m_AnchoredPosition: {x: 0, y: 135}
   m_SizeDelta: {x: 200, y: 200}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &220000

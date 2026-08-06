@@ -143,6 +143,8 @@ public class LobbyManager : NetworkBehaviour
         UpdateWarning();
     }
 
+    private int MinPlayers => lobbyUI != null ? lobbyUI.MinPlayers : 2;
+
     private void UpdateWarning()
     {
         if (lobbyUI == null) return;
@@ -159,11 +161,14 @@ public class LobbyManager : NetworkBehaviour
             if (roleComp.CurrentRole == PlayerRole.Sniper) sniperCount++;
         }
 
+        int playerCount = NetworkManager.Singleton.ConnectedClientsIds.Count;
         int warning = 0;
 
-        if (sniperCount > 1)
+        if (allReady && playerCount < MinPlayers)
+            warning = 3;
+        else if (sniperCount > 1)
             warning = 2;
-        else if (allReady && sniperCount == 0 && NetworkManager.Singleton.ConnectedClientsIds.Count >= 2)
+        else if (allReady && sniperCount == 0)
             warning = 1;
 
         lobbyUI.SetWarning(warning);
@@ -194,7 +199,7 @@ public class LobbyManager : NetworkBehaviour
     private void CheckAllReady()
     {
         if (IsCountdownActive) return;
-        if (NetworkManager.Singleton.ConnectedClientsIds.Count < 2) return;
+        if (NetworkManager.Singleton.ConnectedClientsIds.Count < MinPlayers) return;
 
         int sniperCount = 0;
 

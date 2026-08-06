@@ -375,7 +375,7 @@ MonoBehaviour:
   canInteract: 1
   cancelOnCanInteractFail: 1
   itemName: Rifle Standart
-  inventoryIcon: {fileID: 21300000, guid: cf0668a5dad80a2488e1fae752220311, type: 3}
+  inventoryIcon: {fileID: 1664454394, guid: ff19c0c1710987e458cb5e039ee82024, type: 3}
   sellPrice: 10
   buyPrice: 20
   purpose: 0

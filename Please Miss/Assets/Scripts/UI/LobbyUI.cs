@@ -18,6 +18,10 @@ public class LobbyUI : MonoBehaviour
     [Header("Warning")]
     [SerializeField] private GameObject noSniperWarning;
     [SerializeField] private GameObject multiSniperWarning;
+    [Tooltip("Минимальное количество игроков для старта. Позже будет определяться выбранным режимом игры")]
+    [SerializeField] private int minPlayers = 2;
+    [SerializeField] private GameObject notEnoughPlayersWarning;
+    [SerializeField] private TMP_Text notEnoughText;
 
     [Header("HUD")]
     [SerializeField] private LobbyHudUI hudUI;
@@ -127,6 +131,8 @@ public class LobbyUI : MonoBehaviour
             countdownPanel.SetActive(false);
     }
 
+    public int MinPlayers => minPlayers;
+
     public void SetWarning(int type)
     {
         if (noSniperWarning != null)
@@ -134,6 +140,12 @@ public class LobbyUI : MonoBehaviour
 
         if (multiSniperWarning != null)
             multiSniperWarning.SetActive(type == 2);
+
+        if (notEnoughPlayersWarning != null)
+            notEnoughPlayersWarning.SetActive(type == 3);
+
+        if (notEnoughText != null)
+            notEnoughText.text = $"Need at least {minPlayers} players";
     }
 
     public void FastStartTest()

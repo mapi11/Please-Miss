@@ -265,8 +265,13 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   handTarget: {fileID: 2555282885965871115}
   canInteract: 1
+  cancelOnCanInteractFail: 1
   itemName: Rifle MiniGun
-  inventoryIcon: {fileID: 21300000, guid: 90f4d021d2108dd448a7fbe32908f6ef, type: 3}
+  inventoryIcon: {fileID: 1643522892, guid: ff19c0c1710987e458cb5e039ee82024, type: 3}
+  sellPrice: 10
+  buyPrice: 20
+  purpose: 0
+  itemClass: 0
   heldVisualPrefab: {fileID: 8261763151183194515, guid: d0b070e1ce835104a8e6e53b9eabaa9c, type: 3}
 --- !u!54 &2736446896662914822
 Rigidbody:
