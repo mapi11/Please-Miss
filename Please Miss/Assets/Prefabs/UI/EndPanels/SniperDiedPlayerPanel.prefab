@@ -586,7 +586,7 @@ GameObject:
   - component: {fileID: 4487812770505286108}
   - component: {fileID: 4639569144154324762}
   m_Layer: 5
-  m_Name: (EndPanel) SniperDiedPlayerPanel
+  m_Name: SniperDiedPlayerPanel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

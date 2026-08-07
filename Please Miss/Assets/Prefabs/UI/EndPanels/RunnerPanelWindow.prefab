@@ -903,7 +903,7 @@ GameObject:
   - component: {fileID: 6799413236824926856}
   - component: {fileID: 366362857509770851}
   m_Layer: 5
-  m_Name: (EndPanel)RunnerPanel
+  m_Name: RunnerPanelWindow
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1246,7 +1246,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_Content: {fileID: 3633929919175235369}
   m_Horizontal: 1
-  m_Vertical: 1
+  m_Vertical: 0
   m_MovementType: 1
   m_Elasticity: 0.1
   m_Inertia: 1

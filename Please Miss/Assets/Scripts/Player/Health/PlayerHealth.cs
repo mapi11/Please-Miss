@@ -83,6 +83,8 @@ public sealed class PlayerHealth : NetworkBehaviour, IDamageable
     [Header("Hit zones")]
     [Tooltip("The exact collider struck by the projectile is looked up in this list.")]
     [SerializeField] private List<PlayerHitZone> hitZones = new List<PlayerHitZone>();
+    [Tooltip("Trigger-коллайдер \"близкий пролёт\". Если пуля пересекла его, но не попала в игрока, игрок получает бонусные очки")]
+    [SerializeField] private Collider nearMissCollider;
 
     [Header("Audio")]
     [SerializeField] private PlayerSfx playerSfx;
@@ -123,6 +125,7 @@ public sealed class PlayerHealth : NetworkBehaviour, IDamageable
     public float LastDeathTorque => IsSpawned ? networkDeathTorque.Value : offlineDeathTorque;
     public float DebugHealthStep => debugHealthStep;
     public IReadOnlyList<PlayerHitZone> HitZones => hitZones;
+    public Collider NearMissCollider => nearMissCollider;
 
     private void Awake()
     {

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -11,7 +12,6 @@ public sealed class NetworkProjectile : NetworkBehaviour
     [Header("Collision")]
     [SerializeField] private Collider hitCollider;
     [SerializeField] private LayerMask hitMask = ~0;
-    [SerializeField] private QueryTriggerInteraction triggerInteraction = QueryTriggerInteraction.Ignore;
     [Min(0.1f)] [SerializeField] private float maximumLifetime = 15f;
     [SerializeField] private int bulletLayer = -1;
 
@@ -30,6 +30,7 @@ public sealed class NetworkProjectile : NetworkBehaviour
     );
 
     private readonly RaycastHit[] hitBuffer = new RaycastHit[24];
+    private readonly HashSet<ulong> nearMissedPlayers = new HashSet<ulong>();
     private MaterialPropertyBlock propertyBlock;
 
     private float currentSpeed;
@@ -164,9 +165,12 @@ public sealed class NetworkProjectile : NetworkBehaviour
                 );
 
                 damageable.TakeDamage(in damageInfo);
+
+                PlayerHealth hitHealth = hit.collider.GetComponentInParent<PlayerHealth>();
+                if (hitHealth != null)
+                    nearMissedPlayers.Remove(hitHealth.OwnerClientId);
             }
 
-            // Future properties such as IgniteGround can be handled here.
             DespawnProjectile();
             return;
         }
@@ -191,7 +195,7 @@ public sealed class NetworkProjectile : NetworkBehaviour
                 hitBuffer,
                 distance,
                 hitMask,
-                triggerInteraction
+                QueryTriggerInteraction.Collide
             );
         }
         else
@@ -202,7 +206,7 @@ public sealed class NetworkProjectile : NetworkBehaviour
                 hitBuffer,
                 distance,
                 hitMask,
-                triggerInteraction
+                QueryTriggerInteraction.Collide
             );
         }
 
@@ -226,6 +230,13 @@ public sealed class NetworkProjectile : NetworkBehaviour
             if (hitNetworkObject != null && hitNetworkObject.OwnerClientId == attackerClientId)
                 continue;
 
+            PlayerHealth health = candidate.collider.GetComponentInParent<PlayerHealth>();
+            if (health != null && health.NearMissCollider == candidate.collider)
+            {
+                RecordNearMiss(health);
+                continue;
+            }
+
             if (candidate.distance >= nearestDistance)
                 continue;
 
@@ -235,6 +246,53 @@ public sealed class NetworkProjectile : NetworkBehaviour
         }
 
         return found;
+    }
+
+    private void RecordNearMiss(PlayerHealth health)
+    {
+        if (health == null || !health.IsSpawned || health.IsDead)
+            return;
+
+        nearMissedPlayers.Add(health.OwnerClientId);
+    }
+
+    private void AwardNearMissBonuses()
+    {
+        if (nearMissedPlayers.Count == 0)
+            return;
+
+        int reward = GameManager.Instance != null ? GameManager.Instance.NearMissReward : 0;
+        if (reward <= 0)
+        {
+            nearMissedPlayers.Clear();
+            return;
+        }
+
+        foreach (ulong clientId in nearMissedPlayers)
+        {
+            ClientRpcParams rpcParams = new ClientRpcParams
+            {
+                Send = new ClientRpcSendParams
+                {
+                    TargetClientIds = new ulong[] { clientId }
+                }
+            };
+
+            NearMissBonusClientRpc(reward, rpcParams);
+        }
+
+        nearMissedPlayers.Clear();
+    }
+
+    [ClientRpc]
+    private void NearMissBonusClientRpc(int reward, ClientRpcParams rpcParams = default)
+    {
+        if (reward <= 0) return;
+
+        LocalPlayerSettings.AddPoints(reward);
+
+        if (GameManager.Instance != null)
+            GameManager.Instance.NotifyNearMissReward(reward);
     }
 
     private void OnBulletIdChanged(FixedString64Bytes oldValue, FixedString64Bytes newValue)
@@ -292,6 +350,8 @@ public sealed class NetworkProjectile : NetworkBehaviour
 
     private void DespawnProjectile()
     {
+        AwardNearMissBonuses();
+
         if (NetworkObject != null && NetworkObject.IsSpawned)
             NetworkObject.Despawn(true);
         else

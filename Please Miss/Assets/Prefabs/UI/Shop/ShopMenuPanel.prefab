@@ -187,6 +187,8 @@ MonoBehaviour:
   shopItemsContainer: {fileID: 7993038165985059501}
   buyItemSlotPrefab: {fileID: 4677841107583006339, guid: f9fd64b0dfc398e4c94c5f3c96980aa7, type: 3}
   shopItems:
+  - itemPrefab: {fileID: 127289103789348462, guid: 43701498245fe4f4fbe97451746f4a1a, type: 3}
+    discountPercent: 0
   - itemPrefab: {fileID: 2490301674227407094, guid: 64af151f458de6f488c9f82c7798af0a, type: 3}
     discountPercent: 0
   - itemPrefab: {fileID: 2490301674227407094, guid: a9b2ed5e23941b04693cc4bbfd76e037, type: 3}

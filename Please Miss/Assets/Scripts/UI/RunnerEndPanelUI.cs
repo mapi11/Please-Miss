@@ -55,18 +55,24 @@ public class RunnerEndPanelUI : MonoBehaviour
 
         if (GameManager.Instance != null)
             GameManager.Instance.OnRunnerRewardRecorded -= OnRunnerRewardRecorded;
+        if (GameManager.Instance != null)
+            GameManager.Instance.OnNearMissRecorded -= OnNearMissRecorded;
     }
 
     private void OnEnable()
     {
         if (GameManager.Instance != null)
             GameManager.Instance.OnRunnerRewardRecorded += OnRunnerRewardRecorded;
+        if (GameManager.Instance != null)
+            GameManager.Instance.OnNearMissRecorded += OnNearMissRecorded;
     }
 
     private void OnDisable()
     {
         if (GameManager.Instance != null)
             GameManager.Instance.OnRunnerRewardRecorded -= OnRunnerRewardRecorded;
+        if (GameManager.Instance != null)
+            GameManager.Instance.OnNearMissRecorded -= OnNearMissRecorded;
     }
 
     private void Update()
@@ -165,6 +171,25 @@ public class RunnerEndPanelUI : MonoBehaviour
     private void OnRunnerRewardRecorded(int reward, string reason)
     {
         SpawnRewardCard(reward, reason);
+    }
+
+    private void OnNearMissRecorded(int reward, string reason)
+    {
+        RectTransform container = ResolveRewardsContainer();
+
+        GameObject cardObject;
+        if (rewardPanelPrefab != null)
+        {
+            cardObject = Instantiate(rewardPanelPrefab, container, false);
+        }
+        else
+        {
+            cardObject = CreateRewardCardFallback(container);
+        }
+
+        var panel = cardObject.GetComponent<RewardPanel>();
+        if (panel != null)
+            panel.Setup(0, "", reward, reason);
     }
 
     private void SpawnRewardCard(int reward, string reason)

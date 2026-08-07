@@ -17,6 +17,20 @@ public class GameManager : NetworkBehaviour
     /// <summary>Raised on clients that are runners when their end-of-game reward is granted.</summary>
     public event Action<int, string> OnRunnerRewardRecorded;
 
+    /// <summary>Raised on a client when it receives a near-miss bonus for a bullet that passed close by.</summary>
+    public event Action<int, string> OnNearMissRecorded;
+
+    public void NotifyNearMissReward(int reward)
+    {
+        OnNearMissRecorded?.Invoke(reward, "Near miss");
+    }
+
+    public void NotifyHealReward(int reward)
+    {
+        if (reward <= 0) return;
+        OnRunnerRewardRecorded?.Invoke(reward, "Heal");
+    }
+
     public enum GameState : byte
     {
         Preparing,
@@ -37,6 +51,13 @@ public class GameManager : NetworkBehaviour
     [SerializeField] private int runnerFinishReward = 250;
     [Tooltip("Сколько очков бегун получает за смерть")]
     [SerializeField] private int runnerDeathReward = 100;
+    [Tooltip("Бонус игроку за близко пролетевшую пулю (пересекла trigger, но не попала)")]
+    [SerializeField] private int nearMissReward = 50;
+    [Tooltip("Сколько очков получает игрок за вылеченного напарника")]
+    [SerializeField] private int healReward = 50;
+
+    public int NearMissReward => nearMissReward;
+    public int HealReward => healReward;
 
     [Header("References")]
     [SerializeField] private GameObject[] startWalls;
@@ -79,6 +100,7 @@ public class GameManager : NetworkBehaviour
     private readonly Dictionary<ulong, DamageInfo> lastRunnerDamage = new Dictionary<ulong, DamageInfo>();
     private readonly Dictionary<ulong, string> lastRunnerZone = new Dictionary<ulong, string>();
     private readonly Dictionary<ulong, int> lastRunnerBonusPoints = new Dictionary<ulong, int>();
+    private readonly HashSet<ulong> rewardedRunners = new HashSet<ulong>();
 
     public readonly NetworkList<ulong> FinishedRunners = new NetworkList<ulong>();
     private ulong? sniperClientId;
@@ -206,6 +228,7 @@ public class GameManager : NetworkBehaviour
             lastRunnerDamage.Remove(clientId);
             lastRunnerZone.Remove(clientId);
             lastRunnerBonusPoints.Remove(clientId);
+            rewardedRunners.Remove(clientId);
             trackedRunners.Remove(clientId);
         }
     }
@@ -270,8 +293,29 @@ public class GameManager : NetworkBehaviour
 
         if (State.Value != GameState.Playing) return;
 
+        if (dead)
+            GrantRunnerRewardImmediately(clientId, runnerDeathReward, "Death");
+
         if (!HasActiveRunners())
             SniperWins();
+    }
+
+    private void GrantRunnerRewardImmediately(ulong clientId, int reward, string reason)
+    {
+        if (reward <= 0) return;
+        if (rewardedRunners.Contains(clientId)) return;
+
+        rewardedRunners.Add(clientId);
+
+        ClientRpcParams rpcParams = new ClientRpcParams
+        {
+            Send = new ClientRpcSendParams
+            {
+                TargetClientIds = new ulong[] { clientId }
+            }
+        };
+
+        RunnerRewardClientRpc(reward, new FixedString32Bytes(reason), rpcParams);
     }
 
     private void NotifySniperKill(ulong runnerClientId)
@@ -431,6 +475,7 @@ public class GameManager : NetworkBehaviour
         if (FinishedRunners.Contains(clientId)) return;
 
         FinishedRunners.Add(clientId);
+        GrantRunnerRewardImmediately(clientId, runnerFinishReward, "Finish");
         NotifyRunnerFinishedClientRpc(clientId);
 
         if (NetworkManager.Singleton.ConnectedClients.TryGetValue(clientId, out var client) &&
@@ -517,6 +562,8 @@ public class GameManager : NetworkBehaviour
         foreach (var kvp in trackedRunners)
         {
             ulong clientId = kvp.Key;
+            if (rewardedRunners.Contains(clientId)) continue;
+
             int reward = 0;
             string reason = "";
 

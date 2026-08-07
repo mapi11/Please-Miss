@@ -14,7 +14,7 @@ public class RewardPanel : MonoBehaviour
         ResolveElements();
 
         if (mainPointsText != null)
-            mainPointsText.text = $"+{mainPoints} {mainLabel}";
+            mainPointsText.text = mainPoints > 0 ? $"+{mainPoints} {mainLabel}" : "";
 
         if (bonusPointsText != null)
             bonusPointsText.text = bonusPoints > 0 && !string.IsNullOrWhiteSpace(bonusLabel)
