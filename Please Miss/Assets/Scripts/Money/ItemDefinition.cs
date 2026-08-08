@@ -25,6 +25,8 @@ public sealed class ItemDefinition
     public Color IconColor = Color.white;
     public Sprite IconSprite;
     public int SellPrice = 10;
+    public int BuyPrice = 20;
+    public string Description;
 
     public ItemDefinition()
     {
@@ -89,6 +91,14 @@ public static class ItemCatalog
         items[0].SellPrice = 50;
         items[1].SellPrice = 100;
         items[2].SellPrice = 200;
+
+        items[0].BuyPrice = 100;
+        items[1].BuyPrice = 200;
+        items[2].BuyPrice = 400;
+
+        items[0].Description = "Ускорение бега на короткое время";
+        items[1].Description = "Восстанавливает здоровье игрока";
+        items[2].Description = "Телепорт в безопасное место";
     }
     private static readonly System.Collections.Generic.Dictionary<string, ItemDefinition> extraItems =
         new System.Collections.Generic.Dictionary<string, ItemDefinition>();

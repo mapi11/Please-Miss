@@ -651,6 +651,7 @@ MonoBehaviour:
   inventoryIcon: {fileID: -158208754, guid: 086762bd07c61634e83a0f3bf49c1533, type: 3}
   sellPrice: 150
   buyPrice: 300
+  description: A small first aid kit for treating yourself or other runners
   purpose: 1
   itemClass: 1
   heldVisualPrefab: {fileID: 2069241555282401964, guid: c47053cc73acfbe40a2123adf1de98d9, type: 3}

@@ -111,6 +111,8 @@ public class BuyItemSlot : MonoBehaviour
         {
             IconSprite = item.InventoryIcon,
             SellPrice = item.SellPrice,
+            BuyPrice = item.BuyPrice,
+            Description = item.Description,
             Class = item.ItemClass
         };
 

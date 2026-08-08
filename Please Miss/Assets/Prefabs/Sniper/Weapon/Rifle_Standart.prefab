@@ -378,6 +378,7 @@ MonoBehaviour:
   inventoryIcon: {fileID: 1664454394, guid: ff19c0c1710987e458cb5e039ee82024, type: 3}
   sellPrice: 10
   buyPrice: 20
+  description: A starting rifle with average characteristics
   purpose: 0
   itemClass: 0
   heldVisualPrefab: {fileID: 8443404322149711434, guid: 3ef1b56ee5654624fa3cf0c12f910676, type: 3}

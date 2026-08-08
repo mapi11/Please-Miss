@@ -16,6 +16,10 @@ public class PickableItem : Interactable
     [Tooltip("Points required to buy this item")]
     [SerializeField] private int buyPrice = 20;
 
+    [Header("Description")]
+    [Tooltip("Описание предмета, показывается в ItemInfo в меню инвентаря")]
+    [SerializeField] private string description;
+
     [Header("Purpose & Class")]
     [Tooltip("What the item is used for")]
     [SerializeField] private ItemPurpose purpose = ItemPurpose.Boost;
@@ -31,6 +35,7 @@ public class PickableItem : Interactable
     public int BuyPrice => buyPrice;
     public ItemPurpose Purpose => purpose;
     public ItemClass ItemClass => itemClass;
+    public string Description => description;
     public GameObject HeldVisualPrefab => heldVisualPrefab;
 
     public void SetupItem(string name, Sprite icon)

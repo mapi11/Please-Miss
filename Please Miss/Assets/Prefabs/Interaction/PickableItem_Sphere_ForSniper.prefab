@@ -264,6 +264,7 @@ MonoBehaviour:
   inventoryIcon: {fileID: 21300000, guid: 9507092dc5072a541abdba2779cf47b9, type: 3}
   sellPrice: 155
   buyPrice: 310
+  description: Just shere for sniper
   purpose: 2
   itemClass: 2
   heldVisualPrefab: {fileID: 0}

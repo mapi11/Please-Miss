@@ -264,6 +264,7 @@ MonoBehaviour:
   inventoryIcon: {fileID: 21300000, guid: 9507092dc5072a541abdba2779cf47b9, type: 3}
   sellPrice: 150
   buyPrice: 300
+  description: Just sphere
   purpose: 2
   itemClass: 0
   heldVisualPrefab: {fileID: 0}

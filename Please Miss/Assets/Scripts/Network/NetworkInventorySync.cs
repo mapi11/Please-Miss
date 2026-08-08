@@ -461,7 +461,9 @@ public class NetworkInventorySync : NetworkBehaviour
 
         List<string> equipment = GetEquipmentForRole(role);
 
-        for (int i = 0; i < equipment.Count && i < LocalPlayerSettings.EquipmentSlotsCount; i++)
+        int equipmentSlots = LocalPlayerSettings.GetEquipmentSlotsCount(role == PlayerRole.Runner);
+
+        for (int i = 0; i < equipment.Count && i < equipmentSlots; i++)
         {
             string itemId = equipment[i];
 

@@ -267,6 +267,17 @@ public static class LocalPlayerSettings
 
     public const int EquipmentSlotsCount = 2;
 
+    /// <summary>Сколько слотов снаряжения у бегуна в меню инвентаря.</summary>
+    public const int RunnerEquipmentSlotsCount = 3;
+
+    /// <summary>Сколько слотов снаряжения у снайпера в меню инвентаря (плюс отдельный слот винтовки).</summary>
+    public const int SniperEquipmentSlotsCount = 2;
+
+    public static int GetEquipmentSlotsCount(bool isRunner)
+    {
+        return isRunner ? RunnerEquipmentSlotsCount : SniperEquipmentSlotsCount;
+    }
+
     private static string InventoryItemsKey => MakeKey(InventoryItemsPrefix);
     private static string EquipmentItemsKey => MakeKey(EquipmentItemsPrefix);
 
@@ -339,7 +350,7 @@ public static class LocalPlayerSettings
 
     public static void SetRunnerEquipmentSlot(int slotIndex, string itemId)
     {
-        SetRoleEquipmentSlot(EquipmentRunnerItemsKey, slotIndex, itemId);
+        SetRoleEquipmentSlot(EquipmentRunnerItemsKey, RunnerEquipmentSlotsCount, slotIndex, itemId);
     }
 
     public static string GetRunnerEquipmentSlot(int slotIndex)
@@ -349,7 +360,7 @@ public static class LocalPlayerSettings
 
     public static void SetSniperEquipmentSlot(int slotIndex, string itemId)
     {
-        SetRoleEquipmentSlot(EquipmentSniperItemsKey, slotIndex, itemId);
+        SetRoleEquipmentSlot(EquipmentSniperItemsKey, SniperEquipmentSlotsCount, slotIndex, itemId);
     }
 
     public static string GetSniperEquipmentSlot(int slotIndex)
@@ -357,9 +368,9 @@ public static class LocalPlayerSettings
         return GetRoleEquipmentSlot(EquipmentSniperItemsKey, slotIndex);
     }
 
-    private static void SetRoleEquipmentSlot(string key, int slotIndex, string itemId)
+    private static void SetRoleEquipmentSlot(string key, int maxSlots, int slotIndex, string itemId)
     {
-        if (slotIndex < 0 || slotIndex >= EquipmentSlotsCount)
+        if (slotIndex < 0 || slotIndex >= maxSlots)
             return;
 
         var items = GetStringList(key);

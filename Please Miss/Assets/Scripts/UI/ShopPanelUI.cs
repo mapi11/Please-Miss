@@ -82,6 +82,8 @@ public class ShopPanelUI : MonoBehaviour
             {
                 IconSprite = entry.itemPrefab.InventoryIcon,
                 SellPrice = entry.itemPrefab.SellPrice,
+                BuyPrice = entry.itemPrefab.BuyPrice,
+                Description = entry.itemPrefab.Description,
                 Class = entry.itemPrefab.ItemClass
             };
 

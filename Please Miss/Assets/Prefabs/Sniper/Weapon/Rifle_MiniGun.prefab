@@ -270,6 +270,7 @@ MonoBehaviour:
   inventoryIcon: {fileID: 1643522892, guid: ff19c0c1710987e458cb5e039ee82024, type: 3}
   sellPrice: 10
   buyPrice: 20
+  description: It's a fu*king minigun with toy bullets
   purpose: 0
   itemClass: 0
   heldVisualPrefab: {fileID: 8261763151183194515, guid: d0b070e1ce835104a8e6e53b9eabaa9c, type: 3}

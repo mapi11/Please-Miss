@@ -218,6 +218,7 @@ MonoBehaviour:
   inventoryIcon: {fileID: 21300000, guid: 931d3dc4305a1ff488de558297ed9f8b, type: 3}
   sellPrice: 75
   buyPrice: 150
+  description: Just cube
   purpose: 2
   itemClass: 0
   heldVisualPrefab: {fileID: 0}
