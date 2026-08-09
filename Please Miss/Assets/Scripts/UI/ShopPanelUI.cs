@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 using DG.Tweening;
 
@@ -23,19 +24,14 @@ public class ShopPanelUI : MonoBehaviour
         [Min(0)] public int buyPrice;
     }
 
-    [Header("Content")]
-    [SerializeField] private RectTransform shopItemsContainer;
-    [SerializeField] private BuyItemSlot buyItemSlotPrefab;
-    [SerializeField] private List<ShopItemEntry> shopItems = new List<ShopItemEntry>();
-
-    [Header("Guns Tab")]
-    [SerializeField] private Button itemsTabButton;
-    [SerializeField] private Button gunsTabButton;
-    [SerializeField] private RectTransform itemsRoot;
-    [SerializeField] private RectTransform gunsRoot;
-    [SerializeField] private RectTransform gunsContainer;
-    [SerializeField] private GunShopCard gunCardPrefab;
-    [SerializeField] private List<GunEntry> gunItems = new List<GunEntry>();
+    [System.Serializable]
+    public sealed class PurposeFilterEntry
+    {
+        [Tooltip("Кнопка фильтра по назначению")]
+        public Button button;
+        [Tooltip("Какая цель (как в PickableItem)")]
+        public ItemPurpose purpose;
+    }
 
     [Header("Window")]
     [SerializeField] private RectTransform windowRoot;
@@ -43,7 +39,53 @@ public class ShopPanelUI : MonoBehaviour
     [SerializeField] private Button closeButton2;
     [SerializeField] private TMP_Text pointsText;
 
+    [Header("Items Tab")]
+    [SerializeField] private RectTransform shopItemsContainer;
+    [Tooltip("Префаб карточки предмета в магазине")]
+    [FormerlySerializedAs("buyItemSlotPrefab")]
+    [SerializeField] private BuyItemSlot itemCardPrefab;
+    [SerializeField] private List<ShopItemEntry> shopItems = new List<ShopItemEntry>();
+
+    [Header("Role Filters")]
+    [Tooltip("Основные фильтры по роли: All (все предметы всех ролей), Sniper, Runner")]
+    [SerializeField] private Button roleAllButton;
+    [SerializeField] private Button roleSniperButton;
+    [SerializeField] private Button roleRunnerButton;
+
+    [Header("Purpose Filters")]
+    [Tooltip("Кнопка сброса фильтра по назначению (показывает все предметы выбранной роли)")]
+    [SerializeField] private Button purposeAllButton;
+    [Tooltip("Массив кнопок фильтра по назначению: кнопка + Purpose. " +
+             "Кнопка скрывается, если у выбранной роли нет ни одного предмета с этим Purpose")]
+    [SerializeField] private List<PurposeFilterEntry> purposeFilters = new List<PurposeFilterEntry>();
+
+    [Header("Guns Tab")]
+    [SerializeField] private Button itemsTabButton;
+    [SerializeField] private Button gunsTabButton;
+    [SerializeField] private RectTransform itemsRoot;
+    [SerializeField] private RectTransform gunsRoot;
+    [Tooltip("Контейнер списка карточек оружия (иконка, название, цена, кнопка Info)")]
+    [SerializeField] private RectTransform gunsContainer;
+    [SerializeField] private GunShopCard gunCardPrefab;
+    [SerializeField] private List<GunEntry> gunItems = new List<GunEntry>();
+    [Tooltip("Панель информации о винтовке (открывается с карточки оружия)")]
+    [SerializeField] private GunInfoPanel gunInfoPanel;
+    [Tooltip("Цепная скидка: первая по порядку некупленная винтовка получает скидку. " +
+             "Купил её — скидка переходит к следующей некупленной")]
+    [Range(0f, 100f)]
+    [SerializeField] private int chainDiscountPercent = 10;
+
+    private enum RoleFilter
+    {
+        All,
+        Sniper,
+        Runner
+    }
+
     private bool gunsTabOpen;
+    private RoleFilter roleFilter = RoleFilter.All;
+    private bool purposeAll = true;
+    private ItemPurpose selectedPurpose;
 
     private void Awake()
     {
@@ -98,6 +140,7 @@ public class ShopPanelUI : MonoBehaviour
         EnsureCloseButtons();
         BindTabs();
         ShowGunsTab(false);
+        BindFilterButtons();
         LocalPlayerSettings.PointsChanged += OnPointsChanged;
         RefreshPoints();
         Refresh();
@@ -113,7 +156,9 @@ public class ShopPanelUI : MonoBehaviour
     {
         RefreshPoints();
         RefreshSlotsInteractable();
-        RefreshGunCards();
+
+        if (gunInfoPanel != null && gunInfoPanel.IsOpen)
+            gunInfoPanel.OnPlayerPointsChanged();
     }
 
     private void BindTabs()
@@ -164,6 +209,9 @@ public class ShopPanelUI : MonoBehaviour
 
     private void RebuildGunCards()
     {
+        if (gunInfoPanel != null)
+            gunInfoPanel.Hide();
+
         if (gunsContainer == null || gunCardPrefab == null)
             return;
 
@@ -175,21 +223,75 @@ public class ShopPanelUI : MonoBehaviour
                 continue;
 
             GunShopCard card = Instantiate(gunCardPrefab, gunsContainer);
-            card.Setup(entry.heldPrefab, entry.icon, () => BuyRifle(entry), Mathf.Max(0, entry.buyPrice));
+            card.Setup(
+                entry.heldPrefab,
+                entry.icon,
+                () => ShowGunInfo(entry),
+                GetGunPrice(entry),
+                IsChainDiscounted(entry));
         }
     }
 
-    private void RefreshGunCards()
+    private void ShowGunInfo(GunEntry entry)
     {
-        if (gunsContainer == null)
+        if (gunInfoPanel == null || entry == null || entry.heldPrefab == null)
             return;
 
-        for (int i = 0; i < gunsContainer.childCount; i++)
+        gunInfoPanel.Show(
+            entry.heldPrefab,
+            entry.icon,
+            GetGunPrice(entry),
+            IsChainDiscounted(entry),
+            chainDiscountPercent,
+            () => BuyRifle(entry));
+    }
+
+    /// <summary>
+    /// Цепная скидка: скидку получает первая по порядку некупленная винтовка.
+    /// После покупки скидка переходит к следующей некупленной.
+    /// </summary>
+    private bool IsChainDiscounted(GunEntry entry)
+    {
+        if (chainDiscountPercent <= 0 || entry == null || entry.heldPrefab == null)
+            return false;
+
+        foreach (GunEntry e in gunItems)
         {
-            GunShopCard card = gunsContainer.GetChild(i).GetComponent<GunShopCard>();
-            if (card != null)
-                card.OnPlayerPointsChanged();
+            if (e == null || e.heldPrefab == null)
+                continue;
+
+            if (!IsGunOwned(e))
+                return e == entry;
         }
+
+        return false;
+    }
+
+    private bool IsGunOwned(GunEntry entry)
+    {
+        string rifleId = GetGunId(entry);
+        return !string.IsNullOrEmpty(rifleId) && LocalPlayerSettings.IsSniperRifleOwned(rifleId);
+    }
+
+    private string GetGunId(GunEntry entry)
+    {
+        if (entry == null || entry.heldPrefab == null)
+            return "";
+
+        return entry.heldPrefab.Definition != null
+            ? entry.heldPrefab.Definition.RifleId
+            : entry.heldPrefab.name;
+    }
+
+    /// <summary>Финальная цена винтовки: базовая или со скидкой, если винтовка — текущая цель цепочки.</summary>
+    private int GetGunPrice(GunEntry entry)
+    {
+        int basePrice = Mathf.Max(0, entry != null ? entry.buyPrice : 0);
+
+        if (entry != null && IsChainDiscounted(entry))
+            return Mathf.Max(0, Mathf.RoundToInt(basePrice * (1f - chainDiscountPercent / 100f)));
+
+        return basePrice;
     }
 
     private void BuyRifle(GunEntry entry)
@@ -197,14 +299,12 @@ public class ShopPanelUI : MonoBehaviour
         if (entry == null || entry.heldPrefab == null)
             return;
 
-        string rifleId = entry.heldPrefab.Definition != null
-            ? entry.heldPrefab.Definition.RifleId
-            : entry.heldPrefab.name;
+        string rifleId = GetGunId(entry);
 
-        if (string.IsNullOrEmpty(rifleId) || LocalPlayerSettings.IsSniperRifleOwned(rifleId))
+        if (string.IsNullOrEmpty(rifleId) || IsGunOwned(entry))
             return;
 
-        int price = Mathf.Max(0, entry.buyPrice);
+        int price = GetGunPrice(entry);
 
         if (LocalPlayerSettings.PlayerPoints < price)
             return;
@@ -258,18 +358,15 @@ public class ShopPanelUI : MonoBehaviour
         target.DOKill();
         group.DOKill();
 
-        target.localScale = Vector3.one * 0.8f;
-        target.DOScale(1f, animInDuration).SetEase(Ease.OutBack, 1.2f);
+        // Никакого масштабирования окна: при scale-анимации карточки двигаются под курсором
+        // и первый клик после открытия промахивается. Только фейд — он не влияет на клики.
+        group.blocksRaycasts = true;
+        group.interactable = true;
+        target.localScale = Vector3.one;
 
         group.alpha = 0f;
-        group.interactable = false;
-        group.DOFade(1f, animInDuration * 0.6f).OnComplete(() =>
-        {
-            group.interactable = true;
-        });
+        group.DOFade(1f, 0.15f);
     }
-
-    private const float animInDuration = 0.35f;
 
     private void EnsureWindow()
     {
@@ -369,7 +466,7 @@ public class ShopPanelUI : MonoBehaviour
                 shopItemsContainer = t as RectTransform;
         }
 
-        if (shopItemsContainer == null || buyItemSlotPrefab == null)
+        if (shopItemsContainer == null || itemCardPrefab == null)
             return;
 
         ClearChildren(shopItemsContainer);
@@ -379,8 +476,158 @@ public class ShopPanelUI : MonoBehaviour
             if (entry == null || entry.itemPrefab == null)
                 continue;
 
-            BuyItemSlot slot = Instantiate(buyItemSlotPrefab, shopItemsContainer);
+            if (!MatchesFilters(entry.itemPrefab))
+                continue;
+
+            BuyItemSlot slot = Instantiate(itemCardPrefab, shopItemsContainer);
             slot.Setup(entry);
+        }
+    }
+
+    /// <summary>
+    /// Роль (All — все классы; Sniper/Runner — только свой класс) в сочетании с назначением
+    /// (All — любой Purpose, иначе конкретный ItemPurpose).
+    /// </summary>
+    private bool MatchesFilters(PickableItem item)
+    {
+        switch (roleFilter)
+        {
+            case RoleFilter.Sniper:
+                if (item.ItemClass != ItemClass.Sniper)
+                    return false;
+                break;
+
+            case RoleFilter.Runner:
+                if (item.ItemClass != ItemClass.Runner)
+                    return false;
+                break;
+        }
+
+        if (!purposeAll && item.Purpose != selectedPurpose)
+            return false;
+
+        return true;
+    }
+
+    private void BindFilterButtons()
+    {
+        roleFilter = RoleFilter.All;
+        purposeAll = true;
+
+        if (roleAllButton != null)
+        {
+            roleAllButton.onClick.RemoveAllListeners();
+            roleAllButton.onClick.AddListener(() => ApplyRoleFilter(RoleFilter.All));
+        }
+
+        if (roleSniperButton != null)
+        {
+            roleSniperButton.onClick.RemoveAllListeners();
+            roleSniperButton.onClick.AddListener(() => ApplyRoleFilter(RoleFilter.Sniper));
+        }
+
+        if (roleRunnerButton != null)
+        {
+            roleRunnerButton.onClick.RemoveAllListeners();
+            roleRunnerButton.onClick.AddListener(() => ApplyRoleFilter(RoleFilter.Runner));
+        }
+
+        if (purposeAllButton != null)
+        {
+            purposeAllButton.onClick.RemoveAllListeners();
+            purposeAllButton.onClick.AddListener(ApplyPurposeAll);
+        }
+
+        foreach (PurposeFilterEntry entry in purposeFilters)
+        {
+            if (entry == null || entry.button == null)
+                continue;
+
+            entry.button.onClick.RemoveAllListeners();
+            entry.button.onClick.AddListener(() => ApplyPurposeFilter(entry.purpose));
+        }
+
+        RefreshFilterButtons();
+    }
+
+    private void ApplyRoleFilter(RoleFilter filter)
+    {
+        if (roleFilter == filter)
+            return;
+
+        roleFilter = filter;
+
+        if (!purposeAll && !GetAvailablePurposes(roleFilter).Contains(selectedPurpose))
+            purposeAll = true;
+
+        RefreshFilterButtons();
+        Refresh();
+    }
+
+    private void ApplyPurposeFilter(ItemPurpose purpose)
+    {
+        purposeAll = false;
+        selectedPurpose = purpose;
+        RefreshFilterButtons();
+        Refresh();
+    }
+
+    private void ApplyPurposeAll()
+    {
+        if (purposeAll)
+            return;
+
+        purposeAll = true;
+        RefreshFilterButtons();
+        Refresh();
+    }
+
+    /// <summary>Какие Purpose есть у предметов текущей роли (для All — по всем предметам).</summary>
+    private HashSet<ItemPurpose> GetAvailablePurposes(RoleFilter filter)
+    {
+        HashSet<ItemPurpose> result = new HashSet<ItemPurpose>();
+
+        foreach (ShopItemEntry entry in shopItems)
+        {
+            if (entry == null || entry.itemPrefab == null)
+                continue;
+
+            if (filter == RoleFilter.Sniper && entry.itemPrefab.ItemClass != ItemClass.Sniper)
+                continue;
+
+            if (filter == RoleFilter.Runner && entry.itemPrefab.ItemClass != ItemClass.Runner)
+                continue;
+
+            result.Add(entry.itemPrefab.Purpose);
+        }
+
+        return result;
+    }
+
+    private void RefreshFilterButtons()
+    {
+        if (roleAllButton != null)
+            roleAllButton.interactable = roleFilter != RoleFilter.All;
+
+        if (roleSniperButton != null)
+            roleSniperButton.interactable = roleFilter != RoleFilter.Sniper;
+
+        if (roleRunnerButton != null)
+            roleRunnerButton.interactable = roleFilter != RoleFilter.Runner;
+
+        if (purposeAllButton != null)
+            purposeAllButton.interactable = !purposeAll;
+
+        HashSet<ItemPurpose> available = GetAvailablePurposes(roleFilter);
+
+        foreach (PurposeFilterEntry entry in purposeFilters)
+        {
+            if (entry == null || entry.button == null)
+                continue;
+
+            bool isAvailable = available.Contains(entry.purpose);
+            entry.button.gameObject.SetActive(isAvailable);
+            entry.button.interactable = !(!purposeAll && selectedPurpose == entry.purpose);
         }
     }
 

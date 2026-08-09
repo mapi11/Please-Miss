@@ -3,152 +3,85 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+/// <summary>
+/// Карточка оружия в списке магазина (вкладка Guns): иконка, название, цена и кнопка,
+/// открывающая панель информации о винтовке. Покупка происходит в панели.
+/// </summary>
 public class GunShopCard : MonoBehaviour
 {
+    [Header("Visuals")]
     [SerializeField] private Image iconImg;
     [SerializeField] private TMP_Text nameTxt;
-    [SerializeField] private TMP_Text magazineText;
-    [SerializeField] private TMP_Text velocityText;
-    [SerializeField] private TMP_Text swayText;
-    [SerializeField] private TMP_Text scopeText;
-    [SerializeField] private TMP_Text recoilText;
-    [SerializeField] private Button buyButton;
-    [SerializeField] private TMP_Text buyButtonText;
+    [SerializeField] private TMP_Text priceTxt;
+    [SerializeField] private Button infoButton;
 
-    [Tooltip("Optional. If null, resolved from SniperRifleHeldVisual.Definition")]
-    [SerializeField] private SniperRifleDefinition definition;
-
-    [Header("Purchased")]
-    [SerializeField] private Color purchasedButtonColor = new Color(0.25f, 0.55f, 0.3f, 1f);
-
-    private SniperRifleHeldVisual heldVisual;
-    private Action onBuy;
+    [Header("Colors")]
+    [Tooltip("Обычный цвет цены")]
+    [SerializeField] private Color normalColor = Color.white;
+    [Tooltip("Цвет цены при активной скидке")]
+    [SerializeField] private Color discountColor = Color.yellow;
+    [Tooltip("Цвет текста у уже купленной винтовки")]
+    [SerializeField] private Color ownedColor = new Color(0.45f, 0.75f, 0.5f, 1f);
     private int price;
-    private Color defaultButtonColor;
-    private bool hasDefaultButtonColor;
+    private bool owned;
+    private bool hasDiscount;
+    private SniperRifleHeldVisual heldVisual;
 
-    public void Setup(SniperRifleHeldVisual held, Sprite icon, Action onBuy, int price = -1)
+    public void Setup(SniperRifleHeldVisual held, Sprite icon, Action onInfo, int price, bool hasDiscount)
     {
-        heldVisual = held;
-        this.onBuy = onBuy;
         this.price = Mathf.Max(0, price);
+        this.hasDiscount = hasDiscount;
+        heldVisual = held;
 
-        if (heldVisual == null)
-            return;
-
-        if (definition == null)
-            definition = heldVisual.Definition;
+        SniperRifleDefinition def = held != null ? held.Definition : null;
+        string rifleId = def != null ? def.RifleId : (held != null ? held.name : "");
+        owned = !string.IsNullOrEmpty(rifleId) && LocalPlayerSettings.IsSniperRifleOwned(rifleId);
 
         if (iconImg != null)
         {
             iconImg.enabled = true;
             iconImg.sprite = icon;
-            iconImg.color = icon != null ? Color.white : new Color(0.8f, 0.8f, 0.8f, 1f);
+            iconImg.color = Color.white;
         }
 
         if (nameTxt != null)
-            nameTxt.text = definition != null && !string.IsNullOrEmpty(definition.DisplayName)
-                ? definition.DisplayName
-                : heldVisual.name;
-
-        SetStats(BuildStatsLines(definition));
-
-        Image buttonImage = buyButton != null ? buyButton.image : null;
-        if (buttonImage != null)
         {
-            defaultButtonColor = buttonImage.color;
-            hasDefaultButtonColor = true;
+            nameTxt.text = def != null && !string.IsNullOrEmpty(def.DisplayName)
+                ? def.DisplayName
+                : (held != null ? held.name : "");
         }
 
-        if (buyButton != null)
-            buyButton.onClick.RemoveAllListeners();
+        UpdatePrice();
 
-        ApplyState();
-    }
-
-    public void OnPlayerPointsChanged()
-    {
-        ApplyState();
-    }
-
-    private void OnEnable()
-    {
-        Image buttonImage = buyButton != null ? buyButton.image : null;
-        if (buttonImage != null && !hasDefaultButtonColor)
+        if (infoButton != null)
         {
-            defaultButtonColor = buttonImage.color;
-            hasDefaultButtonColor = true;
+            infoButton.onClick.RemoveAllListeners();
+            infoButton.onClick.AddListener(() => onInfo?.Invoke());
         }
-
-        ApplyState();
     }
 
-    private void ApplyState()
+    /// <summary>Обновляет цену/статус без пересоздания карточки (например, после покупки).</summary>
+    public void RefreshState()
     {
-        if (buyButton == null)
+        SniperRifleDefinition def = heldVisual != null ? heldVisual.Definition : null;
+        string rifleId = def != null ? def.RifleId : (heldVisual != null ? heldVisual.name : "");
+        owned = !string.IsNullOrEmpty(rifleId) && LocalPlayerSettings.IsSniperRifleOwned(rifleId);
+        UpdatePrice();
+    }
+
+    private void UpdatePrice()
+    {
+        if (priceTxt == null)
             return;
-
-        string rifleId = definition != null ? definition.RifleId : (heldVisual != null ? heldVisual.name : "");
-        bool owned = !string.IsNullOrEmpty(rifleId) && LocalPlayerSettings.IsSniperRifleOwned(rifleId);
 
         if (owned)
         {
-            buyButton.interactable = false;
-
-            if (buyButton.image != null)
-                buyButton.image.color = purchasedButtonColor;
-
-            if (buyButtonText != null)
-                buyButtonText.text = "Purchased";
-
+            priceTxt.text = "Owned";
+            priceTxt.color = ownedColor;
             return;
         }
 
-        if (buyButton.image != null && hasDefaultButtonColor)
-            buyButton.image.color = defaultButtonColor;
-
-        buyButton.interactable = LocalPlayerSettings.PlayerPoints >= price;
-
-        if (buyButtonText != null)
-            buyButtonText.text = price > 0 ? $"Buy - {price}" : "Buy";
-
-        buyButton.onClick.RemoveAllListeners();
-        buyButton.onClick.AddListener(() => onBuy?.Invoke());
-    }
-
-    private string[] BuildStatsLines(SniperRifleDefinition d)
-    {
-        if (d == null)
-            return new[] { "Stats unavailable" };
-
-        return new[]
-        {
-            $"Magazine: {d.MagazineSize}",
-            $"Muzzle velocity: {d.MuzzleVelocity:0.##}",
-            $"Sway amplitude: {d.SwayAmplitude:0.##}",
-            $"Scope {d.MinimumMagnification:0.#}-{d.MaximumMagnification:0.#}",
-            $"Recoil pitch: {d.RecoilPitchAmount:0.##}"
-        };
-    }
-
-    private void SetStats(string[] lines)
-    {
-        AssignStat(magazineText, 0, lines);
-        AssignStat(velocityText, 1, lines);
-        AssignStat(swayText, 2, lines);
-        AssignStat(scopeText, 3, lines);
-        AssignStat(recoilText, 4, lines);
-    }
-
-    private static void AssignStat(TMP_Text text, int index, string[] lines)
-    {
-        if (text == null)
-            return;
-
-        bool hasLine = index < lines.Length;
-        text.gameObject.SetActive(hasLine);
-
-        if (hasLine)
-            text.text = lines[index];
+        priceTxt.text = price.ToString();
+        priceTxt.color = hasDiscount ? discountColor : normalColor;
     }
 }
