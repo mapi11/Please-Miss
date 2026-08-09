@@ -16,6 +16,10 @@ public class LobbyPlayerCard : MonoBehaviour
     [SerializeField] private Image outlineImage;
     [SerializeField] private Image outlineReady;
 
+    [Header("Kick")]
+    [Tooltip("Кнопка выгона игрока из лобби. Видна только хосту и только на чужих карточках")]
+    [SerializeField] private Button kickButton;
+
     [Header("Card Colors")]
     [SerializeField] private Color localCardColor = new Color32(0x20, 0x96, 0xF3, 0xFF);
     [SerializeField] private Color otherCardColor = new Color32(0x2E, 0x2E, 0x2E, 0xFF);
@@ -84,6 +88,18 @@ public class LobbyPlayerCard : MonoBehaviour
             readyButton.interactable = isLocalCard;
             if (isLocalCard)
                 readyButton.onClick.AddListener(OnReadyClicked);
+        }
+
+        if (kickButton != null)
+        {
+            kickButton.onClick.RemoveAllListeners();
+            bool showKick = NetworkManager.Singleton != null
+                && NetworkManager.Singleton.IsServer
+                && !isLocalCard;
+            kickButton.gameObject.SetActive(showKick);
+
+            if (showKick)
+                kickButton.onClick.AddListener(OnKickClicked);
         }
 
         if (roleComponent != null)
@@ -218,5 +234,15 @@ public class LobbyPlayerCard : MonoBehaviour
     {
         if (roleComponent != null)
             roleComponent.RequestToggleReady();
+    }
+
+    /// <summary>Выгоняет игрока из лобби (только хост). Кикнутый клиент отключается
+    /// и через OnLocalDisconnected возвращается в главное меню.</summary>
+    private void OnKickClicked()
+    {
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer)
+            return;
+
+        NetworkManager.Singleton.DisconnectClient(clientId);
     }
 }
