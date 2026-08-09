@@ -5760,8 +5760,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  healAmount: 50
   maxHealRange: 2.5
+  zoneWidth: 2
+  zoneHeight: 2
   healSliderContent: {fileID: 9205323102393140219}
   healSlider: {fileID: 4905146138012651114}
 --- !u!114 &2807886825379859501
