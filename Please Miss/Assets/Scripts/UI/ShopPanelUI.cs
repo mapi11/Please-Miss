@@ -485,20 +485,20 @@ public class ShopPanelUI : MonoBehaviour
     }
 
     /// <summary>
-    /// Роль (All — все классы; Sniper/Runner — только свой класс) в сочетании с назначением
-    /// (All — любой Purpose, иначе конкретный ItemPurpose).
+    /// Роль (All — все классы; Sniper/Runner — свой класс + Universal) в сочетании с
+    /// назначением (All — любой Purpose, иначе конкретный ItemPurpose).
     /// </summary>
     private bool MatchesFilters(PickableItem item)
     {
         switch (roleFilter)
         {
             case RoleFilter.Sniper:
-                if (item.ItemClass != ItemClass.Sniper)
+                if (item.ItemClass != ItemClass.Sniper && item.ItemClass != ItemClass.Universal)
                     return false;
                 break;
 
             case RoleFilter.Runner:
-                if (item.ItemClass != ItemClass.Runner)
+                if (item.ItemClass != ItemClass.Runner && item.ItemClass != ItemClass.Universal)
                     return false;
                 break;
         }
@@ -592,10 +592,14 @@ public class ShopPanelUI : MonoBehaviour
             if (entry == null || entry.itemPrefab == null)
                 continue;
 
-            if (filter == RoleFilter.Sniper && entry.itemPrefab.ItemClass != ItemClass.Sniper)
+            if (filter == RoleFilter.Sniper &&
+                entry.itemPrefab.ItemClass != ItemClass.Sniper &&
+                entry.itemPrefab.ItemClass != ItemClass.Universal)
                 continue;
 
-            if (filter == RoleFilter.Runner && entry.itemPrefab.ItemClass != ItemClass.Runner)
+            if (filter == RoleFilter.Runner &&
+                entry.itemPrefab.ItemClass != ItemClass.Runner &&
+                entry.itemPrefab.ItemClass != ItemClass.Universal)
                 continue;
 
             result.Add(entry.itemPrefab.Purpose);

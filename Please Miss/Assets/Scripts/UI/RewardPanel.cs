@@ -4,26 +4,36 @@ using UnityEngine;
 public class RewardPanel : MonoBehaviour
 {
     [Header("References")]
-    [Tooltip("Очки за основное действие, например \"+50 Kill\" или \"+250 Finish\"")]
+    [Tooltip("Текст действия, например \"Kill\", \"Finish\", \"Heal\"")]
+    [SerializeField] private TMP_Text actionText;
+    [Tooltip("Полученные очки, например \"+50\"")]
     [SerializeField] private TMP_Text mainPointsText;
-    [Tooltip("Бонусные очки, например \"+10 Left Hand\"")]
+    [Tooltip("Бонусные очки, например \"+10\". Скрывается, если бонуса нет")]
     [SerializeField] private TMP_Text bonusPointsText;
 
-    public void Setup(int mainPoints, string mainLabel, int bonusPoints, string bonusLabel)
+    public void Setup(string actionLabel, int mainPoints, int bonusPoints)
     {
         ResolveElements();
 
+        if (actionText != null)
+            actionText.text = string.IsNullOrWhiteSpace(actionLabel) ? "Reward" : actionLabel;
+
         if (mainPointsText != null)
-            mainPointsText.text = mainPoints > 0 ? $"+{mainPoints} {mainLabel}" : "";
+            mainPointsText.text = mainPoints > 0 ? $"+{mainPoints}" : "";
 
         if (bonusPointsText != null)
-            bonusPointsText.text = bonusPoints > 0 && !string.IsNullOrWhiteSpace(bonusLabel)
-                ? $"+{bonusPoints} {bonusLabel}"
-                : "";
+            bonusPointsText.text = bonusPoints > 0 ? $"+{bonusPoints}" : "";
     }
 
     private void ResolveElements()
     {
+        if (actionText == null)
+        {
+            Transform t = FindChildRecursive(transform, "ActionText");
+            if (t != null)
+                actionText = t.GetComponent<TMP_Text>();
+        }
+
         if (mainPointsText == null)
         {
             Transform t = FindChildRecursive(transform, "MainPointsText");

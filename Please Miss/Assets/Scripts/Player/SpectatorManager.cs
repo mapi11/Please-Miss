@@ -52,4 +52,17 @@ public class SpectatorManager : NetworkBehaviour
         var netObj = instance.GetComponent<NetworkObject>();
         netObj.SpawnWithOwnership(ownerClientId);
     }
+
+    /// <summary>Удаляет всех сетевых спектаторов (сервер). Нужно при перезапуске матча/возврате в лобби.</summary>
+    public static void DespawnAllSpectators()
+    {
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer)
+            return;
+
+        foreach (var spectator in FindObjectsByType<SpectatorController>(FindObjectsSortMode.None))
+        {
+            if (spectator != null && spectator.IsSpawned)
+                spectator.NetworkObject.Despawn();
+        }
+    }
 }

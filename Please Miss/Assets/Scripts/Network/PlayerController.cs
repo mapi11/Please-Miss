@@ -388,7 +388,7 @@ public class PlayerController : NetworkBehaviour
         if (!lobbyChecked)
         {
             lobbyChecked = true;
-            bool inLobby = FindObjectOfType<LobbyManager>() != null;
+            bool inLobby = LobbyManager.Instance != null;
 
             if (inLobby)
             {

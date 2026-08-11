@@ -62,7 +62,7 @@ public class PauseMenu : MonoBehaviour
             return;
         }
 
-        if (LobbyManager.IsInLobby)
+        if (LobbyManager.IsInLobby && LobbyManager.Instance != null)
             return;
 
         if (Keyboard.current == null || !Keyboard.current.escapeKey.wasPressedThisFrame)

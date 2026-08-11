@@ -82,11 +82,16 @@ public class LobbyUI : MonoBehaviour
             if (client.PlayerObject == null) continue;
             activeIds.Add(client.ClientId);
 
-            if (activeCards.TryGetValue(client.ClientId, out var existing) && existing != null)
+            if (activeCards.TryGetValue(client.ClientId, out var existing)
+                && existing != null
+                && existing.PlayerObject == client.PlayerObject)
             {
                 existing.Refresh();
                 continue;
             }
+
+            if (existing != null)
+                RemoveCard(client.ClientId);
 
             GameObject cardObj = Instantiate(playerCardPrefab, playersContent);
             var card = cardObj.GetComponent<LobbyPlayerCard>();

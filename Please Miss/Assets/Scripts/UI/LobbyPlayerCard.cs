@@ -38,6 +38,8 @@ public class LobbyPlayerCard : MonoBehaviour
     private NetworkPlayerName nameComponent;
     private NetworkPlayerColor colorComponent;
 
+    public NetworkObject PlayerObject { get; private set; }
+
     private static int RoleToDropdown(PlayerRole role)
     {
         if (role == PlayerRole.None) return 0;
@@ -53,6 +55,7 @@ public class LobbyPlayerCard : MonoBehaviour
     {
         clientId = id;
         isLocalCard = isLocal;
+        PlayerObject = obj;
 
         roleComponent = obj.GetComponent<NetworkPlayerRole>();
         nameComponent = obj.GetComponent<NetworkPlayerName>();

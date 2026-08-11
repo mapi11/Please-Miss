@@ -12,6 +12,8 @@ public class SniperEndPanelUI : MonoBehaviour
     [SerializeField] private GameObject diedPlayerPanelPrefab;
     [SerializeField] private Button exitButton;
     [SerializeField] private TMP_Text pointsText;
+    [SerializeField] private TMP_Text totalEarnedText;
+    [SerializeField] private TMP_Text timeLeftText;
     [SerializeField] private RectTransform rewardsContainer;
     [SerializeField] private GameObject rewardPanelPrefab;
 
@@ -70,12 +72,22 @@ public class SniperEndPanelUI : MonoBehaviour
         if (sniperEndPanel.activeSelf != show)
             sniperEndPanel.SetActive(show);
 
+        // Хост не видит Exit, чтобы случайно не выйти и не выкинуть всех из игры
+        if (exitButton != null && exitButton.gameObject.activeSelf != !IsLocalHost())
+            exitButton.gameObject.SetActive(!IsLocalHost());
+
         if (show)
         {
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
             RefreshPointsText();
+            RefreshTimeLeftText();
         }
+    }
+
+    private static bool IsLocalHost()
+    {
+        return NetworkManager.Singleton != null && NetworkManager.Singleton.IsHost;
     }
 
     private void OnPointsChanged(int newPoints)
@@ -87,6 +99,15 @@ public class SniperEndPanelUI : MonoBehaviour
     {
         if (pointsText != null)
             pointsText.text = $"Points: {LocalPlayerSettings.PlayerPoints}";
+
+        if (totalEarnedText != null && GameManager.Instance != null)
+            totalEarnedText.text = $"Total Earned: +{Mathf.Max(0, GameManager.Instance.TotalEarnedThisGame)}";
+    }
+
+    private void RefreshTimeLeftText()
+    {
+        if (timeLeftText != null && GameManager.Instance != null)
+            timeLeftText.text = "Time left: " + FormatMinutesSeconds(GameManager.Instance.ElapsedMatchTime);
     }
 
     private void OnSniperKillRecorded(string playerName, Color32 color, float survivedTime, string hitZone, int mainPoints, int bonusPoints)
@@ -130,7 +151,7 @@ public class SniperEndPanelUI : MonoBehaviour
 
         var panel = cardObject.GetComponent<RewardPanel>();
         if (panel != null)
-            panel.Setup(mainPoints, "Kill", bonusPoints, hitZone);
+            panel.Setup("Kill", mainPoints, bonusPoints);
     }
 
     private GameObject CreateRewardCardFallback(Transform parent)
@@ -148,7 +169,8 @@ public class SniperEndPanelUI : MonoBehaviour
         Image background = go.AddComponent<Image>();
         background.color = new Color(0.1f, 0.55f, 0.2f, 0.85f);
 
-        CreateFallbackText(go.transform, "MainPointsText", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(10f, -5f), new Vector2(200f, 24f), TextAlignmentOptions.Left);
+        CreateFallbackText(go.transform, "ActionText", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(10f, -5f), new Vector2(200f, 24f), TextAlignmentOptions.Left);
+        CreateFallbackText(go.transform, "MainPointsText", new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -5f), new Vector2(150f, 24f), TextAlignmentOptions.Center);
         CreateFallbackText(go.transform, "BonusPointsText", new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-10f, -5f), new Vector2(200f, 24f), TextAlignmentOptions.Right);
 
         go.AddComponent<RewardPanel>();
@@ -324,6 +346,26 @@ public class SniperEndPanelUI : MonoBehaviour
         if (pointsText == null)
             pointsText = CreatePointsText();
 
+        if (totalEarnedText == null)
+        {
+            Transform t = FindChildRecursive(sniperEndPanel.transform, "TotalEarnedText");
+            if (t != null)
+                totalEarnedText = t.GetComponent<TMP_Text>();
+        }
+
+        if (totalEarnedText == null)
+            totalEarnedText = CreateTotalEarnedText();
+
+        if (timeLeftText == null)
+        {
+            Transform t = FindChildRecursive(sniperEndPanel.transform, "TimeLeftText");
+            if (t != null)
+                timeLeftText = t.GetComponent<TMP_Text>();
+        }
+
+        if (timeLeftText == null)
+            timeLeftText = CreateTimeLeftText();
+
         if (cardsContainer == null)
             ResolveContainer();
     }
@@ -346,6 +388,54 @@ public class SniperEndPanelUI : MonoBehaviour
         text.color = Color.white;
         text.font = FindAnyFontAsset();
         return text;
+    }
+
+    private TMP_Text CreateTotalEarnedText()
+    {
+        GameObject go = new GameObject("TotalEarnedText", typeof(RectTransform));
+        go.transform.SetParent(sniperEndPanel.transform, false);
+
+        RectTransform rect = go.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0.5f, 1f);
+        rect.anchorMax = new Vector2(0.5f, 1f);
+        rect.pivot = new Vector2(0.5f, 1f);
+        rect.anchoredPosition = new Vector2(0f, -45f);
+        rect.sizeDelta = new Vector2(400f, 30f);
+
+        TMP_Text text = go.AddComponent<TextMeshProUGUI>();
+        text.alignment = TextAlignmentOptions.Center;
+        text.fontSize = 24f;
+        text.color = Color.white;
+        text.font = FindAnyFontAsset();
+        return text;
+    }
+
+    private TMP_Text CreateTimeLeftText()
+    {
+        GameObject go = new GameObject("TimeLeftText", typeof(RectTransform));
+        go.transform.SetParent(sniperEndPanel.transform, false);
+
+        RectTransform rect = go.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0.5f, 1f);
+        rect.anchorMax = new Vector2(0.5f, 1f);
+        rect.pivot = new Vector2(0.5f, 1f);
+        rect.anchoredPosition = new Vector2(0f, -80f);
+        rect.sizeDelta = new Vector2(400f, 30f);
+
+        TMP_Text text = go.AddComponent<TextMeshProUGUI>();
+        text.alignment = TextAlignmentOptions.Center;
+        text.fontSize = 24f;
+        text.color = Color.white;
+        text.font = FindAnyFontAsset();
+        return text;
+    }
+
+    private static string FormatMinutesSeconds(float seconds)
+    {
+        int totalSec = Mathf.Max(0, Mathf.FloorToInt(seconds));
+        int mins = totalSec / 60;
+        int secs = totalSec % 60;
+        return mins > 0 ? $"{mins} min {secs} sec" : $"{secs} sec";
     }
 
     private static Transform FindChildRecursive(Transform root, string name)

@@ -9,6 +9,8 @@ public class RunnerEndPanelUI : MonoBehaviour
     [Header("References")]
     [SerializeField] private GameObject runnerEndPanel;
     [SerializeField] private TMP_Text survivedTimeText;
+    [SerializeField] private TMP_Text totalEarnedText;
+    [SerializeField] private TMP_Text timeLeftText;
     [SerializeField] private Button exitButton;
     [SerializeField] private Button spectateButton;
     [SerializeField] private RectTransform rewardsContainer;
@@ -77,10 +79,17 @@ public class RunnerEndPanelUI : MonoBehaviour
 
     private void Update()
     {
-        if (panelHidden) return;
         if (GameManager.Instance == null || NetworkManager.Singleton == null) return;
 
         bool stateEnded = GameManager.Instance.State.Value == GameManager.GameState.Ended;
+
+        // Спектатор скрыл панель кнопкой Spectate, но при конце игры её нужно
+        // снова показать: голосование и таймер должны быть доступны всем игрокам.
+        if (panelHidden)
+        {
+            if (!stateEnded || !IsSpectating()) return;
+            panelHidden = false;
+        }
 
         if (IsSpectating())
         {
@@ -89,6 +98,10 @@ public class RunnerEndPanelUI : MonoBehaviour
 
             if (spectateButton != null && spectateButton.gameObject.activeSelf)
                 spectateButton.gameObject.SetActive(false);
+
+            // Хост не видит Exit, чтобы случайно не выйти и не выкинуть всех из игры
+            if (exitButton != null && exitButton.gameObject.activeSelf != !IsLocalHost())
+                exitButton.gameObject.SetActive(!IsLocalHost());
 
             if (stateEnded)
             {
@@ -119,6 +132,10 @@ public class RunnerEndPanelUI : MonoBehaviour
         if (runnerEndPanel.activeSelf != show)
             runnerEndPanel.SetActive(show);
 
+        // Хост не видит Exit, чтобы случайно не выйти и не выкинуть всех из игры
+        if (exitButton != null && exitButton.gameObject.activeSelf != !IsLocalHost())
+            exitButton.gameObject.SetActive(!IsLocalHost());
+
         if (show)
         {
             CleanupExtraButtons();
@@ -146,6 +163,22 @@ public class RunnerEndPanelUI : MonoBehaviour
             }
         }
 
+        if (totalEarnedText != null)
+        {
+            if (show && GameManager.Instance != null)
+                totalEarnedText.text = $"Total Earned: +{Mathf.Max(0, GameManager.Instance.TotalEarnedThisGame)}";
+            else
+                totalEarnedText.text = "";
+        }
+
+        if (timeLeftText != null)
+        {
+            if (show && GameManager.Instance != null)
+                timeLeftText.text = "Time left: " + FormatMinutesSeconds(GameManager.Instance.ElapsedMatchTime);
+            else
+                timeLeftText.text = "";
+        }
+
         if (spectateButton != null)
         {
             bool canSpectate = !stateEnded && GameManager.Instance.CountAliveRunners() > 0;
@@ -161,9 +194,16 @@ public class RunnerEndPanelUI : MonoBehaviour
 
         buttonsCleaned = true;
 
+        var voteUI = runnerEndPanel.GetComponentInParent<GameEndVoteUI>(true)
+                    ?? runnerEndPanel.GetComponentInChildren<GameEndVoteUI>(true);
+
+        Button lobbyButton = voteUI != null ? voteUI.BackToLobbyButton : null;
+        Button playAgainVoteButton = voteUI != null ? voteUI.PlayAgainButton : null;
+
         foreach (var btn in runnerEndPanel.GetComponentsInChildren<Button>(true))
         {
-            if (btn != exitButton && btn != spectateButton)
+            if (btn != exitButton && btn != spectateButton &&
+                btn != lobbyButton && btn != playAgainVoteButton)
                 Destroy(btn.gameObject);
         }
     }
@@ -189,7 +229,7 @@ public class RunnerEndPanelUI : MonoBehaviour
 
         var panel = cardObject.GetComponent<RewardPanel>();
         if (panel != null)
-            panel.Setup(0, "", reward, reason);
+            panel.Setup(reason, reward, 0);
     }
 
     private void SpawnRewardCard(int reward, string reason)
@@ -208,7 +248,7 @@ public class RunnerEndPanelUI : MonoBehaviour
 
         var panel = cardObject.GetComponent<RewardPanel>();
         if (panel != null)
-            panel.Setup(reward, reason, 0, "");
+            panel.Setup(reason, reward, 0);
     }
 
     private GameObject CreateRewardCardFallback(Transform parent)
@@ -226,7 +266,8 @@ public class RunnerEndPanelUI : MonoBehaviour
         Image background = go.AddComponent<Image>();
         background.color = new Color(0.1f, 0.45f, 0.75f, 0.85f);
 
-        CreateFallbackText(go.transform, "MainPointsText", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(10f, -5f), new Vector2(300f, 24f), TextAlignmentOptions.Left);
+        CreateFallbackText(go.transform, "ActionText", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(10f, -5f), new Vector2(200f, 24f), TextAlignmentOptions.Left);
+        CreateFallbackText(go.transform, "MainPointsText", new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -5f), new Vector2(150f, 24f), TextAlignmentOptions.Center);
         CreateFallbackText(go.transform, "BonusPointsText", new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-10f, -5f), new Vector2(200f, 24f), TextAlignmentOptions.Right);
 
         go.AddComponent<RewardPanel>();
@@ -299,6 +340,11 @@ public class RunnerEndPanelUI : MonoBehaviour
         var local = NetworkManager.Singleton.LocalClient?.PlayerObject;
         if (local != null)
             spectatorManager = local.GetComponent<SpectatorManager>();
+    }
+
+    private static bool IsLocalHost()
+    {
+        return NetworkManager.Singleton != null && NetworkManager.Singleton.IsHost;
     }
 
     private static bool IsSpectating()
@@ -395,6 +441,26 @@ public class RunnerEndPanelUI : MonoBehaviour
         if (survivedTimeText == null)
             survivedTimeText = CreateSurvivedTimeText();
 
+        if (totalEarnedText == null)
+        {
+            Transform t = FindChildRecursive(runnerEndPanel.transform, "TotalEarnedText");
+            if (t != null)
+                totalEarnedText = t.GetComponent<TMP_Text>();
+        }
+
+        if (totalEarnedText == null)
+            totalEarnedText = CreateTotalEarnedText();
+
+        if (timeLeftText == null)
+        {
+            Transform t = FindChildRecursive(runnerEndPanel.transform, "TimeLeftText");
+            if (t != null)
+                timeLeftText = t.GetComponent<TMP_Text>();
+        }
+
+        if (timeLeftText == null)
+            timeLeftText = CreateTimeLeftText();
+
         if (exitButton == null)
             exitButton = CreateExitButton();
 
@@ -470,6 +536,46 @@ public class RunnerEndPanelUI : MonoBehaviour
         TMP_Text text = go.AddComponent<TextMeshProUGUI>();
         text.alignment = TextAlignmentOptions.Center;
         text.fontSize = 36f;
+        text.color = Color.white;
+        text.font = FindAnyFontAsset();
+        return text;
+    }
+
+    private TMP_Text CreateTotalEarnedText()
+    {
+        GameObject go = new GameObject("TotalEarnedText", typeof(RectTransform));
+        go.transform.SetParent(runnerEndPanel.transform, false);
+
+        RectTransform rect = go.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0.5f, 1f);
+        rect.anchorMax = new Vector2(0.5f, 1f);
+        rect.pivot = new Vector2(0.5f, 1f);
+        rect.anchoredPosition = new Vector2(0f, -40f);
+        rect.sizeDelta = new Vector2(400f, 30f);
+
+        TMP_Text text = go.AddComponent<TextMeshProUGUI>();
+        text.alignment = TextAlignmentOptions.Center;
+        text.fontSize = 24f;
+        text.color = Color.white;
+        text.font = FindAnyFontAsset();
+        return text;
+    }
+
+    private TMP_Text CreateTimeLeftText()
+    {
+        GameObject go = new GameObject("TimeLeftText", typeof(RectTransform));
+        go.transform.SetParent(runnerEndPanel.transform, false);
+
+        RectTransform rect = go.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0.5f, 1f);
+        rect.anchorMax = new Vector2(0.5f, 1f);
+        rect.pivot = new Vector2(0.5f, 1f);
+        rect.anchoredPosition = new Vector2(0f, -75f);
+        rect.sizeDelta = new Vector2(400f, 30f);
+
+        TMP_Text text = go.AddComponent<TextMeshProUGUI>();
+        text.alignment = TextAlignmentOptions.Center;
+        text.fontSize = 24f;
         text.color = Color.white;
         text.font = FindAnyFontAsset();
         return text;
@@ -554,5 +660,13 @@ public class RunnerEndPanelUI : MonoBehaviour
         int mins = totalSec / 60;
         int secs = totalSec % 60;
         return $"{mins}:{secs:D2}";
+    }
+
+    private static string FormatMinutesSeconds(float seconds)
+    {
+        int totalSec = Mathf.Max(0, Mathf.FloorToInt(seconds));
+        int mins = totalSec / 60;
+        int secs = totalSec % 60;
+        return mins > 0 ? $"{mins} min {secs} sec" : $"{secs} sec";
     }
 }

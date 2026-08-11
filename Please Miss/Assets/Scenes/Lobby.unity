@@ -508,6 +508,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 2280153415579105338, guid: d9a6fdf4c44b47d4380fdef363ccaeba, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: -73.27
+      objectReference: {fileID: 0}
+    - target: {fileID: 2280153415579105338, guid: d9a6fdf4c44b47d4380fdef363ccaeba, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 21.63501
+      objectReference: {fileID: 0}
     - target: {fileID: 3788949414696184779, guid: d9a6fdf4c44b47d4380fdef363ccaeba, type: 3}
       propertyPath: m_Pivot.x
       value: 0
@@ -588,6 +596,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4781889438897903359, guid: d9a6fdf4c44b47d4380fdef363ccaeba, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: -85.13
+      objectReference: {fileID: 0}
+    - target: {fileID: 4781889438897903359, guid: d9a6fdf4c44b47d4380fdef363ccaeba, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 27.564941
+      objectReference: {fileID: 0}
     - target: {fileID: 4910418371178876381, guid: d9a6fdf4c44b47d4380fdef363ccaeba, type: 3}
       propertyPath: m_InScenePlaced
       value: 1
@@ -599,6 +615,14 @@ PrefabInstance:
     - target: {fileID: 7666878338569089173, guid: d9a6fdf4c44b47d4380fdef363ccaeba, type: 3}
       propertyPath: m_Name
       value: LobbyCanvas
+      objectReference: {fileID: 0}
+    - target: {fileID: 8039466215183861051, guid: d9a6fdf4c44b47d4380fdef363ccaeba, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: -70.92
+      objectReference: {fileID: 0}
+    - target: {fileID: 8039466215183861051, guid: d9a6fdf4c44b47d4380fdef363ccaeba, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 20.459991
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

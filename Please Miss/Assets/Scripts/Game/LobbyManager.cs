@@ -35,7 +35,10 @@ public class LobbyManager : NetworkBehaviour
     private void OnDestroy()
     {
         if (Instance == this)
+        {
+            Instance = null;
             IsInLobby = false;
+        }
     }
 
     public override void OnNetworkSpawn()
@@ -46,6 +49,8 @@ public class LobbyManager : NetworkBehaviour
         {
             NetworkManager.Singleton.OnClientConnectedCallback += OnClientChanged;
             NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
+
+            StartCoroutine(ResetAllPlayersForLobby());
         }
 
         if (lobbyUI != null)
@@ -61,6 +66,37 @@ public class LobbyManager : NetworkBehaviour
             NetworkManager.Singleton.OnClientConnectedCallback -= OnClientChanged;
             NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientDisconnected;
         }
+    }
+
+    private IEnumerator ResetAllPlayersForLobby()
+    {
+        NetworkConnectionManager.ConnectionLocked = false;
+        NetworkConnectionManager.IsLobbyLocked = false;
+
+        SpectatorManager.DespawnAllSpectators();
+
+        var playerPrefab = NetworkManager.Singleton.NetworkConfig.PlayerPrefab;
+        if (playerPrefab == null) yield break;
+
+        foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
+        {
+            if (client.PlayerObject != null && client.PlayerObject.IsSpawned)
+                client.PlayerObject.Despawn();
+        }
+
+        yield return null;
+
+        foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
+        {
+            var netObj = Instantiate(playerPrefab).GetComponent<NetworkObject>();
+            if (netObj != null)
+                netObj.SpawnAsPlayerObject(client.ClientId);
+        }
+
+        if (lobbyUI != null)
+            lobbyUI.RebuildCards();
+
+        NotifyPlayersChangedClientRpc();
     }
 
     private void OnClientChanged(ulong clientId)
@@ -91,8 +127,49 @@ public class LobbyManager : NetworkBehaviour
     [ClientRpc]
     private void NotifyPlayersChangedClientRpc()
     {
-        if (!IsServer && lobbyUI != null)
+        if (IsServer) return;
+
+        if (rebuildCardsCoroutine != null)
+            StopCoroutine(rebuildCardsCoroutine);
+
+        rebuildCardsCoroutine = StartCoroutine(RebuildCardsWhenReady());
+    }
+
+    private Coroutine rebuildCardsCoroutine;
+
+    private IEnumerator RebuildCardsWhenReady()
+    {
+        const float timeout = 3f;
+        float elapsed = 0f;
+
+        while (elapsed < timeout)
+        {
+            bool allReady = true;
+            var clients = NetworkManager.Singleton.ConnectedClientsList;
+
+            if (clients.Count == 0)
+                allReady = false;
+
+            foreach (var client in clients)
+            {
+                if (client.PlayerObject == null || !client.PlayerObject.IsSpawned)
+                {
+                    allReady = false;
+                    break;
+                }
+            }
+
+            if (allReady)
+                break;
+
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        if (lobbyUI != null)
             lobbyUI.RebuildCards();
+
+        rebuildCardsCoroutine = null;
     }
 
     private void OnLocalDisconnected(ulong clientId)

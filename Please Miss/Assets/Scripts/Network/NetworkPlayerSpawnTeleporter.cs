@@ -173,7 +173,16 @@ public class NetworkPlayerSpawnTeleporter : NetworkBehaviour
             playerController.SetFrozen(false);
 
         if (characterController != null)
+        {
+            float stepOffset = characterController.stepOffset;
+            characterController.stepOffset = 0f;
             characterController.enabled = true;
+
+            Vector3 scale = transform.lossyScale;
+            float minScale = Mathf.Min(Mathf.Abs(scale.x), Mathf.Min(Mathf.Abs(scale.y), Mathf.Abs(scale.z)));
+            if (minScale >= 0.5f)
+                characterController.stepOffset = stepOffset;
+        }
 
         finishedSpawning = true;
         EnableCollisionsWithSpawnedPlayers();

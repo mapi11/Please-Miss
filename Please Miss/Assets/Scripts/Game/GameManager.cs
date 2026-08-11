@@ -4,6 +4,7 @@ using TMPro;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GameManager : NetworkBehaviour
 {
@@ -38,11 +39,27 @@ public class GameManager : NetworkBehaviour
         Ended
     }
 
+    /// <summary>Варианты голосования после конца игры.</summary>
+    public enum GameEndVoteOption : byte
+    {
+        BackToLobby,
+        PlayAgain
+    }
+
     [Header("Timers")]
     [SerializeField] private float prepareDuration = 10f;
     [SerializeField] private float gameDuration = 180f;
 
     public float GameDuration => gameDuration;
+
+    /// <summary>Время, прошедшее с начала матча.</summary>
+    public float ElapsedMatchTime => Mathf.Max(0f, GameDuration - GameTimeRemaining.Value);
+
+    /// <summary>Очки игрока на момент старта игры (для подсчёта заработанных за матч).</summary>
+    public int PointsAtGameStart { get; private set; }
+
+    /// <summary>Очки, заработанные за текущую игру.</summary>
+    public int TotalEarnedThisGame => LocalPlayerSettings.PlayerPoints - PointsAtGameStart;
 
     [Header("Rewards")]
     [Tooltip("Сколько очков снайпер получает за каждое убийство бегуна в конце игры")]
@@ -63,6 +80,14 @@ public class GameManager : NetworkBehaviour
     [SerializeField] private GameObject[] startWalls;
     [SerializeField] private TMP_Text timerText;
     [SerializeField] private GameObject timerPanel;
+
+    [Header("Game End Vote")]
+    [Tooltip("Сцена лобби при выборе 'Back to Lobby'")]
+    [SerializeField] private string lobbySceneName = "Lobby";
+    [Tooltip("Сцена игры при выборе 'Play again'")]
+    [SerializeField] private string gameSceneName = "Game";
+    [Tooltip("Таймер голосования при большинстве (>50%), в секундах")]
+    [SerializeField] private float majorityTimerDuration = 5f;
 
     public readonly NetworkVariable<GameState> State = new NetworkVariable<GameState>(
         GameState.Preparing,
@@ -107,6 +132,19 @@ public class GameManager : NetworkBehaviour
     private PlayerHealth sniperHealth;
     private PlayerHealth localPlayerHealth;
 
+    /// <summary>Клиенты, проголосовавшие за возврат в лобби (после конца игры).</summary>
+    public readonly NetworkList<ulong> LobbyVotes = new NetworkList<ulong>();
+
+    /// <summary>Клиенты, проголосовавшие за повторную игру.</summary>
+    public readonly NetworkList<ulong> PlayAgainVotes = new NetworkList<ulong>();
+
+    /// <summary>Обратный отсчёт при большинстве голосов (>= 0 — таймер активен).</summary>
+    public readonly NetworkVariable<int> VoteTimerRemaining = new NetworkVariable<int>(-1);
+
+    private readonly HashSet<ulong> votedClients = new HashSet<ulong>();
+    private Coroutine majorityVoteCoroutine;
+    private GameEndVoteOption? pendingVoteOption;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -122,8 +160,11 @@ public class GameManager : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         FinishedRunners.Initialize(this);
+        LobbyVotes.Initialize(this);
+        PlayAgainVotes.Initialize(this);
 
         localPlayerHealth = NetworkManager.Singleton.LocalClient?.PlayerObject?.GetComponent<PlayerHealth>();
+        PointsAtGameStart = LocalPlayerSettings.PlayerPoints;
 
         if (!IsServer) return;
 
@@ -137,9 +178,16 @@ public class GameManager : NetworkBehaviour
         NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
 
         NetworkInventorySync.ClearAllTrackedServer();
+        SpectatorManager.DespawnAllSpectators();
 
         foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
+        {
             TrackRunner(client.ClientId, client.PlayerObject);
+
+            var health = client.PlayerObject?.GetComponent<PlayerHealth>();
+            if (health != null)
+                health.ServerRestoreFullHealth();
+        }
 
         ConfigureAllPlayers();
         TrackSniper();
@@ -175,6 +223,11 @@ public class GameManager : NetworkBehaviour
     private void OnClientDisconnected(ulong clientId)
     {
         UntrackRunner(clientId);
+
+        LobbyVotes.Remove(clientId);
+        PlayAgainVotes.Remove(clientId);
+        votedClients.Remove(clientId);
+        ReEvaluateGameEndVotes();
 
         if (sniperClientId.HasValue && sniperClientId.Value == clientId)
         {
@@ -623,6 +676,138 @@ public class GameManager : NetworkBehaviour
         if (rewardPerKill < 0) return;
 
         LocalPlayerSettings.AddPoints(totalKills * rewardPerKill + totalBonus);
+    }
+
+    /// <summary>Отправляет голос на сервер (вызывается на клиенте).</summary>
+    public void SubmitGameEndVote(GameEndVoteOption option)
+    {
+        if (!IsSpawned) return;
+        SubmitGameEndVoteServerRpc(option);
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void SubmitGameEndVoteServerRpc(GameEndVoteOption option, ServerRpcParams rpcParams = default)
+    {
+        if (State.Value != GameState.Ended) return;
+
+        ulong clientId = rpcParams.Receive.SenderClientId;
+
+        // Голос можно менять: клик по другой кнопке меняет голос,
+        // повторный клик по той же — отменяет его.
+        if (option == GameEndVoteOption.BackToLobby)
+        {
+            if (LobbyVotes.Contains(clientId))
+            {
+                LobbyVotes.Remove(clientId);
+            }
+            else
+            {
+                if (PlayAgainVotes.Contains(clientId))
+                    PlayAgainVotes.Remove(clientId);
+
+                LobbyVotes.Add(clientId);
+            }
+        }
+        else
+        {
+            if (PlayAgainVotes.Contains(clientId))
+            {
+                PlayAgainVotes.Remove(clientId);
+            }
+            else
+            {
+                if (LobbyVotes.Contains(clientId))
+                    LobbyVotes.Remove(clientId);
+
+                PlayAgainVotes.Add(clientId);
+            }
+        }
+
+        votedClients.Add(clientId);
+        ReEvaluateGameEndVotes();
+    }
+
+    /// <summary>
+    /// Проверяет голоса: 100% за один вариант — сразу выполняем его;
+    /// больше 50% — запускаем таймер, по истечении которого выполняется большинство.
+    /// </summary>
+    private void ReEvaluateGameEndVotes()
+    {
+        if (!IsServer || NetworkManager.Singleton == null) return;
+
+        int total = NetworkManager.Singleton.ConnectedClientsList.Count;
+        if (total <= 0) return;
+
+        int lobby = LobbyVotes.Count;
+        int again = PlayAgainVotes.Count;
+
+        if (lobby == total)
+        {
+            ExecuteGameEndVote(GameEndVoteOption.BackToLobby);
+            return;
+        }
+
+        if (again == total)
+        {
+            ExecuteGameEndVote(GameEndVoteOption.PlayAgain);
+            return;
+        }
+
+        if (lobby * 2 > total)
+            StartMajorityVoteTimer(GameEndVoteOption.BackToLobby);
+        else if (again * 2 > total)
+            StartMajorityVoteTimer(GameEndVoteOption.PlayAgain);
+        else
+            StopMajorityVoteTimer();
+    }
+
+    private void StartMajorityVoteTimer(GameEndVoteOption option)
+    {
+        if (majorityVoteCoroutine != null && pendingVoteOption == option)
+            return;
+
+        pendingVoteOption = option;
+
+        if (majorityVoteCoroutine != null)
+            StopCoroutine(majorityVoteCoroutine);
+
+        majorityVoteCoroutine = StartCoroutine(MajorityVoteTimerRoutine(option));
+    }
+
+    private System.Collections.IEnumerator MajorityVoteTimerRoutine(GameEndVoteOption option)
+    {
+        float remaining = majorityTimerDuration;
+
+        while (remaining > 0f)
+        {
+            VoteTimerRemaining.Value = Mathf.CeilToInt(remaining);
+            remaining -= Time.deltaTime;
+            yield return null;
+        }
+
+        VoteTimerRemaining.Value = -1;
+        majorityVoteCoroutine = null;
+        ExecuteGameEndVote(option);
+    }
+
+    private void StopMajorityVoteTimer()
+    {
+        if (majorityVoteCoroutine != null)
+        {
+            StopCoroutine(majorityVoteCoroutine);
+            majorityVoteCoroutine = null;
+        }
+
+        pendingVoteOption = null;
+        VoteTimerRemaining.Value = -1;
+    }
+
+    private void ExecuteGameEndVote(GameEndVoteOption option)
+    {
+        StopMajorityVoteTimer();
+
+        string scene = option == GameEndVoteOption.BackToLobby ? lobbySceneName : gameSceneName;
+        NetworkManager.Singleton.SceneManager.LoadScene(scene, LoadSceneMode.Single);
     }
 
     private void ConfigureAllPlayers()
