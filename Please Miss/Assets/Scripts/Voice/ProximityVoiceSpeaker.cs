@@ -69,6 +69,8 @@ public class ProximityVoiceSpeaker : NetworkBehaviour
     {
         Speakers[OwnerClientId] = this;
 
+        ProximityVoiceManager.RefreshVoiceChatVolume();
+
         SetupAudioSource();
         StartStreamingAudioClip();
 
@@ -276,7 +278,7 @@ public class ProximityVoiceSpeaker : NetworkBehaviour
             return;
 
         float distanceVolume = manualDistanceVolume;
-        float finalVolume = volume * distanceVolume;
+        float finalVolume = volume * distanceVolume * ProximityVoiceManager.VoiceChatVolume;
 
         lock (queueLock)
         {

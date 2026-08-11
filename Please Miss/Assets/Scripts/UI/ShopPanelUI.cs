@@ -337,6 +337,36 @@ public class ShopPanelUI : MonoBehaviour
 
     public void Close()
     {
+        RectTransform target = windowRoot != null ? windowRoot : transform as RectTransform;
+
+        if (target == null)
+        {
+            CloseNow();
+            return;
+        }
+
+        CanvasGroup group = target.GetComponent<CanvasGroup>();
+
+        if (group == null)
+        {
+            CloseNow();
+            return;
+        }
+
+        target.DOKill();
+        group.DOKill();
+
+        group.interactable = false;
+        group.blocksRaycasts = false;
+
+        target.DOScale(0.8f, 0.2f).SetEase(Ease.InBack).SetUpdate(true)
+            .OnComplete(CloseNow);
+
+        group.DOFade(0f, 0.12f).SetUpdate(true);
+    }
+
+    private void CloseNow()
+    {
         if (windowRoot != null)
             windowRoot.gameObject.SetActive(false);
         else

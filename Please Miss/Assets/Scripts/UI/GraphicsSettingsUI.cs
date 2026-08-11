@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using DG.Tweening;
 using TMPro;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Localization;
 using UnityEngine.Localization.Settings;
@@ -10,44 +12,62 @@ using UnityEngine.UI;
 
 public class GraphicsSettingsUI : MonoBehaviour
 {
+    private const int MaxFpsMax = 399;
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void ApplySavedSettingsEarly()
     {
-        int preset = PlayerPrefs.GetInt("GraphicsPreset", -1);
+        int savedWidth = PlayerPrefs.GetInt("ScreenWidth", 0);
+        int savedHeight = PlayerPrefs.GetInt("ScreenHeight", 0);
 
-        if (preset < 0)
-        {
-            QualitySettings.globalTextureMipmapLimit = 1;
-            QualitySettings.shadows = UnityEngine.ShadowQuality.All;
-            QualitySettings.shadowDistance = 100f;
-            QualitySettings.shadowResolution = UnityEngine.ShadowResolution.High;
-            QualitySettings.vSyncCount = 1;
-            Application.targetFrameRate = 144;
-            ApplyUrpShadowResolution(2);
-        }
-        else
-        {
-            QualitySettings.globalTextureMipmapLimit = PlayerPrefs.GetInt("TextureQuality", 0);
-            QualitySettings.shadows = (UnityEngine.ShadowQuality)PlayerPrefs.GetInt("ShadowQuality", 2);
-            QualitySettings.shadowDistance = PlayerPrefs.GetFloat("ShadowDistance", 100f);
-            QualitySettings.shadowResolution = (UnityEngine.ShadowResolution)PlayerPrefs.GetInt("ShadowResolution", 2);
-            QualitySettings.vSyncCount = PlayerPrefs.GetInt("VSync", 1);
-            Application.targetFrameRate = PlayerPrefs.GetInt("MaxFps", 144);
-            ApplyUrpShadowResolution(PlayerPrefs.GetInt("ShadowResolution", 2));
-        }
+        if (savedWidth > 0 && savedHeight > 0)
+            Screen.SetResolution(savedWidth, savedHeight, (FullScreenMode)PlayerPrefs.GetInt("DisplayMode", 1));
+
+        Screen.fullScreenMode = (FullScreenMode)PlayerPrefs.GetInt("DisplayMode", 1);
+        QualitySettings.vSyncCount = PlayerPrefs.GetInt("VSync", 1);
+        Application.targetFrameRate = PlayerPrefs.GetInt("MaxFps", 144);
+
+        int texture = PlayerPrefs.GetInt("TextureQuality", 1);
+        QualitySettings.globalTextureMipmapLimit = texture;
+
+        int shadows = PlayerPrefs.GetInt("ShadowQuality", 2);
+        QualitySettings.shadows = (UnityEngine.ShadowQuality)Mathf.Clamp(shadows, 0, 2);
+        QualitySettings.shadowDistance = PlayerPrefs.GetFloat("ShadowDistance", 100f);
+        QualitySettings.shadowResolution = (UnityEngine.ShadowResolution)Mathf.Clamp(PlayerPrefs.GetInt("ShadowResolution", shadows == 3 ? 3 : 2), 0, 3);
+        ApplyUrpShadowResolution(PlayerPrefs.GetInt("ShadowResolution", 2));
+
+        int aa = PlayerPrefs.GetInt("AntiAliasing", 2);
+        ApplyMsaa(new[] { 1, 2, 4, 8 }[Mathf.Clamp(aa, 0, 3)]);
+
+        ApplyRenderScale(PlayerPrefs.GetFloat("RenderScale", 1f));
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void ApplySavedSettingsAfterSceneLoad()
     {
-        int preset = PlayerPrefs.GetInt("GraphicsPreset", -1);
-        int shadowResolution = preset < 0 ? 2 : PlayerPrefs.GetInt("ShadowResolution", 2);
-        ApplyUrpShadowResolution(shadowResolution);
+        Camera cam = GetTargetCamera();
 
-        if (Camera.main != null && preset >= 0)
+        if (cam != null)
         {
-            Camera.main.farClipPlane = PlayerPrefs.GetFloat("DrawDistance", Camera.main.farClipPlane);
+            cam.fieldOfView = PlayerPrefs.GetFloat("Fov", 90f);
+            cam.farClipPlane = PlayerPrefs.GetFloat("DrawDistance", 1000f);
+
+            var data = cam.GetUniversalAdditionalCameraData();
+
+            if (data != null)
+                data.renderPostProcessing = PlayerPrefs.GetInt("PostProcessing", 1) == 1;
         }
+
+        var urp = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
+
+        if (urp != null)
+            urp.supportsHDR = PlayerPrefs.GetInt("HDR", 1) == 1;
+
+        SetVolumeEffectActive<Bloom>(PlayerPrefs.GetInt("Bloom", 1) == 1);
+        SetVolumeEffectActive<MotionBlur>(PlayerPrefs.GetInt("MotionBlur", 0) == 1);
+        SetVolumeEffectActive<ChromaticAberration>(PlayerPrefs.GetInt("ChromaticAberration", 0) == 1);
+        SetVolumeEffectActive<DepthOfField>(PlayerPrefs.GetInt("DepthOfField", 0) == 1);
+        SetVolumeEffectActive<ScreenSpaceLensFlare>(PlayerPrefs.GetInt("LensFlare", 0) == 1);
     }
 
     private static void ApplyUrpShadowResolution(int index)
@@ -61,28 +81,82 @@ public class GraphicsSettingsUI : MonoBehaviour
             urp.mainLightShadowmapResolution = res;
     }
 
-    [Header("Preset")]
-    [SerializeField] private TMP_Dropdown presetDropdown;
+    private static void ApplyMsaa(int sampleCount)
+    {
+        var urp = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
 
-    [Header("Texture Quality")]
-    [SerializeField] private TMP_Dropdown textureQualityDropdown;
+        if (urp != null)
+            urp.msaaSampleCount = sampleCount;
+    }
 
-    [Header("Shadow")]
-    [SerializeField] private TMP_Dropdown shadowQualityDropdown;
-    [SerializeField] private Slider shadowDistanceSlider;
-    [SerializeField] private TMP_Text shadowDistanceValueText;
-    [SerializeField] private TMP_Dropdown shadowResolutionDropdown;
+    private static void ApplyRenderScale(float scale)
+    {
+        var urp = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
 
-    [Header("Draw Distance")]
-    [SerializeField] private Slider drawDistanceSlider;
-    [SerializeField] private TMP_Text drawDistanceValueText;
+        if (urp != null)
+            urp.renderScale = scale;
+    }
 
-    [Header("VSync")]
+    private static void SetVolumeEffectActive<T>(bool enabled) where T : VolumeComponent
+    {
+        var volume = FindFirstObjectByType<Volume>();
+
+        if (volume == null || volume.profile == null)
+            return;
+
+        if (volume.profile.TryGet<T>(out var effect))
+            effect.active = enabled;
+    }
+
+    private static Camera GetTargetCamera()
+    {
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsClient)
+        {
+            var localClient = NetworkManager.Singleton.LocalClient;
+
+            if (localClient != null && localClient.PlayerObject != null)
+            {
+                var cam = localClient.PlayerObject.GetComponentInChildren<Camera>();
+
+                if (cam != null)
+                    return cam;
+            }
+        }
+
+        return Camera.main;
+    }
+
+    [Header("Display")]
+    [SerializeField] private TMP_Dropdown resolutionDropdown;
+    [SerializeField] private TMP_Dropdown displayModeDropdown;
     [SerializeField] private Toggle vSyncToggle;
-
-    [Header("Frame Rate")]
     [SerializeField] private Slider maxFpsSlider;
     [SerializeField] private TMP_Text maxFpsValueText;
+    [SerializeField] private Slider fovSlider;
+    [SerializeField] private TMP_Text fovValueText;
+
+    [Header("Advanced")]
+    [SerializeField] private Slider shadowDistanceSlider;
+    [SerializeField] private TMP_Text shadowDistanceValueText;
+    [SerializeField] private Toggle motionBlurToggle;
+    [SerializeField] private Toggle bloomToggle;
+
+    [Header("Quality")]
+    [SerializeField] private TMP_Dropdown presetDropdown;
+    [SerializeField] private TMP_Dropdown textureQualityDropdown;
+    [SerializeField] private TMP_Dropdown shadowQualityDropdown;
+    [SerializeField] private TMP_Dropdown effectsQualityDropdown;
+    [SerializeField] private TMP_Dropdown antiAliasingDropdown;
+    [SerializeField] private TMP_Dropdown viewDistanceDropdown;
+    [SerializeField] private Toggle postProcessingToggle;
+
+    [Header("Other")]
+    [SerializeField] private Toggle hdrToggle;
+    [SerializeField] private Toggle chromaticAberrationToggle;
+    [SerializeField] private Toggle depthOfFieldToggle;
+    [SerializeField] private Toggle lensFlareToggle;
+    [SerializeField] private Slider renderScaleSlider;
+    [SerializeField] private TMP_Text renderScaleValueText;
 
     [Header("Buttons")]
     [SerializeField] private Button backButton;
@@ -92,61 +166,59 @@ public class GraphicsSettingsUI : MonoBehaviour
     [SerializeField] private float animOutDuration = 0.2f;
 
     private CanvasGroup canvasGroup;
-    private int savedTextureQuality;
-    private int savedShadowQuality;
-    private float savedShadowDistance;
-    private int savedShadowResolution;
-    private float savedDrawDistance;
-    private bool savedVSync;
-    private int savedMaxFps;
-    private int savedPreset;
     private bool ignorePresetChange;
+    private List<Resolution> resolutions;
 
-    private string Loc(string key) => LocalizationSettings.StringDatabase.GetLocalizedString("PlayerUI_Table", key);
+    private int SavedPreset => PlayerPrefs.GetInt("QualityPreset", -1);
+
+    private string Loc(string key)
+    {
+        string value = LocalizationSettings.StringDatabase.GetLocalizedString("PlayerUI_Table", key);
+        return string.IsNullOrEmpty(value) ? key : value;
+    }
 
     private void Awake()
     {
         canvasGroup = GetComponent<CanvasGroup>();
 
-        if (canvasGroup != null)
-        {
-            canvasGroup.alpha = 0f;
-            canvasGroup.interactable = false;
-        }
-
-        transform.localScale = Vector3.one * 0.8f;
-
         LocalizationSettings.SelectedLocaleChanged += OnLocaleChanged;
 
-        LoadSavedValues();
-
         ignorePresetChange = true;
+        InitResolution();
+        InitDisplayMode();
+        InitVSync();
+        InitMaxFps();
+        InitFov();
+        InitShadowDistance();
+        InitMotionBlur();
+        InitBloom();
         InitPreset();
         InitTextureQuality();
         InitShadowQuality();
-        InitShadowDistance();
-        InitShadowResolution();
-        InitDrawDistance();
-        InitVSync();
-        InitMaxFps();
+        InitEffectsQuality();
+        InitAntiAliasing();
+        InitViewDistance();
+        InitPostProcessing();
+        InitHDR();
+        InitChromaticAberration();
+        InitDepthOfField();
+        InitLensFlare();
+        InitRenderScale();
         ignorePresetChange = false;
 
         if (backButton != null)
             backButton.onClick.AddListener(OnBack);
     }
 
-    private void Start()
-    {
-        AnimateIn();
-    }
-
     private void AnimateIn()
     {
-        transform.DOScale(1f, animInDuration).SetEase(Ease.OutBack, 1.2f);
+        transform.localScale = Vector3.one * 0.8f;
+        transform.DOScale(1f, animInDuration).SetEase(Ease.OutBack, 1.2f).SetUpdate(true);
 
         if (canvasGroup != null)
         {
-            canvasGroup.DOFade(1f, animInDuration * 0.6f).OnComplete(() =>
+            canvasGroup.alpha = 0f;
+            canvasGroup.DOFade(1f, animInDuration * 0.6f).SetUpdate(true).OnComplete(() =>
             {
                 if (canvasGroup != null)
                     canvasGroup.interactable = true;
@@ -156,16 +228,16 @@ public class GraphicsSettingsUI : MonoBehaviour
 
     public void AnimateOut(Action onComplete)
     {
-        transform.DOScale(0.8f, animOutDuration).SetEase(Ease.InBack);
+        transform.DOScale(0.8f, animOutDuration).SetEase(Ease.InBack).SetUpdate(true);
 
         if (canvasGroup != null)
-            canvasGroup.DOFade(0f, animOutDuration * 0.6f);
+            canvasGroup.DOFade(0f, animOutDuration * 0.6f).SetUpdate(true);
 
         DOVirtual.DelayedCall(animOutDuration, () =>
         {
             onComplete?.Invoke();
             Destroy(gameObject);
-        });
+        }, true);
     }
 
     private void OnDestroy()
@@ -180,10 +252,14 @@ public class GraphicsSettingsUI : MonoBehaviour
 
     private void RefreshLocalizedText()
     {
+        InitResolution();
+        InitDisplayMode();
         InitPreset();
         InitTextureQuality();
         InitShadowQuality();
-        InitShadowResolution();
+        InitEffectsQuality();
+        InitAntiAliasing();
+        InitViewDistance();
 
         if (maxFpsSlider != null)
             UpdateMaxFpsText(maxFpsSlider.value);
@@ -194,159 +270,186 @@ public class GraphicsSettingsUI : MonoBehaviour
         AnimateOut(null);
     }
 
-    private void LoadSavedValues()
+    private void MarkPresetChanged()
     {
-        savedPreset = PlayerPrefs.GetInt("GraphicsPreset", -1);
-
-        if (savedPreset < 0)
-        {
-            savedTextureQuality = 1;
-            savedShadowQuality = 2;
-            savedShadowDistance = 100f;
-            savedShadowResolution = 2;
-            savedDrawDistance = Camera.main != null ? Camera.main.farClipPlane : 500f;
-            savedVSync = true;
-            savedMaxFps = 144;
-        }
-        else
-        {
-            float defaultDrawDistance = Camera.main != null ? Camera.main.farClipPlane : 500f;
-
-            savedTextureQuality = PlayerPrefs.GetInt("TextureQuality", 0);
-            savedShadowQuality = PlayerPrefs.GetInt("ShadowQuality", 2);
-            savedShadowDistance = PlayerPrefs.GetFloat("ShadowDistance", QualitySettings.shadowDistance > 0.01f ? QualitySettings.shadowDistance : 50f);
-            savedShadowResolution = PlayerPrefs.GetInt("ShadowResolution", 2);
-            savedDrawDistance = PlayerPrefs.GetFloat("DrawDistance", defaultDrawDistance);
-            savedVSync = PlayerPrefs.GetInt("VSync", QualitySettings.vSyncCount > 0 ? 1 : 0) == 1;
-            savedMaxFps = PlayerPrefs.GetInt("MaxFps", Application.targetFrameRate >= 0 ? Application.targetFrameRate : 200);
-        }
-    }
-
-    private void InitPreset()
-    {
-        if (presetDropdown == null) return;
-
-        presetDropdown.onValueChanged.RemoveAllListeners();
-        presetDropdown.ClearOptions();
-        presetDropdown.AddOptions(new System.Collections.Generic.List<string> { Loc("Low"), Loc("Medium"), Loc("High"), Loc("Ultra") });
-        presetDropdown.SetValueWithoutNotify(savedPreset >= 0 ? savedPreset : 2);
-        presetDropdown.onValueChanged.AddListener(OnPresetChanged);
-    }
-
-    private void ApplyPreset(int index)
-    {
-        ignorePresetChange = true;
-
-        switch (index)
-        {
-            case 0: // Low
-                SetTextureQuality(3);
-                SetShadowQuality(0);
-                SetShadowDistance(10f);
-                SetShadowResolution(0);
-                SetDrawDistance(200f);
-                SetVSync(false);
-                SetMaxFps(60);
-                break;
-
-            case 1: // Medium
-                SetTextureQuality(2);
-                SetShadowQuality(1);
-                SetShadowDistance(40f);
-                SetShadowResolution(1);
-                SetDrawDistance(500f);
-                SetVSync(true);
-                SetMaxFps(60);
-                break;
-
-            case 2: // High
-                SetTextureQuality(1);
-                SetShadowQuality(2);
-                SetShadowDistance(100f);
-                SetShadowResolution(2);
-                SetDrawDistance(1000f);
-                SetVSync(true);
-                SetMaxFps(144);
-                break;
-
-            case 3: // Ultra
-                SetTextureQuality(0);
-                SetShadowQuality(2);
-                SetShadowDistance(150f);
-                SetShadowResolution(3);
-                SetDrawDistance(1500f);
-                SetVSync(true);
-                SetMaxFps(200);
-                break;
-        }
-
-        savedPreset = index;
-        PlayerPrefs.SetInt("GraphicsPreset", index);
-        PlayerPrefs.Save();
-
-        ignorePresetChange = false;
-        presetDropdown.SetValueWithoutNotify(index);
-    }
-
-    private void OnPresetChanged(int index)
-    {
-        ApplyPreset(index);
-    }
-
-    private void InitTextureQuality()
-    {
-        if (textureQualityDropdown == null) return;
-
-        textureQualityDropdown.onValueChanged.RemoveAllListeners();
-        textureQualityDropdown.ClearOptions();
-        textureQualityDropdown.AddOptions(new System.Collections.Generic.List<string> { Loc("Ultra"), Loc("High"), Loc("Medium"), Loc("Low") });
-        textureQualityDropdown.SetValueWithoutNotify(Mathf.Clamp(savedTextureQuality, 0, 3));
-        textureQualityDropdown.onValueChanged.AddListener(OnTextureQualityChanged);
-    }
-
-    private void OnTextureQualityChanged(int index)
-    {
-        if (!ignorePresetChange)
+        if (!ignorePresetChange && presetDropdown != null)
             presetDropdown.SetValueWithoutNotify(-1);
-
-        SetTextureQuality(index);
     }
 
-    private void SetTextureQuality(int index)
+    private static List<Resolution> GetUniqueResolutions()
     {
-        // index 0=Ultra → mipmapLimit 0 (full res), index 3=Low → mipmapLimit 3 (most compressed)
-        QualitySettings.globalTextureMipmapLimit = index;
-        PlayerPrefs.SetInt("TextureQuality", index);
+        var unique = new List<Resolution>();
+        var seen = new HashSet<Vector2Int>();
+
+        for (int i = 0; i < Screen.resolutions.Length; i++)
+        {
+            Resolution res = Screen.resolutions[i];
+
+            if (!seen.Add(new Vector2Int(res.width, res.height)))
+                continue;
+
+            unique.Add(res);
+        }
+
+        return unique;
+    }
+
+    private void InitResolution()
+    {
+        if (resolutionDropdown == null)
+            return;
+
+        resolutions = GetUniqueResolutions();
+
+        resolutionDropdown.onValueChanged.RemoveAllListeners();
+        resolutionDropdown.ClearOptions();
+
+        int currentIndex = 0;
+        var options = new List<string>();
+
+        for (int i = 0; i < resolutions.Count; i++)
+        {
+            options.Add(resolutions[i].width + "x" + resolutions[i].height);
+
+            if (resolutions[i].width == Screen.width && resolutions[i].height == Screen.height)
+                currentIndex = i;
+        }
+
+        resolutionDropdown.AddOptions(options);
+        resolutionDropdown.SetValueWithoutNotify(currentIndex);
+        resolutionDropdown.onValueChanged.AddListener(OnResolutionChanged);
+    }
+
+    private void OnResolutionChanged(int index)
+    {
+        if (resolutions == null || index < 0 || index >= resolutions.Count)
+            return;
+
+        Resolution res = resolutions[index];
+        Screen.SetResolution(res.width, res.height, Screen.fullScreenMode);
+        PlayerPrefs.SetInt("ScreenWidth", res.width);
+        PlayerPrefs.SetInt("ScreenHeight", res.height);
+        PlayerPrefs.Save();
+    }
+
+    private void InitDisplayMode()
+    {
+        if (displayModeDropdown == null) return;
+
+        displayModeDropdown.onValueChanged.RemoveAllListeners();
+        displayModeDropdown.ClearOptions();
+        displayModeDropdown.AddOptions(new List<string> { Loc("Fullscreen"), Loc("Borderless"), Loc("Windowed") });
+        displayModeDropdown.SetValueWithoutNotify(Mathf.Clamp(PlayerPrefs.GetInt("DisplayMode", 1), 0, 2));
+        displayModeDropdown.onValueChanged.AddListener(OnDisplayModeChanged);
+    }
+
+    private void OnDisplayModeChanged(int index)
+    {
+        Screen.fullScreenMode = index switch
+        {
+            0 => FullScreenMode.ExclusiveFullScreen,
+            1 => FullScreenMode.FullScreenWindow,
+            _ => FullScreenMode.Windowed,
+        };
+
+        PlayerPrefs.SetInt("DisplayMode", index);
+        PlayerPrefs.Save();
+    }
+
+    private void InitVSync()
+    {
+        if (vSyncToggle == null) return;
+
+        vSyncToggle.onValueChanged.AddListener(OnVSyncChanged);
+        SetVSync(PlayerPrefs.GetInt("VSync", 1) == 1);
+    }
+
+    private void OnVSyncChanged(bool enabled)
+    {
+        SetVSync(enabled);
+    }
+
+    private void SetVSync(bool enabled)
+    {
+        QualitySettings.vSyncCount = enabled ? 1 : 0;
+        PlayerPrefs.SetInt("VSync", enabled ? 1 : 0);
         PlayerPrefs.Save();
 
-        if (textureQualityDropdown != null)
-            textureQualityDropdown.SetValueWithoutNotify(index);
+        if (vSyncToggle != null)
+            vSyncToggle.SetIsOnWithoutNotify(enabled);
     }
 
-    private void InitShadowQuality()
+    private void InitMaxFps()
     {
-        if (shadowQualityDropdown == null) return;
+        if (maxFpsSlider == null) return;
 
-        shadowQualityDropdown.onValueChanged.RemoveAllListeners();
-        shadowQualityDropdown.ClearOptions();
-        shadowQualityDropdown.AddOptions(new System.Collections.Generic.List<string> { Loc("Disable"), Loc("Hard Only"), Loc("All") });
-        shadowQualityDropdown.SetValueWithoutNotify(Mathf.Clamp(savedShadowQuality, 0, 2));
-        shadowQualityDropdown.onValueChanged.AddListener(OnShadowQualityChanged);
+        maxFpsSlider.minValue = 60f;
+        maxFpsSlider.maxValue = MaxFpsMax;
+        maxFpsSlider.wholeNumbers = true;
+        maxFpsSlider.onValueChanged.AddListener(OnMaxFpsChanged);
+        SetMaxFps(PlayerPrefs.GetInt("MaxFps", 144));
     }
 
-    private void OnShadowQualityChanged(int index)
+    private void OnMaxFpsChanged(float value)
     {
-        if (!ignorePresetChange)
-            presetDropdown.SetValueWithoutNotify(-1);
-
-        SetShadowQuality(index);
+        SetMaxFps(value);
     }
 
-    private void SetShadowQuality(int index)
+    private void SetMaxFps(float value)
     {
-        QualitySettings.shadows = (UnityEngine.ShadowQuality)index;
-        PlayerPrefs.SetInt("ShadowQuality", index);
+        int fps = Mathf.RoundToInt(value);
+        Application.targetFrameRate = fps >= MaxFpsMax ? -1 : fps;
+        PlayerPrefs.SetInt("MaxFps", fps);
         PlayerPrefs.Save();
+        UpdateMaxFpsText(fps);
+
+        if (maxFpsSlider != null)
+            maxFpsSlider.SetValueWithoutNotify(fps);
+    }
+
+    private void UpdateMaxFpsText(float value)
+    {
+        int fps = Mathf.RoundToInt(value);
+
+        if (maxFpsValueText != null)
+            maxFpsValueText.text = fps >= MaxFpsMax ? Loc("Unlimited") : fps.ToString();
+    }
+
+    private void InitFov()
+    {
+        if (fovSlider == null) return;
+
+        fovSlider.minValue = 80f;
+        fovSlider.maxValue = 120f;
+        fovSlider.wholeNumbers = true;
+        fovSlider.onValueChanged.AddListener(OnFovChanged);
+        SetFov(PlayerPrefs.GetFloat("Fov", 90f));
+    }
+
+    private void OnFovChanged(float value)
+    {
+        SetFov(value);
+    }
+
+    private void SetFov(float value)
+    {
+        Camera cam = GetTargetCamera();
+
+        if (cam != null)
+            cam.fieldOfView = value;
+
+        PlayerPrefs.SetFloat("Fov", value);
+        PlayerPrefs.Save();
+        UpdateFovText(value);
+
+        if (fovSlider != null)
+            fovSlider.SetValueWithoutNotify(value);
+    }
+
+    private void UpdateFovText(float value)
+    {
+        if (fovValueText != null)
+            fovValueText.text = Mathf.RoundToInt(value).ToString();
     }
 
     private void InitShadowDistance()
@@ -356,14 +459,11 @@ public class GraphicsSettingsUI : MonoBehaviour
         shadowDistanceSlider.minValue = 0f;
         shadowDistanceSlider.maxValue = 200f;
         shadowDistanceSlider.onValueChanged.AddListener(OnShadowDistanceChanged);
-        SetShadowDistance(savedShadowDistance);
+        SetShadowDistance(PlayerPrefs.GetFloat("ShadowDistance", 100f));
     }
 
     private void OnShadowDistanceChanged(float value)
     {
-        if (!ignorePresetChange)
-            presetDropdown.SetValueWithoutNotify(-1);
-
         SetShadowDistance(value);
     }
 
@@ -384,133 +484,434 @@ public class GraphicsSettingsUI : MonoBehaviour
             shadowDistanceValueText.text = value.ToString("F0");
     }
 
-    private void InitShadowResolution()
+    private void InitMotionBlur()
     {
-        if (shadowResolutionDropdown == null) return;
+        if (motionBlurToggle == null) return;
 
-        shadowResolutionDropdown.onValueChanged.RemoveAllListeners();
-        shadowResolutionDropdown.ClearOptions();
-        shadowResolutionDropdown.AddOptions(new System.Collections.Generic.List<string> { Loc("Low"), Loc("Medium"), Loc("High"), Loc("Very High") });
-        shadowResolutionDropdown.onValueChanged.AddListener(OnShadowResolutionChanged);
-        SetShadowResolution(savedShadowResolution);
+        motionBlurToggle.onValueChanged.AddListener(OnMotionBlurChanged);
+        SetMotionBlur(PlayerPrefs.GetInt("MotionBlur", 0) == 1);
     }
 
-    private void OnShadowResolutionChanged(int index)
+    private void OnMotionBlurChanged(bool enabled)
     {
-        if (!ignorePresetChange)
-            presetDropdown.SetValueWithoutNotify(-1);
-
-        SetShadowResolution(index);
+        SetMotionBlur(enabled);
     }
 
-    private void SetShadowResolution(int index)
+    private void SetMotionBlur(bool enabled)
     {
-        ApplyUrpShadowResolution(index);
-
-        QualitySettings.shadowResolution = (UnityEngine.ShadowResolution)index;
-        PlayerPrefs.SetInt("ShadowResolution", index);
+        SetVolumeEffectActive<MotionBlur>(enabled);
+        PlayerPrefs.SetInt("MotionBlur", enabled ? 1 : 0);
         PlayerPrefs.Save();
+
+        if (motionBlurToggle != null)
+            motionBlurToggle.SetIsOnWithoutNotify(enabled);
     }
 
-    private void InitDrawDistance()
+    private void InitBloom()
     {
-        if (drawDistanceSlider == null) return;
+        if (bloomToggle == null) return;
 
-        drawDistanceSlider.minValue = 50f;
-        drawDistanceSlider.maxValue = 2000f;
-        drawDistanceSlider.onValueChanged.AddListener(OnDrawDistanceChanged);
-        SetDrawDistance(savedDrawDistance);
+        bloomToggle.onValueChanged.AddListener(OnBloomChanged);
+        SetBloom(PlayerPrefs.GetInt("Bloom", 1) == 1);
     }
 
-    private void OnDrawDistanceChanged(float value)
+    private void OnBloomChanged(bool enabled)
     {
-        if (!ignorePresetChange)
-            presetDropdown.SetValueWithoutNotify(-1);
-
-        SetDrawDistance(value);
+        SetBloom(enabled);
     }
 
-    private void SetDrawDistance(float value)
+    private void SetBloom(bool enabled)
     {
-        if (Camera.main != null)
-            Camera.main.farClipPlane = value;
+        SetVolumeEffectActive<Bloom>(enabled);
+        PlayerPrefs.SetInt("Bloom", enabled ? 1 : 0);
+        PlayerPrefs.Save();
+
+        if (bloomToggle != null)
+            bloomToggle.SetIsOnWithoutNotify(enabled);
+    }
+
+    private void InitPreset()
+    {
+        if (presetDropdown == null) return;
+
+        presetDropdown.onValueChanged.RemoveAllListeners();
+        presetDropdown.ClearOptions();
+        presetDropdown.AddOptions(new List<string> { Loc("Low"), Loc("Medium"), Loc("High"), Loc("Epic") });
+        presetDropdown.SetValueWithoutNotify(Mathf.Clamp(SavedPreset, 0, 3));
+        presetDropdown.onValueChanged.AddListener(OnPresetChanged);
+    }
+
+    private void ApplyPreset(int index)
+    {
+        ignorePresetChange = true;
+
+        switch (index)
+        {
+            case 0: // Low
+                SetTextureQuality(3);
+                SetShadowQuality(0);
+                SetEffectsQuality(0);
+                SetAntiAliasing(0);
+                SetViewDistance(0);
+                SetPostProcessing(false);
+                break;
+
+            case 1: // Medium
+                SetTextureQuality(2);
+                SetShadowQuality(1);
+                SetEffectsQuality(1);
+                SetAntiAliasing(1);
+                SetViewDistance(1);
+                SetPostProcessing(true);
+                break;
+
+            case 2: // High
+                SetTextureQuality(1);
+                SetShadowQuality(2);
+                SetEffectsQuality(2);
+                SetAntiAliasing(2);
+                SetViewDistance(2);
+                SetPostProcessing(true);
+                break;
+
+            case 3: // Epic
+                SetTextureQuality(0);
+                SetShadowQuality(3);
+                SetEffectsQuality(3);
+                SetAntiAliasing(3);
+                SetViewDistance(3);
+                SetPostProcessing(true);
+                break;
+        }
+
+        PlayerPrefs.SetInt("QualityPreset", index);
+        PlayerPrefs.Save();
+
+        ignorePresetChange = false;
+        presetDropdown.SetValueWithoutNotify(index);
+    }
+
+    private void OnPresetChanged(int index)
+    {
+        ApplyPreset(index);
+    }
+
+    private void InitTextureQuality()
+    {
+        if (textureQualityDropdown == null) return;
+
+        textureQualityDropdown.onValueChanged.RemoveAllListeners();
+        textureQualityDropdown.ClearOptions();
+        textureQualityDropdown.AddOptions(new List<string> { Loc("Epic"), Loc("High"), Loc("Medium"), Loc("Low") });
+        textureQualityDropdown.SetValueWithoutNotify(Mathf.Clamp(PlayerPrefs.GetInt("TextureQuality", 1), 0, 3));
+        textureQualityDropdown.onValueChanged.AddListener(OnTextureQualityChanged);
+    }
+
+    private void OnTextureQualityChanged(int index)
+    {
+        MarkPresetChanged();
+        SetTextureQuality(index);
+    }
+
+    private void SetTextureQuality(int index)
+    {
+        // index 0=Epic → mipmapLimit 0 (full res), index 3=Low → mipmapLimit 3 (most compressed)
+        QualitySettings.globalTextureMipmapLimit = index;
+        PlayerPrefs.SetInt("TextureQuality", index);
+        PlayerPrefs.Save();
+
+        if (textureQualityDropdown != null)
+            textureQualityDropdown.SetValueWithoutNotify(index);
+    }
+
+    private void InitShadowQuality()
+    {
+        if (shadowQualityDropdown == null) return;
+
+        shadowQualityDropdown.onValueChanged.RemoveAllListeners();
+        shadowQualityDropdown.ClearOptions();
+        shadowQualityDropdown.AddOptions(new List<string> { Loc("Low"), Loc("Medium"), Loc("High"), Loc("Epic") });
+        shadowQualityDropdown.SetValueWithoutNotify(Mathf.Clamp(PlayerPrefs.GetInt("ShadowQuality", 2), 0, 3));
+        shadowQualityDropdown.onValueChanged.AddListener(OnShadowQualityChanged);
+    }
+
+    private void OnShadowQualityChanged(int index)
+    {
+        MarkPresetChanged();
+        SetShadowQuality(index);
+    }
+
+    private void SetShadowQuality(int index)
+    {
+        QualitySettings.shadows = (UnityEngine.ShadowQuality)Mathf.Clamp(index, 0, 2);
+
+        if (index == 3)
+        {
+            QualitySettings.shadowResolution = UnityEngine.ShadowResolution.VeryHigh;
+            ApplyUrpShadowResolution(3);
+            PlayerPrefs.SetInt("ShadowResolution", 3);
+        }
+
+        PlayerPrefs.SetInt("ShadowQuality", index);
+        PlayerPrefs.Save();
+
+        if (shadowQualityDropdown != null)
+            shadowQualityDropdown.SetValueWithoutNotify(index);
+    }
+
+    private void InitEffectsQuality()
+    {
+        if (effectsQualityDropdown == null) return;
+
+        effectsQualityDropdown.onValueChanged.RemoveAllListeners();
+        effectsQualityDropdown.ClearOptions();
+        effectsQualityDropdown.AddOptions(new List<string> { Loc("Low"), Loc("Medium"), Loc("High"), Loc("Epic") });
+        effectsQualityDropdown.SetValueWithoutNotify(Mathf.Clamp(PlayerPrefs.GetInt("VfxQuality", 2), 0, 3));
+        effectsQualityDropdown.onValueChanged.AddListener(OnEffectsQualityChanged);
+    }
+
+    private void OnEffectsQualityChanged(int index)
+    {
+        MarkPresetChanged();
+        SetEffectsQuality(index);
+    }
+
+    private void SetEffectsQuality(int index)
+    {
+        PlayerPrefs.SetInt("VfxQuality", index);
+        PlayerPrefs.Save();
+
+        if (effectsQualityDropdown != null)
+            effectsQualityDropdown.SetValueWithoutNotify(index);
+    }
+
+    private void InitAntiAliasing()
+    {
+        if (antiAliasingDropdown == null) return;
+
+        antiAliasingDropdown.onValueChanged.RemoveAllListeners();
+        antiAliasingDropdown.ClearOptions();
+        antiAliasingDropdown.AddOptions(new List<string> { "Off", "MSAA 2x", "MSAA 4x", "MSAA 8x" });
+        antiAliasingDropdown.SetValueWithoutNotify(Mathf.Clamp(PlayerPrefs.GetInt("AntiAliasing", 2), 0, 3));
+        antiAliasingDropdown.onValueChanged.AddListener(OnAntiAliasingChanged);
+    }
+
+    private void OnAntiAliasingChanged(int index)
+    {
+        MarkPresetChanged();
+        SetAntiAliasing(index);
+    }
+
+    private void SetAntiAliasing(int index)
+    {
+        ApplyMsaa(new[] { 1, 2, 4, 8 }[Mathf.Clamp(index, 0, 3)]);
+        PlayerPrefs.SetInt("AntiAliasing", index);
+        PlayerPrefs.Save();
+
+        if (antiAliasingDropdown != null)
+            antiAliasingDropdown.SetValueWithoutNotify(index);
+    }
+
+    private void InitViewDistance()
+    {
+        if (viewDistanceDropdown == null) return;
+
+        viewDistanceDropdown.onValueChanged.RemoveAllListeners();
+        viewDistanceDropdown.ClearOptions();
+        viewDistanceDropdown.AddOptions(new List<string> { Loc("Low"), Loc("Medium"), Loc("High"), Loc("Epic") });
+        viewDistanceDropdown.SetValueWithoutNotify(Mathf.Clamp(ViewDistanceToIndex(PlayerPrefs.GetFloat("DrawDistance", 1000f)), 0, 3));
+        viewDistanceDropdown.onValueChanged.AddListener(OnViewDistanceChanged);
+    }
+
+    private void OnViewDistanceChanged(int index)
+    {
+        MarkPresetChanged();
+        SetViewDistance(index);
+    }
+
+    private void SetViewDistance(int index)
+    {
+        float[] distances = { 200f, 500f, 1000f, 1500f };
+        float value = distances[Mathf.Clamp(index, 0, distances.Length - 1)];
+
+        Camera cam = GetTargetCamera();
+
+        if (cam != null)
+            cam.farClipPlane = value;
 
         PlayerPrefs.SetFloat("DrawDistance", value);
         PlayerPrefs.Save();
-        UpdateDrawDistanceText(value);
 
-        if (drawDistanceSlider != null)
-            drawDistanceSlider.SetValueWithoutNotify(value);
+        if (viewDistanceDropdown != null)
+            viewDistanceDropdown.SetValueWithoutNotify(index);
     }
 
-    private void UpdateDrawDistanceText(float value)
+    private static int ViewDistanceToIndex(float distance)
     {
-        if (drawDistanceValueText != null)
-            drawDistanceValueText.text = value.ToString("F0");
+        if (distance <= 300f) return 0;
+        if (distance <= 750f) return 1;
+        if (distance <= 1250f) return 2;
+        return 3;
     }
 
-    private void InitVSync()
+    private void InitPostProcessing()
     {
-        if (vSyncToggle == null) return;
+        if (postProcessingToggle == null) return;
 
-        vSyncToggle.onValueChanged.AddListener(OnVSyncChanged);
-        SetVSync(savedVSync);
+        postProcessingToggle.onValueChanged.AddListener(OnPostProcessingChanged);
+        SetPostProcessing(PlayerPrefs.GetInt("PostProcessing", 1) == 1);
     }
 
-    private void OnVSyncChanged(bool enabled)
+    private void OnPostProcessingChanged(bool enabled)
     {
-        if (!ignorePresetChange)
-            presetDropdown.SetValueWithoutNotify(-1);
-
-        SetVSync(enabled);
+        MarkPresetChanged();
+        SetPostProcessing(enabled);
     }
 
-    private void SetVSync(bool enabled)
+    private void SetPostProcessing(bool enabled)
     {
-        QualitySettings.vSyncCount = enabled ? 1 : 0;
-        PlayerPrefs.SetInt("VSync", enabled ? 1 : 0);
+        Camera cam = GetTargetCamera();
+
+        if (cam != null)
+        {
+            var data = cam.GetUniversalAdditionalCameraData();
+
+            if (data != null)
+                data.renderPostProcessing = enabled;
+        }
+
+        PlayerPrefs.SetInt("PostProcessing", enabled ? 1 : 0);
         PlayerPrefs.Save();
 
-        if (vSyncToggle != null)
-            vSyncToggle.SetIsOnWithoutNotify(enabled);
+        if (postProcessingToggle != null)
+            postProcessingToggle.SetIsOnWithoutNotify(enabled);
     }
 
-    private void InitMaxFps()
+    private void InitHDR()
     {
-        if (maxFpsSlider == null) return;
+        if (hdrToggle == null) return;
 
-        maxFpsSlider.minValue = 30;
-        maxFpsSlider.maxValue = 200;
-        maxFpsSlider.wholeNumbers = true;
-        maxFpsSlider.onValueChanged.AddListener(OnMaxFpsChanged);
-        SetMaxFps(savedMaxFps);
+        hdrToggle.onValueChanged.AddListener(OnHDRChanged);
+        SetHDR(PlayerPrefs.GetInt("HDR", 1) == 1);
     }
 
-    private void OnMaxFpsChanged(float value)
+    private void OnHDRChanged(bool enabled)
     {
-        if (!ignorePresetChange)
-            presetDropdown.SetValueWithoutNotify(-1);
-
-        SetMaxFps(value);
+        SetHDR(enabled);
     }
 
-    private void SetMaxFps(float value)
+    private void SetHDR(bool enabled)
     {
-        int fps = Mathf.RoundToInt(value);
-        Application.targetFrameRate = fps >= 200 ? -1 : fps;
-        PlayerPrefs.SetInt("MaxFps", fps);
+        var urp = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
+
+        if (urp != null)
+            urp.supportsHDR = enabled;
+
+        PlayerPrefs.SetInt("HDR", enabled ? 1 : 0);
         PlayerPrefs.Save();
-        UpdateMaxFpsText(fps);
 
-        if (maxFpsSlider != null)
-            maxFpsSlider.SetValueWithoutNotify(fps);
+        if (hdrToggle != null)
+            hdrToggle.SetIsOnWithoutNotify(enabled);
     }
 
-    private void UpdateMaxFpsText(float value)
+    private void InitChromaticAberration()
     {
-        int fps = Mathf.RoundToInt(value);
+        if (chromaticAberrationToggle == null) return;
 
-        if (maxFpsValueText != null)
-            maxFpsValueText.text = fps >= 200 ? Loc("Unlimited") : fps.ToString();
+        chromaticAberrationToggle.onValueChanged.AddListener(OnChromaticAberrationChanged);
+        SetChromaticAberration(PlayerPrefs.GetInt("ChromaticAberration", 0) == 1);
+    }
+
+    private void OnChromaticAberrationChanged(bool enabled)
+    {
+        SetChromaticAberration(enabled);
+    }
+
+    private void SetChromaticAberration(bool enabled)
+    {
+        SetVolumeEffectActive<ChromaticAberration>(enabled);
+        PlayerPrefs.SetInt("ChromaticAberration", enabled ? 1 : 0);
+        PlayerPrefs.Save();
+
+        if (chromaticAberrationToggle != null)
+            chromaticAberrationToggle.SetIsOnWithoutNotify(enabled);
+    }
+
+    private void InitDepthOfField()
+    {
+        if (depthOfFieldToggle == null) return;
+
+        depthOfFieldToggle.onValueChanged.AddListener(OnDepthOfFieldChanged);
+        SetDepthOfField(PlayerPrefs.GetInt("DepthOfField", 0) == 1);
+    }
+
+    private void OnDepthOfFieldChanged(bool enabled)
+    {
+        SetDepthOfField(enabled);
+    }
+
+    private void SetDepthOfField(bool enabled)
+    {
+        SetVolumeEffectActive<DepthOfField>(enabled);
+        PlayerPrefs.SetInt("DepthOfField", enabled ? 1 : 0);
+        PlayerPrefs.Save();
+
+        if (depthOfFieldToggle != null)
+            depthOfFieldToggle.SetIsOnWithoutNotify(enabled);
+    }
+
+    private void InitLensFlare()
+    {
+        if (lensFlareToggle == null) return;
+
+        lensFlareToggle.onValueChanged.AddListener(OnLensFlareChanged);
+        SetLensFlare(PlayerPrefs.GetInt("LensFlare", 0) == 1);
+    }
+
+    private void OnLensFlareChanged(bool enabled)
+    {
+        SetLensFlare(enabled);
+    }
+
+    private void SetLensFlare(bool enabled)
+    {
+        SetVolumeEffectActive<ScreenSpaceLensFlare>(enabled);
+        PlayerPrefs.SetInt("LensFlare", enabled ? 1 : 0);
+        PlayerPrefs.Save();
+
+        if (lensFlareToggle != null)
+            lensFlareToggle.SetIsOnWithoutNotify(enabled);
+    }
+
+    private void InitRenderScale()
+    {
+        if (renderScaleSlider == null) return;
+
+        renderScaleSlider.minValue = 0.5f;
+        renderScaleSlider.maxValue = 1.5f;
+        renderScaleSlider.onValueChanged.AddListener(OnRenderScaleChanged);
+        SetRenderScale(PlayerPrefs.GetFloat("RenderScale", 1f));
+    }
+
+    private void OnRenderScaleChanged(float value)
+    {
+        SetRenderScale(value);
+    }
+
+    private void SetRenderScale(float value)
+    {
+        ApplyRenderScale(value);
+        PlayerPrefs.SetFloat("RenderScale", value);
+        PlayerPrefs.Save();
+        UpdateRenderScaleText(value);
+
+        if (renderScaleSlider != null)
+            renderScaleSlider.SetValueWithoutNotify(value);
+    }
+
+    private void UpdateRenderScaleText(float value)
+    {
+        if (renderScaleValueText != null)
+            renderScaleValueText.text = value.ToString("0%");
     }
 }

@@ -174,7 +174,32 @@ public class InventoryMenuUI : MonoBehaviour
 
     public void Close()
     {
-        Destroy(gameObject);
+        RectTransform target = windowRoot != null ? windowRoot : transform as RectTransform;
+
+        if (target == null)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        CanvasGroup group = target.GetComponent<CanvasGroup>();
+
+        if (group == null)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        target.DOKill();
+        group.DOKill();
+
+        group.interactable = false;
+        group.blocksRaycasts = false;
+
+        target.DOScale(0.8f, 0.2f).SetEase(Ease.InBack).SetUpdate(true);
+        group.DOFade(0f, 0.12f).SetUpdate(true);
+
+        DOVirtual.DelayedCall(0.2f, () => Destroy(gameObject), true);
     }
 
     private void OnPointsChanged(int newPoints)

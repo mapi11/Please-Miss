@@ -59,14 +59,26 @@ public class MainMenuUI : MonoBehaviour
     [SerializeField] private RectTransform shopContent;
     [SerializeField] private GameObject shopPanelPrefab;
 
+    [Header("Settings")]
+    [Tooltip("Кнопка открытия настроек (если есть SettingsMenu — используется он)")]
+    [SerializeField] private Button settingsButton;
+    [Tooltip("Контейнер, в который открывается панель настроек")]
+    [SerializeField] private RectTransform settingsContent;
+    [Tooltip("Префаб панели настроек (SettingsPanelMenu)")]
+    [SerializeField] private GameObject settingsPanelPrefab;
+
     private Color32 selectedColor;
     private NetworkConnectionManager connectionManager;
     private GameObject spawnedInventoryPanel;
     private GameObject spawnedShopPanel;
+    private GameObject spawnedSettingsPanel;
     private readonly List<GameObject> colorCircles = new List<GameObject>();
     private int lastSelectedIndex = -1;
+    private float nextColorChangeTime;
 
-    private const int VisibleColorCount = 6;
+    private const int VisibleColorCount = 5;
+    private const int CenterSlotIndex = 2;
+    private const float ColorChangeCooldown = 0.4f;
 
     private void Awake()
     {
@@ -167,6 +179,11 @@ public class MainMenuUI : MonoBehaviour
 
     private void SetColorIndex(int index)
     {
+        if (Time.time < nextColorChangeTime)
+            return;
+
+        nextColorChangeTime = Time.time + ColorChangeCooldown;
+
         GameSessionData.SelectedColorIndex = index;
         selectedColor = GameSessionData.ColorValues[index];
         LocalPlayerSettings.Load("Default");
@@ -225,6 +242,9 @@ public class MainMenuUI : MonoBehaviour
 
         if (shopButton != null)
             shopButton.onClick.AddListener(OnShopButtonClicked);
+
+        if (settingsButton != null)
+            settingsButton.onClick.AddListener(OnSettingsButtonClicked);
     }
 
     private void OnInventoryButtonClicked()
@@ -252,6 +272,23 @@ public class MainMenuUI : MonoBehaviour
             bool show = !spawnedShopPanel.activeSelf;
             spawnedShopPanel.SetActive(show);
         }
+    }
+
+    private void OnSettingsButtonClicked()
+    {
+        if (SettingsMenu.Instance != null)
+        {
+            SettingsMenu.Instance.Open();
+            return;
+        }
+
+        if (settingsPanelPrefab == null || settingsContent == null)
+            return;
+
+        if (spawnedSettingsPanel != null)
+            Destroy(spawnedSettingsPanel);
+
+        spawnedSettingsPanel = Instantiate(settingsPanelPrefab, settingsContent);
     }
 
     private void OnAddPointsClicked()
@@ -353,34 +390,35 @@ public class MainMenuUI : MonoBehaviour
     }
 
     /// <summary>
-    /// Лента из 6 кружков-окна: показывает 6 цветов из списка, сдвигаясь так,
-    /// чтобы выбранный цвет всегда был в кадре. На кружке выбранного цвета включается SelectedContainer с галочкой.
+    /// Лента из 5 кружков-окна: показывает 5 цветов из списка, цвета цикличны (бесконечное листание),
+    /// выбранный цвет всегда в центре (3-й кружок).
+    /// На кружке выбранного цвета включается SelectedContainer с галочкой.
     /// </summary>
     private void RefreshColorCircles()
     {
         EnsureColorCircles();
 
         int total = GameSessionData.ColorValues.Length;
+
+        if (total <= 0)
+            return;
+
         int current = Mathf.Clamp(GameSessionData.SelectedColorIndex, 0, Mathf.Max(0, total - 1));
-        int windowStart = Mathf.Clamp(current - 2, 0, Mathf.Max(0, total - VisibleColorCount));
+        int windowStart = current - CenterSlotIndex;
         int currentCircleIndex = -1;
 
         for (int i = 0; i < colorCircles.Count; i++)
         {
             GameObject circle = colorCircles[i];
-            int actualIndex = windowStart + i;
-
-            if (actualIndex >= total)
-            {
-                circle.SetActive(false);
-                continue;
-            }
+            int actualIndex = ((windowStart + i) % total + total) % total;
 
             circle.SetActive(true);
 
             Image img = circle.GetComponent<Image>();
             if (img != null)
                 img.color = GameSessionData.ColorValues[actualIndex];
+
+            BindColorCircleClick(circle, actualIndex);
 
             SetCheckActive(circle, actualIndex == current);
 
@@ -458,6 +496,17 @@ public class MainMenuUI : MonoBehaviour
 
         if (selected != null)
             selected.gameObject.SetActive(active);
+    }
+
+    private void BindColorCircleClick(GameObject circle, int colorIndex)
+    {
+        Button button = circle.GetComponent<Button>();
+        if (button == null)
+            return;
+
+        int index = colorIndex;
+        button.onClick.RemoveAllListeners();
+        button.onClick.AddListener(() => SetColorIndex(index));
     }
 
     private void RefreshFooter()

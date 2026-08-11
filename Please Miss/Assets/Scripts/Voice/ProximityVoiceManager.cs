@@ -36,6 +36,46 @@ public class ProximityVoiceManager : MonoBehaviour
 
     private bool handlersRegistered;
 
+    public static float VoiceChatVolume { get; private set; } = 1f;
+
+    public static void RefreshVoiceChatVolume()
+    {
+        VoiceChatVolume = PlayerPrefs.GetFloat("VoiceChatVolume", 1f);
+    }
+
+    public static bool IsVoiceChatEnabled()
+    {
+        return PlayerPrefs.GetInt("VoiceChatEnabled", 1) == 1;
+    }
+
+    public static void SetVoiceChatEnabled(bool enabled)
+    {
+        PlayerPrefs.SetInt("VoiceChatEnabled", enabled ? 1 : 0);
+        PlayerPrefs.Save();
+    }
+
+    public static Key GetPushToTalkKey()
+    {
+        return (Key)PlayerPrefs.GetInt("PushToTalkKey", (int)Key.V);
+    }
+
+    public static void SetPushToTalkKey(Key key)
+    {
+        PlayerPrefs.SetInt("PushToTalkKey", (int)key);
+        PlayerPrefs.Save();
+    }
+
+    public static float GetMicrophoneVolume()
+    {
+        return PlayerPrefs.GetFloat("MicrophoneVolume", 1f);
+    }
+
+    public static void SetMicrophoneVolume(float volume)
+    {
+        PlayerPrefs.SetFloat("MicrophoneVolume", volume);
+        PlayerPrefs.Save();
+    }
+
     private void Awake()
     {
         if (Instance != null)
@@ -67,6 +107,9 @@ public class ProximityVoiceManager : MonoBehaviour
         if (!NetworkManager.Singleton.IsListening)
             return;
 
+        if (!IsVoiceChatEnabled())
+            return;
+
         EnsureMessageHandlersRegistered();
         EnsureMicrophoneStarted();
 
@@ -75,7 +118,7 @@ public class ProximityVoiceManager : MonoBehaviour
 
         bool pushToTalkPressed =
             Keyboard.current != null &&
-            Keyboard.current[pushToTalkKey].isPressed;
+            Keyboard.current[GetPushToTalkKey()].isPressed;
 
         isTalking = pushToTalkPressed;
 
@@ -192,6 +235,14 @@ public class ProximityVoiceManager : MonoBehaviour
         while (availableSamples >= chunkSamples)
         {
             ReadMicrophoneChunk(microphoneReadPosition, captureBuffer);
+
+            float micVolume = GetMicrophoneVolume();
+
+            if (micVolume > 0.0001f)
+            {
+                for (int i = 0; i < captureBuffer.Length; i++)
+                    captureBuffer[i] *= micVolume;
+            }
 
             microphoneReadPosition += chunkSamples;
 

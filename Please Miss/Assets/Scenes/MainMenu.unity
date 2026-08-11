@@ -132,6 +132,7 @@ GameObject:
   - component: {fileID: 186300050}
   - component: {fileID: 186300049}
   - component: {fileID: 186300053}
+  - component: {fileID: 186300054}
   m_Layer: 0
   m_Name: NetworkManager
   m_TagString: Untagged
@@ -273,6 +274,25 @@ MonoBehaviour:
   sampleRate: 0
   chunkSamples: 0
   lastAmplitude: 0
+--- !u!114 &186300054
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 186300048}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8bb0b4ca59be0a648b7a0e1c2ff15c5c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  setStartupResolution: 1
+  startupWidth: 1920
+  startupHeight: 1080
+  targetAspect: {x: 16, y: 9}
+  tolerance: 0.02
+  checkInterval: 0.3
+  persistAcrossScenes: 1
 --- !u!1 &204680230
 GameObject:
   m_ObjectHideFlags: 0
@@ -750,10 +770,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6565148236476111799, guid: 1def75c2af8c26e4582c5107abfa6a90, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 9147147458570507062, guid: 1def75c2af8c26e4582c5107abfa6a90, type: 3}
-      propertyPath: m_AnchoredPosition.x
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []

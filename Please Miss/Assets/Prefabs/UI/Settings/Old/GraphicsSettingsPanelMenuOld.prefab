@@ -749,7 +749,7 @@ GameObject:
   - component: {fileID: 1072300365592926164}
   - component: {fileID: 630938666345295246}
   m_Layer: 5
-  m_Name: GraphicsSettingsPanelMenu
+  m_Name: GraphicsSettingsPanelMenuOld
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

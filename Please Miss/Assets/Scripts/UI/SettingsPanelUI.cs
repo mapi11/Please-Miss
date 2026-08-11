@@ -1,55 +1,40 @@
 using System;
 using System.Collections.Generic;
-using TMPro;
-using Unity.Netcode;
+using DG.Tweening;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.Localization;
-using UnityEngine.Localization.Settings;
 using UnityEngine.UI;
-using DG.Tweening;
+
+[Serializable]
+public class SettingsTabConfig
+{
+    [Tooltip("Кнопка, открывающая эту вкладку")]
+    public Button tabButton;
+    [Tooltip("Префаб панели вкладки")]
+    public GameObject panelPrefab;
+}
 
 public class SettingsPanelUI : MonoBehaviour
 {
-    [Header("Volume")]
-    [SerializeField] private Slider volumeSlider;
-    [SerializeField] private TMP_Text volumeValueText;
-
-    [Header("Music")]
-    [SerializeField] private Slider musicVolumeSlider;
-    [SerializeField] private TMP_Text musicVolumeValueText;
-
-    [Header("Mouse")]
-    [SerializeField] private Slider sensitivitySlider;
-    [SerializeField] private TMP_Text sensitivityValueText;
-
-    [Header("Graphics")]
-    [SerializeField] private Button graphicsButton;
-    [SerializeField] private GameObject graphicsPanelPrefab;
-    [SerializeField] private Transform graphicsContainer;
-
-    [Header("Microphone")]
-    [SerializeField] private TMP_Dropdown micDropdown;
-
-    [Header("Language")]
-    [SerializeField] private TMP_Dropdown languageDropdown;
-
-    [Header("Buttons")]
-    [SerializeField] private Button backButton;
+    [Header("Tabs")]
+    [Tooltip("Вкладки в порядке отображения. Первая (General) открыта при старте")]
+    [SerializeField] private SettingsTabConfig[] tabs;
+    [Tooltip("Контейнер, в который открывается панель активной вкладки")]
+    [SerializeField] private RectTransform panelsRoot;
 
     [Header("Window")]
     [Tooltip("Root destroyed when ESC closes the settings window")]
     [SerializeField] private GameObject settingsRoot;
+    [SerializeField] private Button backButton;
 
     [Header("Animation")]
     [SerializeField] private float animInDuration = 0.35f;
     [SerializeField] private float animOutDuration = 0.2f;
 
+    private readonly List<GameObject> activePanels = new List<GameObject>();
     private CanvasGroup canvasGroup;
     private CanvasGroup animationGroup;
-    private PlayerController playerController;
-    private GameObject graphicsInstance;
-    private bool graphicsOpen;
+    private int currentTabIndex = -1;
 
     private Transform AnimationTarget
     {
@@ -60,84 +45,113 @@ public class SettingsPanelUI : MonoBehaviour
     {
         canvasGroup = GetComponent<CanvasGroup>();
 
-        Transform target = AnimationTarget;
-        target.localScale = Vector3.one * 0.8f;
-
-        animationGroup = canvasGroup;
-
-        if (settingsRoot != null)
-        {
-            animationGroup = settingsRoot.GetComponent<CanvasGroup>();
-
-            if (animationGroup == null)
-                animationGroup = settingsRoot.AddComponent<CanvasGroup>();
-        }
-
-        if (animationGroup != null)
-        {
-            animationGroup.alpha = 0f;
-            animationGroup.interactable = false;
-        }
-
-        playerController = GetLocalPlayerController();
-
-        LocalizationSettings.SelectedLocaleChanged += OnLocaleChanged;
-
-        InitVolume();
-        InitMusicVolume();
-        InitSensitivity();
-        InitMicDropdown();
-        InitLanguageDropdown();
-
         if (backButton != null)
-            backButton.onClick.AddListener(OnBack);
-
-        if (graphicsButton != null)
-            graphicsButton.onClick.AddListener(OpenGraphicsPanel);
-    }
-
-    private void OnDestroy()
-    {
-        LocalizationSettings.SelectedLocaleChanged -= OnLocaleChanged;
+            backButton.onClick.AddListener(CloseWindow);
     }
 
     private void Start()
     {
-        AnimateIn();
+        BindTabs();
+
+        if (tabs != null && tabs.Length > 0)
+            OpenTab(0);
     }
 
     private void Update()
     {
-        if (graphicsOpen && graphicsInstance == null)
-        {
-            graphicsOpen = false;
-
-            if (graphicsButton != null)
-                graphicsButton.interactable = true;
-        }
-
         if (Keyboard.current == null || !Keyboard.current.escapeKey.wasPressedThisFrame)
             return;
 
-        if (graphicsInstance != null)
-        {
-            var graphicsUI = graphicsInstance.GetComponent<GraphicsSettingsUI>();
+        CloseWindow();
+    }
 
-            if (graphicsUI != null)
-                graphicsUI.AnimateOut(null);
-            else
-                Destroy(graphicsInstance);
-
-            graphicsInstance = null;
-            graphicsOpen = false;
-
-            if (graphicsButton != null)
-                graphicsButton.interactable = true;
-
+    private void BindTabs()
+    {
+        if (tabs == null)
             return;
+
+        for (int i = 0; i < tabs.Length; i++)
+        {
+            if (tabs[i].tabButton == null)
+                continue;
+
+            int index = i;
+            tabs[i].tabButton.onClick.AddListener(() => OpenTab(index));
         }
 
-        CloseWindow();
+        RefreshTabButtons();
+    }
+
+    private void OpenTab(int index)
+    {
+        if (tabs == null || index < 0 || index >= tabs.Length || index == currentTabIndex)
+            return;
+
+        currentTabIndex = index;
+        ClearPanels();
+
+        if (tabs[index].panelPrefab != null)
+        {
+            GameObject panel = Instantiate(tabs[index].panelPrefab, panelsRoot);
+            activePanels.Add(panel);
+        }
+
+        RefreshTabButtons();
+    }
+
+    private void ClearPanels()
+    {
+        for (int i = 0; i < activePanels.Count; i++)
+        {
+            if (activePanels[i] != null)
+                Destroy(activePanels[i]);
+        }
+
+        activePanels.Clear();
+    }
+
+    private void RefreshTabButtons()
+    {
+        if (tabs == null)
+            return;
+
+        for (int i = 0; i < tabs.Length; i++)
+        {
+            if (tabs[i].tabButton != null)
+                tabs[i].tabButton.interactable = i != currentTabIndex;
+        }
+    }
+
+    public void AnimateIn()
+    {
+        Transform target = AnimationTarget;
+        target.localScale = Vector3.one * 0.8f;
+        target.DOScale(1f, animInDuration).SetEase(Ease.OutBack, 1.2f).SetUpdate(true);
+
+        if (animationGroup != null)
+        {
+            animationGroup.alpha = 0f;
+            animationGroup.DOFade(1f, animInDuration * 0.6f).SetUpdate(true).OnComplete(() =>
+            {
+                if (animationGroup != null)
+                    animationGroup.interactable = true;
+            });
+        }
+    }
+
+    public void AnimateOut(Action onComplete)
+    {
+        Transform target = AnimationTarget;
+        target.DOScale(0.8f, animOutDuration).SetEase(Ease.InBack).SetUpdate(true);
+
+        if (animationGroup != null)
+            animationGroup.DOFade(0f, animOutDuration * 0.6f).SetUpdate(true);
+
+        DOVirtual.DelayedCall(animOutDuration, () =>
+        {
+            onComplete?.Invoke();
+            Destroy(gameObject);
+        }, true);
     }
 
     private void CloseWindow()
@@ -152,294 +166,16 @@ public class SettingsPanelUI : MonoBehaviour
             var panel = settingsRoot.GetComponentInChildren<SettingsPanelUI>(true);
 
             if (panel != null)
-            {
                 panel.AnimateOut(() => Destroy(settingsRoot));
-            }
             else
-            {
                 Destroy(settingsRoot);
-            }
 
             return;
         }
 
-        CloseSelf();
-    }
-
-    public void AnimateIn()
-    {
-        Transform target = AnimationTarget;
-        target.DOScale(1f, animInDuration).SetEase(Ease.OutBack, 1.2f);
-
-        if (animationGroup != null)
-        {
-            animationGroup.DOFade(1f, animInDuration * 0.6f).OnComplete(() =>
-            {
-                if (animationGroup != null)
-                    animationGroup.interactable = true;
-            });
-        }
-    }
-
-    public void AnimateOut(Action onComplete)
-    {
-        Transform target = AnimationTarget;
-        target.DOScale(0.8f, animOutDuration).SetEase(Ease.InBack);
-
-        if (animationGroup != null)
-            animationGroup.DOFade(0f, animOutDuration * 0.6f);
-
-        DOVirtual.DelayedCall(animOutDuration, () =>
-        {
-            onComplete?.Invoke();
-            Destroy(gameObject);
-        });
-    }
-
-    private void InitVolume()
-    {
-        if (volumeSlider == null)
-            return;
-
-        volumeSlider.minValue = 0f;
-        volumeSlider.maxValue = 1f;
-        volumeSlider.value = AudioListener.volume;
-        UpdateVolumeText(AudioListener.volume);
-        volumeSlider.onValueChanged.AddListener(OnVolumeChanged);
-    }
-
-    private void OnVolumeChanged(float value)
-    {
-        AudioListener.volume = value;
-        PlayerPrefs.SetFloat("Volume", value);
-        PlayerPrefs.Save();
-        UpdateVolumeText(value);
-    }
-
-    private void UpdateVolumeText(float value)
-    {
-        if (volumeValueText != null)
-            volumeValueText.text = Mathf.RoundToInt(value * 100) + "%";
-    }
-
-    private void InitMusicVolume()
-    {
-        if (musicVolumeSlider == null)
-            return;
-
-        float current = MusicManager.Instance != null
-            ? MusicManager.Instance.Volume
-            : PlayerPrefs.GetFloat("MusicVolume", 0.8f);
-
-        musicVolumeSlider.minValue = 0f;
-        musicVolumeSlider.maxValue = 1f;
-        musicVolumeSlider.value = current;
-        UpdateMusicVolumeText(current);
-        musicVolumeSlider.onValueChanged.AddListener(OnMusicVolumeChanged);
-    }
-
-    private void OnMusicVolumeChanged(float value)
-    {
-        if (MusicManager.Instance != null)
-            MusicManager.Instance.SetVolume(value);
-
-        UpdateMusicVolumeText(value);
-    }
-
-    private void UpdateMusicVolumeText(float value)
-    {
-        if (musicVolumeValueText != null)
-            musicVolumeValueText.text = Mathf.RoundToInt(value * 100) + "%";
-    }
-
-    private void InitSensitivity()
-    {
-        if (sensitivitySlider == null)
-            return;
-
-        sensitivitySlider.minValue = 0.01f;
-        sensitivitySlider.maxValue = 0.3f;
-
-        float saved = PlayerPrefs.GetFloat("MouseSensitivity", -1f);
-
-        if (saved >= 0f)
-        {
-            sensitivitySlider.value = saved;
-            ApplySensitivity(saved);
-        }
-        else if (playerController != null)
-        {
-            sensitivitySlider.value = playerController.mouseSensitivity;
-        }
-
-        UpdateSensitivityText(sensitivitySlider.value);
-        sensitivitySlider.onValueChanged.AddListener(OnSensitivityChanged);
-    }
-
-    private void OnSensitivityChanged(float value)
-    {
-        ApplySensitivity(value);
-        UpdateSensitivityText(value);
-        PlayerPrefs.SetFloat("MouseSensitivity", value);
-        PlayerPrefs.Save();
-    }
-
-    private void ApplySensitivity(float value)
-    {
-        if (playerController != null)
-            playerController.mouseSensitivity = value;
-    }
-
-    private void UpdateSensitivityText(float value)
-    {
-        if (sensitivityValueText != null)
-            sensitivityValueText.text = (value * 100f).ToString("F0");
-    }
-
-    private void InitMicDropdown()
-    {
-        if (micDropdown == null)
-            return;
-
-        micDropdown.ClearOptions();
-
-        string[] devices = Microphone.devices;
-        var options = new List<TMP_Dropdown.OptionData>();
-
-        if (devices.Length == 0)
-        {
-            options.Add(new TMP_Dropdown.OptionData("No Mic"));
-        }
-        else
-        {
-            for (int i = 0; i < devices.Length; i++)
-                options.Add(new TMP_Dropdown.OptionData(devices[i]));
-        }
-
-        micDropdown.AddOptions(options);
-
-        string saved = VoiceChatSettings.GetSelectedOrDefaultMicrophoneName();
-        int savedIndex = 0;
-
-        if (!string.IsNullOrEmpty(saved))
-        {
-            for (int i = 0; i < devices.Length; i++)
-            {
-                if (devices[i] == saved)
-                {
-                    savedIndex = i;
-                    break;
-                }
-            }
-        }
-
-        micDropdown.SetValueWithoutNotify(Mathf.Clamp(savedIndex, 0, options.Count - 1));
-        micDropdown.onValueChanged.AddListener(OnMicChanged);
-    }
-
-    private void OnMicChanged(int index)
-    {
-        string[] devices = Microphone.devices;
-
-        if (index >= 0 && index < devices.Length)
-        {
-            VoiceChatSettings.SetSelectedMicrophone(devices[index]);
-
-            if (ProximityVoiceManager.Instance != null)
-                ProximityVoiceManager.Instance.RestartMicrophone();
-        }
-    }
-
-    private void OnLocaleChanged(Locale _)
-    {
-        InitLanguageDropdown();
-    }
-
-    private void InitLanguageDropdown()
-    {
-        if (languageDropdown == null) return;
-
-        languageDropdown.onValueChanged.RemoveAllListeners();
-        languageDropdown.ClearOptions();
-
-        var locales = LocalizationSettings.AvailableLocales.Locales;
-        var options = new List<string>();
-
-        for (int i = 0; i < locales.Count; i++)
-            options.Add(locales[i].Identifier.CultureInfo?.NativeName ?? locales[i].LocaleName);
-
-        languageDropdown.AddOptions(options);
-
-        int selected = locales.IndexOf(LocalizationSettings.SelectedLocale);
-        languageDropdown.SetValueWithoutNotify(selected >= 0 ? selected : 0);
-        languageDropdown.onValueChanged.AddListener(OnLanguageChanged);
-    }
-
-    private void OnLanguageChanged(int index)
-    {
-        var locales = LocalizationSettings.AvailableLocales.Locales;
-
-        if (index >= 0 && index < locales.Count)
-        {
-            LocalizationSettings.SelectedLocale = locales[index];
-            PlayerPrefs.SetString("Locale", locales[index].Identifier.Code);
-            PlayerPrefs.Save();
-        }
-    }
-
-    private void OnBack()
-    {
-        CloseWindow();
-    }
-
-    private void CloseSelf()
-    {
         if (SettingsMenu.Instance != null && SettingsMenu.Instance.IsOpen)
-        {
             SettingsMenu.Instance.Close();
-            return;
-        }
-
-        if (PauseMenu.Instance != null)
+        else if (PauseMenu.Instance != null)
             PauseMenu.Instance.CloseSettings();
-    }
-
-    private void OpenGraphicsPanel()
-    {
-        if (graphicsPanelPrefab == null || graphicsOpen)
-            return;
-
-        Transform parent = graphicsContainer != null ? graphicsContainer : transform;
-        graphicsInstance = Instantiate(graphicsPanelPrefab, parent);
-        graphicsOpen = true;
-
-        if (graphicsButton != null)
-            graphicsButton.interactable = false;
-    }
-
-    private static PlayerController GetLocalPlayerController()
-    {
-        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsClient)
-        {
-            var localClient = NetworkManager.Singleton.LocalClient;
-
-            if (localClient != null && localClient.PlayerObject != null)
-            {
-                var pc = localClient.PlayerObject.GetComponentInChildren<PlayerController>();
-
-                if (pc != null)
-                    return pc;
-            }
-        }
-
-        var all = FindObjectsByType<PlayerController>(FindObjectsSortMode.None);
-
-        for (int i = 0; i < all.Length; i++)
-        {
-            if (all[i].IsOwner)
-                return all[i];
-        }
-
-        return null;
     }
 }

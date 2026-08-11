@@ -358,41 +358,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 7100442696825175539}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &580092922288371312
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 8314532247491650892}
-  m_Layer: 5
-  m_Name: PauseMenuContent
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!224 &8314532247491650892
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 580092922288371312}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 5681432495307723938}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
-  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &851018832125965093
 GameObject:
   m_ObjectHideFlags: 0
@@ -1124,14 +1089,13 @@ RectTransform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 8314532247491650892}
+  m_Children: []
   m_Father: {fileID: 8340973616428194893}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 600, y: 930}
+  m_SizeDelta: {x: 600, y: 0}
   m_Pivot: {x: 0, y: 1}
 --- !u!1 &1451024436036735188
 GameObject:
@@ -2122,10 +2086,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 93efc161eb46a2640b406e7fa5681bc8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  pausePanelPrefab: {fileID: 1592449342222127783, guid: bd604bb3bc4874b449bfe0536db13a6f, type: 3}
-  pauseSpawnPoint: {fileID: 8314532247491650892}
-  settingsPanelPrefab: {fileID: 4910165372588912112, guid: 25b438f572e0c52439f45f050b4d8580, type: 3}
-  settingsSpawnPoint: {fileID: 8314532247491650892}
+  pausePanelPrefab: {fileID: 2505216793186968440, guid: 58fbf99925b5b104fb0e15f1817608a6, type: 3}
+  pauseSpawnPoint: {fileID: 3914841670601136104}
+  settingsPanelPrefab: {fileID: 6298102741684984009, guid: 1bb5f5f06e66e6d4e8bdf4ecf2c35313, type: 3}
+  settingsSpawnPoint: {fileID: 3914841670601136104}
 --- !u!1 &4314498343022842020
 GameObject:
   m_ObjectHideFlags: 0
