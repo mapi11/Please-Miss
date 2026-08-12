@@ -173,7 +173,7 @@ public class GraphicsSettingsUI : MonoBehaviour
 
     private string Loc(string key)
     {
-        string value = LocalizationSettings.StringDatabase.GetLocalizedString("PlayerUI_Table", key);
+        string value = LocalizationSettings.StringDatabase.GetLocalizedString("UI_Table", key);
         return string.IsNullOrEmpty(value) ? key : value;
     }
 
@@ -338,7 +338,7 @@ public class GraphicsSettingsUI : MonoBehaviour
 
         displayModeDropdown.onValueChanged.RemoveAllListeners();
         displayModeDropdown.ClearOptions();
-        displayModeDropdown.AddOptions(new List<string> { Loc("Fullscreen"), Loc("Borderless"), Loc("Windowed") });
+        displayModeDropdown.AddOptions(new List<string> { Loc("FullScreen"), Loc("Borderless"), Loc("Windowed") });
         displayModeDropdown.SetValueWithoutNotify(Mathf.Clamp(PlayerPrefs.GetInt("DisplayMode", 1), 0, 2));
         displayModeDropdown.onValueChanged.AddListener(OnDisplayModeChanged);
     }

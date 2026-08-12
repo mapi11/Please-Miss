@@ -139,6 +139,390 @@ MonoBehaviour:
     m_Key: Copy join code
     m_Metadata:
       m_Items: []
+  - m_Id: -10001
+    m_Key: Inventory
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10002
+    m_Key: Shop
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10003
+    m_Key: Settings
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10004
+    m_Key: Player
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10005
+    m_Key: Controls
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10006
+    m_Key: Play
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10007
+    m_Key: Coin code...
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10008
+    m_Key: Paste
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10009
+    m_Key: Create lobby
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10010
+    m_Key: Join lobby
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10011
+    m_Key: Offline
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10012
+    m_Key: Local host
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10013
+    m_Key: Join local
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10014
+    m_Key: Exit game
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10015
+    m_Key: 
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10016
+    m_Key: 
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10017
+    m_Key: 
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10018
+    m_Key: 
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10019
+    m_Key: 
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10020
+    m_Key: 
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10021
+    m_Key: 
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10022
+    m_Key: Hold
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10023
+    m_Key: Information about keys
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10024
+    m_Key: General
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10025
+    m_Key: Graphics
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10026
+    m_Key: Audio
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10027
+    m_Key: Account
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10028
+    m_Key: Back
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10029
+    m_Key: AccountReset
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10030
+    m_Key: account
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10031
+    m_Key: Volumes
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10032
+    m_Key: Master volume
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10033
+    m_Key: Music volume
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10034
+    m_Key: Voice
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10035
+    m_Key: Voice chat
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10036
+    m_Key: Voice chat volume
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10037
+    m_Key: Push to talk
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10038
+    m_Key: Microphone
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10039
+    m_Key: Microphone volume
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10040
+    m_Key: Audio output device
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10041
+    m_Key: Display
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10042
+    m_Key: Display mode
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10043
+    m_Key: Resolution
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10044
+    m_Key: Quality
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10045
+    m_Key: Quality preset
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10046
+    m_Key: Low
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10047
+    m_Key: Medium
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10048
+    m_Key: High
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10049
+    m_Key: Epic
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10050
+    m_Key: Ultra
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10051
+    m_Key: Unlimited
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10052
+    m_Key: All
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10053
+    m_Key: FullScreen
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10054
+    m_Key: Borderless
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10055
+    m_Key: Windowed
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10056
+    m_Key: Max FPS
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10057
+    m_Key: Field of view
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10058
+    m_Key: Textures
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10059
+    m_Key: Shadows
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10060
+    m_Key: Effects
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10061
+    m_Key: Anti-Aliasing
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10062
+    m_Key: View distance
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10063
+    m_Key: Post processing
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10064
+    m_Key: Advanced
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10065
+    m_Key: Shadow distance
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10066
+    m_Key: Motion blur
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10067
+    m_Key: Bloom
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10068
+    m_Key: Other
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10069
+    m_Key: Chromatic aberration
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10070
+    m_Key: Depth of field
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10071
+    m_Key: Lens flare
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10072
+    m_Key: Render scale
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10073
+    m_Key: Resume
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10074
+    m_Key: Exit
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10075
+    m_Key: Items
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10076
+    m_Key: Guns
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10077
+    m_Key: Runner
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10078
+    m_Key: Sniper
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10079
+    m_Key: 'Magazine:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10080
+    m_Key: 'Velocity:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10081
+    m_Key: 'Sway:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10082
+    m_Key: 'Scope:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10083
+    m_Key: 'Recoil:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10084
+    m_Key: Buy
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10085
+    m_Key: Owned
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10086
+    m_Key: Sell
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10087
+    m_Key: Runner inventory
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10088
+    m_Key: Loadout
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10089
+    m_Key: (Upgrade for extra slots)
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10090
+    m_Key: 'Item info:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10091
+    m_Key: Item name
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10092
+    m_Key: Description
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10093
+    m_Key: Equip
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10094
+    m_Key: Empty slot
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10095
+    m_Key: Sniper inventory
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10096
+    m_Key: Sell discount
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

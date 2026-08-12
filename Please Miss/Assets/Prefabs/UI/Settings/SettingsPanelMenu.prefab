@@ -145,7 +145,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 188830774576622549}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 56eb0353ae6e5124bb35b17aff880f16, type: 3}
   m_Name: 
@@ -154,7 +154,7 @@ MonoBehaviour:
     m_TableReference:
       m_TableCollectionName: GUID:3d1a26612b7a6004fa0d0c2be10c1d75
     m_TableEntryReference:
-      m_KeyId: 557165502464
+      m_KeyId: -10003
       m_Key: 
     m_FallbackState: 0
     m_WaitForCompletion: 0
@@ -1523,7 +1523,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7358096622070122628}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 56eb0353ae6e5124bb35b17aff880f16, type: 3}
   m_Name: 
@@ -1532,7 +1532,7 @@ MonoBehaviour:
     m_TableReference:
       m_TableCollectionName: GUID:3d1a26612b7a6004fa0d0c2be10c1d75
     m_TableEntryReference:
-      m_KeyId: 557165502464
+      m_KeyId: -10028
       m_Key: 
     m_FallbackState: 0
     m_WaitForCompletion: 0
@@ -1861,6 +1861,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6094754359044518825, guid: 4ccefb1ba331adc4d88dd893847a4f0d, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6094754359044518825, guid: 4ccefb1ba331adc4d88dd893847a4f0d, type: 3}
+      propertyPath: m_StringReference.m_TableEntryReference.m_KeyId
+      value: -10027
+      objectReference: {fileID: 0}
     - target: {fileID: 6803828846309237775, guid: 4ccefb1ba331adc4d88dd893847a4f0d, type: 3}
       propertyPath: m_Name
       value: ButtonAccount
@@ -2011,6 +2019,14 @@ PrefabInstance:
     - target: {fileID: 458676738511958940, guid: 4ccefb1ba331adc4d88dd893847a4f0d, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6094754359044518825, guid: 4ccefb1ba331adc4d88dd893847a4f0d, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6094754359044518825, guid: 4ccefb1ba331adc4d88dd893847a4f0d, type: 3}
+      propertyPath: m_StringReference.m_TableEntryReference.m_KeyId
+      value: -10024
       objectReference: {fileID: 0}
     - target: {fileID: 6803828846309237775, guid: 4ccefb1ba331adc4d88dd893847a4f0d, type: 3}
       propertyPath: m_Name
@@ -2303,6 +2319,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6094754359044518825, guid: 4ccefb1ba331adc4d88dd893847a4f0d, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6094754359044518825, guid: 4ccefb1ba331adc4d88dd893847a4f0d, type: 3}
+      propertyPath: m_StringReference.m_TableEntryReference.m_KeyId
+      value: -10025
+      objectReference: {fileID: 0}
     - target: {fileID: 6803828846309237775, guid: 4ccefb1ba331adc4d88dd893847a4f0d, type: 3}
       propertyPath: m_Name
       value: ButtonGraphics
@@ -2451,6 +2475,14 @@ PrefabInstance:
     - target: {fileID: 458676738511958940, guid: 4ccefb1ba331adc4d88dd893847a4f0d, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6094754359044518825, guid: 4ccefb1ba331adc4d88dd893847a4f0d, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6094754359044518825, guid: 4ccefb1ba331adc4d88dd893847a4f0d, type: 3}
+      propertyPath: m_StringReference.m_TableEntryReference.m_KeyId
+      value: -10026
       objectReference: {fileID: 0}
     - target: {fileID: 6803828846309237775, guid: 4ccefb1ba331adc4d88dd893847a4f0d, type: 3}
       propertyPath: m_Name

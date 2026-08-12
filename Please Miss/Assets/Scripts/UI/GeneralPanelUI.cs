@@ -2,12 +2,17 @@ using System.Collections.Generic;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Localization;
+using UnityEngine.Localization.Settings;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.UI;
 
 public class GeneralPanelUI : MonoBehaviour
 {
+    [Header("Localization")]
+    [SerializeField] private TMP_Dropdown languageDropdown;
+
     [Header("Display")]
     [SerializeField] private TMP_Dropdown displayModeDropdown;
     [SerializeField] private TMP_Dropdown resolutionDropdown;
@@ -25,8 +30,64 @@ public class GeneralPanelUI : MonoBehaviour
 
     private List<Resolution> resolutions;
 
+    private void Awake()
+    {
+        LocalizationSettings.SelectedLocaleChanged += OnLocaleChanged;
+    }
+
+    private void OnDestroy()
+    {
+        LocalizationSettings.SelectedLocaleChanged -= OnLocaleChanged;
+    }
+
+    private void OnLocaleChanged(Locale _)
+    {
+        InitLanguageDropdown();
+        InitDisplayMode();
+        InitPreset();
+    }
+
+    private string Loc(string key)
+    {
+        string value = LocalizationSettings.StringDatabase.GetLocalizedString("UI_Table", key);
+        return string.IsNullOrEmpty(value) ? key : value;
+    }
+
+    private void InitLanguageDropdown()
+    {
+        if (languageDropdown == null) return;
+
+        languageDropdown.onValueChanged.RemoveAllListeners();
+        languageDropdown.ClearOptions();
+
+        var locales = LocalizationSettings.AvailableLocales.Locales;
+        var options = new List<string>();
+
+        for (int i = 0; i < locales.Count; i++)
+            options.Add(locales[i].Identifier.CultureInfo?.NativeName ?? locales[i].LocaleName);
+
+        languageDropdown.AddOptions(options);
+
+        int selected = locales.IndexOf(LocalizationSettings.SelectedLocale);
+        languageDropdown.SetValueWithoutNotify(selected >= 0 ? selected : 0);
+        languageDropdown.onValueChanged.AddListener(OnLanguageChanged);
+    }
+
+    private void OnLanguageChanged(int index)
+    {
+        var locales = LocalizationSettings.AvailableLocales.Locales;
+
+        if (index >= 0 && index < locales.Count)
+        {
+            LocalizationSettings.SelectedLocale = locales[index];
+            PlayerPrefs.SetString("Locale", locales[index].Identifier.Code);
+            PlayerPrefs.Save();
+        }
+    }
+
     private void Start()
     {
+        InitLanguageDropdown();
         InitDisplayMode();
         InitResolution();
         InitPreset();
@@ -38,8 +99,9 @@ public class GeneralPanelUI : MonoBehaviour
         if (displayModeDropdown == null)
             return;
 
+        displayModeDropdown.onValueChanged.RemoveAllListeners();
         displayModeDropdown.ClearOptions();
-        displayModeDropdown.AddOptions(new List<string> { "Fullscreen", "Borderless", "Windowed" });
+        displayModeDropdown.AddOptions(new List<string> { Loc("FullScreen"), Loc("Borderless"), Loc("Windowed") });
         displayModeDropdown.SetValueWithoutNotify(Mathf.Clamp(PlayerPrefs.GetInt("DisplayMode", 1), 0, 2));
         displayModeDropdown.onValueChanged.AddListener(OnDisplayModeChanged);
     }
@@ -117,8 +179,9 @@ public class GeneralPanelUI : MonoBehaviour
         if (presetDropdown == null)
             return;
 
+        presetDropdown.onValueChanged.RemoveAllListeners();
         presetDropdown.ClearOptions();
-        presetDropdown.AddOptions(new List<string> { "Low", "Medium", "High", "Epic" });
+        presetDropdown.AddOptions(new List<string> { Loc("Low"), Loc("Medium"), Loc("High"), Loc("Epic") });
 
         int saved = PlayerPrefs.GetInt("QualityPreset", -1);
         presetDropdown.SetValueWithoutNotify(Mathf.Clamp(saved, 0, 3));

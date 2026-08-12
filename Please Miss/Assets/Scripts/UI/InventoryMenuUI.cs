@@ -550,7 +550,7 @@ public class InventoryMenuUI : MonoBehaviour
         if (nameText != null)
         {
             nameText.gameObject.SetActive(true);
-            nameText.text = def.DisplayName;
+            nameText.text = ItemLocalization.GetName(def.ItemId);
         }
 
         if (invSlot.EmptySlotPanel != null)

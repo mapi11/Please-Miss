@@ -1,5 +1,7 @@
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Localization;
+using UnityEngine.Localization.Settings;
 using UnityEngine.UI;
 
 public class InventoryUI : MonoBehaviour
@@ -28,6 +30,7 @@ public class InventoryUI : MonoBehaviour
     {
         gameObject.SetActive(true);
         SetContentActive(false);
+        LocalizationSettings.SelectedLocaleChanged += OnLocaleChanged;
     }
 
     private void Start()
@@ -141,6 +144,8 @@ public class InventoryUI : MonoBehaviour
 
     private void OnDestroy()
     {
+        LocalizationSettings.SelectedLocaleChanged -= OnLocaleChanged;
+
         if (sniperWeapon != null)
             sniperWeapon.OnLocalAimChanged -= OnSniperAimChanged;
 
@@ -148,6 +153,15 @@ public class InventoryUI : MonoBehaviour
         inventory.OnSlotChanged -= OnSlotChanged;
         inventory.OnActiveSlotChanged -= OnActiveSlotChanged;
         inventory.OnSlotIconChanged -= OnSlotIconChanged;
+    }
+
+    private void OnLocaleChanged(Locale _)
+    {
+        if (inventory == null)
+            return;
+
+        for (int i = 0; i < inventory.MaxSlots; i++)
+            OnSlotChanged(i, inventory.GetItemAtSlot(i));
     }
 
     private void OnSniperAimChanged(bool aiming)
@@ -220,7 +234,9 @@ public class InventoryUI : MonoBehaviour
         if (slot == null) return;
 
         if (slot.ItemNameTxt != null)
-            slot.ItemNameTxt.text = string.IsNullOrEmpty(itemName) ? (slotIndex + 1).ToString() : itemName;
+            slot.ItemNameTxt.text = string.IsNullOrEmpty(itemName)
+                ? (slotIndex + 1).ToString()
+                : ItemLocalization.GetName(itemName);
 
         RefreshSlotColor(slotIndex);
         UpdateVisibility();

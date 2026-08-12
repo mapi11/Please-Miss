@@ -834,6 +834,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6094754359044518825, guid: 4ccefb1ba331adc4d88dd893847a4f0d, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6094754359044518825, guid: 4ccefb1ba331adc4d88dd893847a4f0d, type: 3}
+      propertyPath: m_StringReference.m_TableEntryReference.m_KeyId
+      value: -10003
+      objectReference: {fileID: 0}
     - target: {fileID: 6803828846309237775, guid: 4ccefb1ba331adc4d88dd893847a4f0d, type: 3}
       propertyPath: m_Name
       value: SettingsButton
@@ -975,6 +983,22 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6094754359044518825, guid: 4ccefb1ba331adc4d88dd893847a4f0d, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6094754359044518825, guid: 4ccefb1ba331adc4d88dd893847a4f0d, type: 3}
+      propertyPath: m_StringReference.m_TableEntryReference.m_KeyId
+      value: -10074
+      objectReference: {fileID: 0}
+    - target: {fileID: 6094754359044518825, guid: 4ccefb1ba331adc4d88dd893847a4f0d, type: 3}
+      propertyPath: m_UpdateString.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 4217593664859243837}
+    - target: {fileID: 6094754359044518825, guid: 4ccefb1ba331adc4d88dd893847a4f0d, type: 3}
+      propertyPath: m_UpdateString.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: set_text
+      objectReference: {fileID: 0}
     - target: {fileID: 6803828846309237775, guid: 4ccefb1ba331adc4d88dd893847a4f0d, type: 3}
       propertyPath: m_Name
       value: ExitButton
@@ -1023,6 +1047,17 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 7666275151603576105, guid: 4ccefb1ba331adc4d88dd893847a4f0d, type: 3}
   m_PrefabInstance: {fileID: 4979856238149316340}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &4217593664859243837 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 9195197921454762953, guid: 4ccefb1ba331adc4d88dd893847a4f0d, type: 3}
+  m_PrefabInstance: {fileID: 4979856238149316340}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!224 &4846309488184679784 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 458676738511958940, guid: 4ccefb1ba331adc4d88dd893847a4f0d, type: 3}
@@ -1116,6 +1151,22 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6094754359044518825, guid: 4ccefb1ba331adc4d88dd893847a4f0d, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6094754359044518825, guid: 4ccefb1ba331adc4d88dd893847a4f0d, type: 3}
+      propertyPath: m_StringReference.m_TableEntryReference.m_KeyId
+      value: -10073
+      objectReference: {fileID: 0}
+    - target: {fileID: 6094754359044518825, guid: 4ccefb1ba331adc4d88dd893847a4f0d, type: 3}
+      propertyPath: m_UpdateString.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 1598350156759323882}
+    - target: {fileID: 6094754359044518825, guid: 4ccefb1ba331adc4d88dd893847a4f0d, type: 3}
+      propertyPath: m_UpdateString.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: set_text
+      objectReference: {fileID: 0}
     - target: {fileID: 6803828846309237775, guid: 4ccefb1ba331adc4d88dd893847a4f0d, type: 3}
       propertyPath: m_Name
       value: ResumeButton
@@ -1162,6 +1213,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &1598350156759323882 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 9195197921454762953, guid: 4ccefb1ba331adc4d88dd893847a4f0d, type: 3}
+  m_PrefabInstance: {fileID: 7617167197268148003}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!224 &8063713983859887295 stripped

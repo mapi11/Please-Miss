@@ -2,6 +2,8 @@ using System;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Localization;
+using UnityEngine.Localization.Settings;
 using UnityEngine.UI;
 
 /// <summary>
@@ -43,10 +45,10 @@ public class ItemInfoPanel : MonoBehaviour
         ApplyDefVisuals(def);
 
         if (nameText != null)
-            nameText.text = def != null ? def.DisplayName : "";
+            nameText.text = def != null ? ItemLocalization.GetName(def.ItemId) : "";
 
         if (descriptionText != null)
-            descriptionText.text = def != null ? def.Description : "";
+            descriptionText.text = def != null ? ItemLocalization.GetDescription(def.ItemId, def.Description) : "";
 
         if (buyPriceText != null)
             buyPriceText.text = def != null ? $"Buy: {def.BuyPrice}" : "";
@@ -63,7 +65,7 @@ public class ItemInfoPanel : MonoBehaviour
         }
 
         if (equipButtonText != null)
-            equipButtonText.text = equipLabel;
+            equipButtonText.text = Loc(equipLabel);
 
         if (sellButton != null)
         {
@@ -89,10 +91,10 @@ public class ItemInfoPanel : MonoBehaviour
         ApplyDefVisuals(def);
 
         if (nameText != null)
-            nameText.text = def != null ? def.DisplayName : "";
+            nameText.text = def != null ? ItemLocalization.GetName(def.ItemId) : "";
 
         if (descriptionText != null)
-            descriptionText.text = def != null ? def.Description : "";
+            descriptionText.text = def != null ? ItemLocalization.GetDescription(def.ItemId, def.Description) : "";
 
         if (buyPriceText != null)
             buyPriceText.text = def != null ? $"Buy: {def.BuyPrice}" : "";
@@ -119,6 +121,15 @@ public class ItemInfoPanel : MonoBehaviour
     {
         transform.DOKill();
         gameObject.SetActive(false);
+    }
+
+    private string Loc(string key)
+    {
+        if (string.IsNullOrEmpty(key))
+            return key;
+
+        string value = LocalizationSettings.StringDatabase.GetLocalizedString("UI_Table", key);
+        return string.IsNullOrEmpty(value) ? key : value;
     }
 
     private void PlayShowAnimation()

@@ -13,42 +13,34 @@ MonoBehaviour:
   m_Name: Rifle_Standart
   m_EditorClassIdentifier: 
   rifleId: Rifle Standart
-displayName: Sniper Rifle Standart
+  displayName: Sniper Rifle
   magazineSize: 4
   defaultBullet: {fileID: 11400000, guid: faa2f9a122382764aaa5934c795b59fb, type: 2}
-  muzzleVelocity: 200
+  muzzleVelocity: 10
   secondsBetweenShots: 1
   projectilePrefab: {fileID: 4956007563087058510, guid: f5e628aaa2c6569409a02aceb51cc9ab, type: 3}
   minimumMagnification: 2
   maximumMagnification: 8
   zoomStep: 1
-  swayAmplitude: 1
-  swayFrequency: 0.8
-  swaySmoothTime: 0.45
+  swayAmplitude: 0.1
+  swayFrequency: 0.5
+  swaySmoothTime: 0.3
   maxBreath: 5
   breathDepletionRate: 1
   breathRecoveryRate: 0.5
   breathRecoveryDelay: 1
-  breathRecoveryThreshold: 0.25
+  breathRecoveryThreshold: 0.3
   breathPunishmentDelay: 1
   breathPunishmentMultiplier: 3
   breathStabilityMultiplier: 0.05
-  deathTorque: 50
-  recoilPitchAmount: 5
+  deathTorque: 300
+  recoilPitchAmount: 0.15
   recoilRecoverySpeed: 3
   soundPack:
-    shotClips:
-    - {fileID: 8300000, guid: 2ecddd23d50e96f4faf564e57b3548aa, type: 3}
-    farShotClips:
-    - {fileID: 8300000, guid: b5a56f7459835f14e9f61df33fab41c4, type: 3}
-    boltClips:
-    - {fileID: 8300000, guid: 6d9abf8bf4ee3ed48a127d7614cb04e4, type: 3}
-    scopeInClips:
-    - {fileID: 8300000, guid: f5cfa016ad246404f9041acc9484bb55, type: 3}
-    scopeOutClips:
-    - {fileID: 8300000, guid: f5cfa016ad246404f9041acc9484bb55, type: 3}
-    zoomClips:
-    - {fileID: 8300000, guid: b319a2e4ff8f5d840b82d8635b645d22, type: 3}
-    - {fileID: 8300000, guid: d14b106713a74b448bcab90869f1706e, type: 3}
-    breathHoldClips:
-    - {fileID: 8300000, guid: aeccda248bad6ab4fa592d124b305651, type: 3}
+    shotClips: []
+    farShotClips: []
+    boltClips: []
+    scopeInClips: []
+    scopeOutClips: []
+    zoomClips: []
+    breathHoldClips: []

@@ -18,36 +18,60 @@ MonoBehaviour:
   m_Metadata:
     m_Items: []
   m_TableData:
-  - m_Id: 7896227840
-    m_Localized: Lehrer
-    m_Metadata:
-      m_Items: []
-  - m_Id: 1634984189952
-    m_Localized: Mechaniker
-    m_Metadata:
-      m_Items: []
-  - m_Id: 1903520309248
-    m_Localized: Operator
-    m_Metadata:
-      m_Items: []
-  - m_Id: 2125084418048
-    m_Localized: Elektrikerin
-    m_Metadata:
-      m_Items: []
-  - m_Id: 2216843206656
-    m_Localized: "Zerst\xF6rer"
-    m_Metadata:
-      m_Items: []
-  - m_Id: 258407213228032
+  - m_Id: -10001
     m_Localized: Kapsel
     m_Metadata:
       m_Items: []
-  - m_Id: 343640205877248
+  - m_Id: -10002
+    m_Localized: Nur eine Kapsel
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10003
+    m_Localized: Lange Kapsel
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10004
+    m_Localized: Nur eine lange Kapsel
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10005
     m_Localized: "W\xFCrfel"
     m_Metadata:
       m_Items: []
-  - m_Id: 343684011188224
+  - m_Id: -10006
+    m_Localized: "Nur ein W\xFCrfel"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10007
+    m_Localized: Verbandskasten
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10008
+    m_Localized: Ein kleiner Verbandskasten, um dich oder andere L\xE4ufer zu heilen
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10009
+    m_Localized: "Gro\xDFer Verbandskasten"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10010
+    m_Localized: Ein gro\xDFer Verbandskasten, um dich oder andere L\xE4ufer zu heilen
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10011
     m_Localized: Kugel
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10012
+    m_Localized: Nur eine Kugel
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10013
+    m_Localized: "Scharfsch\xFCtzen-Kugel"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10014
+    m_Localized: "Nur eine Kugel f\xFCr Scharfsch\xFCtzen"
     m_Metadata:
       m_Items: []
   references:

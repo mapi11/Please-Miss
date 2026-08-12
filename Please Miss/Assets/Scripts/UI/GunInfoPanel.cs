@@ -2,6 +2,8 @@ using System;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Localization;
+using UnityEngine.Localization.Settings;
 using UnityEngine.UI;
 
 /// <summary>
@@ -46,8 +48,30 @@ public class GunInfoPanel : MonoBehaviour
     private bool hasDiscount;
     private int discountPercent;
     private bool discountActive;
+    private string cachedDescription;
 
     public bool IsOpen => gameObject.activeSelf;
+
+    private void Awake()
+    {
+        LocalizationSettings.SelectedLocaleChanged += OnLocaleChanged;
+    }
+
+    private void OnDestroy()
+    {
+        LocalizationSettings.SelectedLocaleChanged -= OnLocaleChanged;
+    }
+
+    private void OnLocaleChanged(Locale _)
+    {
+        UpdateState();
+    }
+
+    private string Loc(string key)
+    {
+        string value = LocalizationSettings.StringDatabase.GetLocalizedString("UI_Table", key);
+        return string.IsNullOrEmpty(value) ? key : value;
+    }
 
     /// <summary>Показывает панель с информацией о винтовке. Awake не гасит панель:
     /// префаб должен стартовать неактивным, иначе панель будет скрываться при первом показе.</summary>
@@ -62,6 +86,7 @@ public class GunInfoPanel : MonoBehaviour
         SniperRifleDefinition def = held != null ? held.Definition : null;
         string rifleId = def != null ? def.RifleId : (held != null ? held.name : "");
         owned = !string.IsNullOrEmpty(rifleId) && LocalPlayerSettings.IsSniperRifleOwned(rifleId);
+        cachedDescription = description ?? "";
 
         if (iconImg != null)
         {
@@ -70,13 +95,7 @@ public class GunInfoPanel : MonoBehaviour
             iconImg.color = Color.white;
         }
 
-        if (nameTxt != null)
-            nameTxt.text = def != null && !string.IsNullOrEmpty(def.DisplayName)
-                ? def.DisplayName
-                : (held != null ? held.name : "");
-
-        if (descriptionText != null)
-            descriptionText.text = description ?? "";
+        RefreshTexts();
 
         if (magazineText != null)
             magazineText.text = def != null ? def.MagazineSize.ToString() : "";
@@ -114,6 +133,26 @@ public class GunInfoPanel : MonoBehaviour
         gameObject.SetActive(false);
     }
 
+    private void RefreshTexts()
+    {
+        if (nameTxt == null && descriptionText == null)
+            return;
+
+        SniperRifleDefinition def = heldVisual != null ? heldVisual.Definition : null;
+        string rifleId = def != null ? def.RifleId : (heldVisual != null ? heldVisual.name : "");
+
+        if (nameTxt != null)
+        {
+            string fallback = def != null && !string.IsNullOrEmpty(def.DisplayName)
+                ? def.DisplayName
+                : (heldVisual != null ? heldVisual.name : "");
+            nameTxt.text = ItemLocalization.GetName(rifleId, fallback);
+        }
+
+        if (descriptionText != null)
+            descriptionText.text = ItemLocalization.GetDescription(rifleId, cachedDescription);
+    }
+
     private void UpdateState()
     {
         SniperRifleDefinition def = heldVisual != null ? heldVisual.Definition : null;
@@ -139,7 +178,7 @@ public class GunInfoPanel : MonoBehaviour
                 buyButton.interactable = enoughPoints;
 
                 if (buyButtonText != null)
-                    buyButtonText.text = "Buy";
+                    buyButtonText.text = Loc("Buy");
             }
         }
 
@@ -147,7 +186,7 @@ public class GunInfoPanel : MonoBehaviour
         {
             if (owned)
             {
-                priceTxt.text = "Owned";
+                priceTxt.text = Loc("Owned");
                 priceTxt.color = normalPriceColor;
             }
             else
@@ -169,12 +208,14 @@ public class GunInfoPanel : MonoBehaviour
             else
             {
                 discountTxt.gameObject.SetActive(true);
-                discountTxt.text = "Sell " + discountPercent + "%";
+                discountTxt.text = string.Format(Loc("Sell discount"), discountPercent);
 
                 if (!discountActive)
                     PlayDiscountPulse();
             }
         }
+
+        RefreshTexts();
     }
 
     /// <summary>

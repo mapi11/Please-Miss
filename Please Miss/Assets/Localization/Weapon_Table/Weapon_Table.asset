@@ -10,13 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5be51871efa6c3e4eae1703925c8f5ac, type: 3}
-  m_Name: PlayerUI_Table
+  m_Name: Weapon_Table
   m_EditorClassIdentifier: 
-  m_SharedTableData: {fileID: 11400000, guid: 3f10d4248479ae647aafc3b3fcfbf64b, type: 2}
+  m_SharedTableData: {fileID: 11400000, guid: aa2e18e627cbbe2488e118a4f6f39b23, type: 2}
   m_Tables:
-  - {fileID: 11400000, guid: fde5b507f675c4c4c8618f5a782f7707, type: 2}
-  - {fileID: 11400000, guid: 8b69d2a161c457944a103b510d41db1b, type: 2}
-  - {fileID: 11400000, guid: 2466636a5043cf64f9ae295cbe1e3f3d, type: 2}
+  - {fileID: 11400000, guid: 1a832026d2b1b6a4f9e264e4d14b3b62, type: 2}
+  - {fileID: 11400000, guid: 71568134af9bf2f4bbc1b050997f00aa, type: 2}
+  - {fileID: 11400000, guid: d378b4973743d81429240dde5e76d9ab, type: 2}
   m_Extensions: []
   m_Group: String Table
   references:

@@ -134,6 +134,390 @@ MonoBehaviour:
     m_Localized: Copy join code
     m_Metadata:
       m_Items: []
+  - m_Id: -10001
+    m_Localized: Inventory
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10002
+    m_Localized: Shop
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10003
+    m_Localized: Settings
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10004
+    m_Localized: Player
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10005
+    m_Localized: Controls
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10006
+    m_Localized: Play
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10007
+    m_Localized: Coin code...
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10008
+    m_Localized: Paste
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10009
+    m_Localized: Create lobby
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10010
+    m_Localized: Join lobby
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10011
+    m_Localized: Offline
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10012
+    m_Localized: Local host
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10013
+    m_Localized: Join local
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10014
+    m_Localized: Exit game
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10015
+    m_Localized: "Walk:"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10016
+    m_Localized: "Push:"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10017
+    m_Localized: "Dash:"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10018
+    m_Localized: "Run:"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10019
+    m_Localized: "View:"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10020
+    m_Localized: "Crouch:"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10021
+    m_Localized: "Throw items:"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10022
+    m_Localized: Hold
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10023
+    m_Localized: Information about keys
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10024
+    m_Localized: General
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10025
+    m_Localized: Graphics
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10026
+    m_Localized: Audio
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10027
+    m_Localized: Account
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10028
+    m_Localized: Back
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10029
+    m_Localized: Account reset
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10030
+    m_Localized: Account
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10031
+    m_Localized: Volumes
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10032
+    m_Localized: Master volume
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10033
+    m_Localized: Music volume
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10034
+    m_Localized: Voice
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10035
+    m_Localized: Voice chat
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10036
+    m_Localized: Voice chat volume
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10037
+    m_Localized: Push to talk
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10038
+    m_Localized: Microphone
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10039
+    m_Localized: Microphone volume
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10040
+    m_Localized: Audio output device
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10041
+    m_Localized: Display
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10042
+    m_Localized: Display mode
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10043
+    m_Localized: Resolution
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10044
+    m_Localized: Quality
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10045
+    m_Localized: Quality preset
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10046
+    m_Localized: Low
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10047
+    m_Localized: Medium
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10048
+    m_Localized: High
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10049
+    m_Localized: Epic
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10050
+    m_Localized: Ultra
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10051
+    m_Localized: Unlimited
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10052
+    m_Localized: All
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10053
+    m_Localized: Fullscreen
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10054
+    m_Localized: Borderless
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10055
+    m_Localized: Windowed
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10056
+    m_Localized: Max FPS
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10057
+    m_Localized: Field of view
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10058
+    m_Localized: Textures
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10059
+    m_Localized: Shadows
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10060
+    m_Localized: Effects
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10061
+    m_Localized: Anti-Aliasing
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10062
+    m_Localized: View distance
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10063
+    m_Localized: Post processing
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10064
+    m_Localized: Advanced
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10065
+    m_Localized: Shadow distance
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10066
+    m_Localized: Motion blur
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10067
+    m_Localized: Bloom
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10068
+    m_Localized: Other
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10069
+    m_Localized: Chromatic aberration
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10070
+    m_Localized: Depth of field
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10071
+    m_Localized: Lens flare
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10072
+    m_Localized: Render scale
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10073
+    m_Localized: Resume
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10074
+    m_Localized: Exit
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10075
+    m_Localized: Items
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10076
+    m_Localized: Guns
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10077
+    m_Localized: Runner
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10078
+    m_Localized: Sniper
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10079
+    m_Localized: "Magazine:"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10080
+    m_Localized: "Velocity:"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10081
+    m_Localized: "Sway:"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10082
+    m_Localized: "Scope:"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10083
+    m_Localized: "Recoil:"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10084
+    m_Localized: Buy
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10085
+    m_Localized: Owned
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10086
+    m_Localized: Sell
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10087
+    m_Localized: Runner inventory
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10088
+    m_Localized: Loadout
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10089
+    m_Localized: (Upgrade for extra slots)
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10090
+    m_Localized: "Item info:"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10091
+    m_Localized: Item name
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10092
+    m_Localized: Description
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10093
+    m_Localized: Equip
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10094
+    m_Localized: Empty slot
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10095
+    m_Localized: Sniper inventory
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10096
+    m_Localized: "Sell {0}%"
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

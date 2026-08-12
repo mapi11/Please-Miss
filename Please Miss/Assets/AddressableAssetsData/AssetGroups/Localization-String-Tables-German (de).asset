@@ -15,17 +15,12 @@ MonoBehaviour:
   m_GroupName: Localization-String-Tables-German (de)
   m_GUID: b27781d639cf74e4db0063b51f034350
   m_SerializeEntries:
-  - m_GUID: 2466636a5043cf64f9ae295cbe1e3f3d
-    m_Address: PlayerUI_Table_de
-    m_ReadOnly: 1
-    m_SerializedLabels:
-    - Locale-de
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 68fbae81898a6d64a99377d396f421d4
     m_Address: UI_Table_de
     m_ReadOnly: 1
     m_SerializedLabels:
     - Locale-de
+    - Preload
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 9aff168611364f542aad869827584f45
     m_Address: Items_Table_de
@@ -35,6 +30,12 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: c991f74f317ba274887c94a474d8f6d6
     m_Address: Scene_Table_de
+    m_ReadOnly: 1
+    m_SerializedLabels:
+    - Locale-de
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d378b4973743d81429240dde5e76d9ab
+    m_Address: Weapon_Table_de
     m_ReadOnly: 1
     m_SerializedLabels:
     - Locale-de

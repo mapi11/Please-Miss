@@ -18,36 +18,60 @@ MonoBehaviour:
   m_Metadata:
     m_Items: []
   m_TableData:
-  - m_Id: 7896227840
-    m_Localized: Instructor
-    m_Metadata:
-      m_Items: []
-  - m_Id: 1634984189952
-    m_Localized: Mechanic
-    m_Metadata:
-      m_Items: []
-  - m_Id: 1903520309248
-    m_Localized: Operator
-    m_Metadata:
-      m_Items: []
-  - m_Id: 2125084418048
-    m_Localized: Electrician
-    m_Metadata:
-      m_Items: []
-  - m_Id: 2216843206656
-    m_Localized: Destroyer
-    m_Metadata:
-      m_Items: []
-  - m_Id: 258407213228032
+  - m_Id: -10001
     m_Localized: Capsule
     m_Metadata:
       m_Items: []
-  - m_Id: 343640205877248
+  - m_Id: -10002
+    m_Localized: Just a capsule
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10003
+    m_Localized: Capsule long
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10004
+    m_Localized: Just a long capsule
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10005
     m_Localized: Cube
     m_Metadata:
       m_Items: []
-  - m_Id: 343684011188224
+  - m_Id: -10006
+    m_Localized: Just a cube
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10007
+    m_Localized: Med kit
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10008
+    m_Localized: A small first aid kit for healing yourself or other runners
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10009
+    m_Localized: Med kit big
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10010
+    m_Localized: A big first aid kit for healing yourself or other runners
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10011
     m_Localized: Sphere
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10012
+    m_Localized: Just a sphere
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10013
+    m_Localized: Sniper's Sphere
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10014
+    m_Localized: Just a sphere for snipers
     m_Metadata:
       m_Items: []
   references:

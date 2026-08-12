@@ -134,6 +134,390 @@ MonoBehaviour:
     m_Localized: Beitrittscode kopieren
     m_Metadata:
       m_Items: []
+  - m_Id: -10001
+    m_Localized: Inventar
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10002
+    m_Localized: Laden
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10003
+    m_Localized: Einstellungen
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10004
+    m_Localized: Spieler
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10005
+    m_Localized: Steuerung
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10006
+    m_Localized: Spielen
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10007
+    m_Localized: Code...
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10008
+    m_Localized: "Einf\xFCgen"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10009
+    m_Localized: Lobby erstellen
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10010
+    m_Localized: Lobby beitreten
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10011
+    m_Localized: Offline
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10012
+    m_Localized: Lokaler Host
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10013
+    m_Localized: Lokal beitreten
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10014
+    m_Localized: Spiel beenden
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10015
+    m_Localized: "Gehen:"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10016
+    m_Localized: "Schieben:"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10017
+    m_Localized: "Dash:"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10018
+    m_Localized: "Rennen:"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10019
+    m_Localized: "Blick:"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10020
+    m_Localized: "Hocken:"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10021
+    m_Localized: "Gegenst\xE4nde werfen:"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10022
+    m_Localized: Halten
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10023
+    m_Localized: Informationen zu den Tasten
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10024
+    m_Localized: Allgemein
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10025
+    m_Localized: Grafik
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10026
+    m_Localized: Audio
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10027
+    m_Localized: Konto
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10028
+    m_Localized: "Zur\xFCck"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10029
+    m_Localized: "Konto zur\xFCcksetzen"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10030
+    m_Localized: Konto
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10031
+    m_Localized: Lautst\xE4rke
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10032
+    m_Localized: Hauptlautst\xE4rke
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10033
+    m_Localized: Musiklautst\xE4rke
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10034
+    m_Localized: Stimme
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10035
+    m_Localized: Sprachchat
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10036
+    m_Localized: Sprachchat-Lautst\xE4rke
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10037
+    m_Localized: "Dr\xFCcken zum Sprechen"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10038
+    m_Localized: Mikrofon
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10039
+    m_Localized: Mikrofonlautst\xE4rke
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10040
+    m_Localized: "Audioausgabeger\xE4t"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10041
+    m_Localized: Anzeige
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10042
+    m_Localized: Anzeigemodus
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10043
+    m_Localized: "Aufl\xF6sung"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10044
+    m_Localized: "Qualit\xE4t"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10045
+    m_Localized: "Qualit\xE4tsstufe"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10046
+    m_Localized: Niedrig
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10047
+    m_Localized: Mittel
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10048
+    m_Localized: Hoch
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10049
+    m_Localized: Episch
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10050
+    m_Localized: Ultra
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10051
+    m_Localized: Unbegrenzt
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10052
+    m_Localized: Alle
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10053
+    m_Localized: Vollbild
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10054
+    m_Localized: Randlos
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10055
+    m_Localized: Fenstermodus
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10056
+    m_Localized: Max. FPS
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10057
+    m_Localized: Sichtfeld
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10058
+    m_Localized: Texturen
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10059
+    m_Localized: Schatten
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10060
+    m_Localized: Effekte
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10061
+    m_Localized: Kantengl\xE4ttung
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10062
+    m_Localized: Sichtweite
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10063
+    m_Localized: Nachbearbeitung
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10064
+    m_Localized: Erweitert
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10065
+    m_Localized: Schattenentfernung
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10066
+    m_Localized: Bewegungsunsch\xE4rfe
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10067
+    m_Localized: Bloom
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10068
+    m_Localized: Sonstiges
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10069
+    m_Localized: Chromatische Aberration
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10070
+    m_Localized: Tiefensch\xE4rfe
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10071
+    m_Localized: Linsenreflexe
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10072
+    m_Localized: Render-Skalierung
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10073
+    m_Localized: Fortsetzen
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10074
+    m_Localized: Beenden
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10075
+    m_Localized: Gegenst\xE4nde
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10076
+    m_Localized: Waffen
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10077
+    m_Localized: "L\xE4ufer"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10078
+    m_Localized: "Scharfsch\xFCtze"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10079
+    m_Localized: "Magazin:"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10080
+    m_Localized: "Projektilgeschwindigkeit:"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10081
+    m_Localized: "Waffenbewegung:"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10082
+    m_Localized: "Zielfernrohr:"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10083
+    m_Localized: "R\xFCcksto\xDF:"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10084
+    m_Localized: Kaufen
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10085
+    m_Localized: Gekauft
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10086
+    m_Localized: Verkauf
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10087
+    m_Localized: "L\xE4ufer-Inventar"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10088
+    m_Localized: "Ausr\xFCstung"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10089
+    m_Localized: "(Upgrade f\xFCr zus\xE4tzliche Slots)"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10090
+    m_Localized: "Info zum Gegenstand:"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10091
+    m_Localized: Name
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10092
+    m_Localized: Beschreibung
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10093
+    m_Localized: "Ausr\xFCsten"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10094
+    m_Localized: Leerer Slot
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10095
+    m_Localized: "Scharfsch\xFCtzen-Inventar"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10096
+    m_Localized: "Verkauf {0}%"
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

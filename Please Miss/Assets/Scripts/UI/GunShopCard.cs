@@ -1,6 +1,8 @@
 using System;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Localization;
+using UnityEngine.Localization.Settings;
 using UnityEngine.UI;
 
 /// <summary>
@@ -27,6 +29,28 @@ public class GunShopCard : MonoBehaviour
     private bool hasDiscount;
     private SniperRifleHeldVisual heldVisual;
 
+    private void Awake()
+    {
+        LocalizationSettings.SelectedLocaleChanged += OnLocaleChanged;
+    }
+
+    private void OnDestroy()
+    {
+        LocalizationSettings.SelectedLocaleChanged -= OnLocaleChanged;
+    }
+
+    private void OnLocaleChanged(Locale _)
+    {
+        RefreshName();
+        UpdatePrice();
+    }
+
+    private string Loc(string key)
+    {
+        string value = LocalizationSettings.StringDatabase.GetLocalizedString("UI_Table", key);
+        return string.IsNullOrEmpty(value) ? key : value;
+    }
+
     public void Setup(SniperRifleHeldVisual held, Sprite icon, Action onInfo, int price, bool hasDiscount)
     {
         this.price = Mathf.Max(0, price);
@@ -44,12 +68,7 @@ public class GunShopCard : MonoBehaviour
             iconImg.color = Color.white;
         }
 
-        if (nameTxt != null)
-        {
-            nameTxt.text = def != null && !string.IsNullOrEmpty(def.DisplayName)
-                ? def.DisplayName
-                : (held != null ? held.name : "");
-        }
+        RefreshName();
 
         UpdatePrice();
 
@@ -69,6 +88,20 @@ public class GunShopCard : MonoBehaviour
         UpdatePrice();
     }
 
+    private void RefreshName()
+    {
+        if (nameTxt == null)
+            return;
+
+        SniperRifleDefinition def = heldVisual != null ? heldVisual.Definition : null;
+        string rifleId = def != null ? def.RifleId : (heldVisual != null ? heldVisual.name : "");
+        string fallback = def != null && !string.IsNullOrEmpty(def.DisplayName)
+            ? def.DisplayName
+            : (heldVisual != null ? heldVisual.name : "");
+
+        nameTxt.text = ItemLocalization.GetName(rifleId, fallback);
+    }
+
     private void UpdatePrice()
     {
         if (priceTxt == null)
@@ -76,7 +109,7 @@ public class GunShopCard : MonoBehaviour
 
         if (owned)
         {
-            priceTxt.text = "Owned";
+            priceTxt.text = Loc("Owned");
             priceTxt.color = ownedColor;
             return;
         }

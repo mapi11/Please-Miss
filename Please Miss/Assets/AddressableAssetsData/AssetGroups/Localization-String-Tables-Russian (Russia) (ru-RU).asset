@@ -26,9 +26,10 @@ MonoBehaviour:
     m_ReadOnly: 1
     m_SerializedLabels:
     - Locale-ru-RU
+    - Preload
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 8b69d2a161c457944a103b510d41db1b
-    m_Address: PlayerUI_Table_ru-RU
+  - m_GUID: 71568134af9bf2f4bbc1b050997f00aa
+    m_Address: Weapon_Table_ru-RU
     m_ReadOnly: 1
     m_SerializedLabels:
     - Locale-ru-RU

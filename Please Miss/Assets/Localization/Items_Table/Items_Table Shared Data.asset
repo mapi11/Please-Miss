@@ -15,36 +15,60 @@ MonoBehaviour:
   m_TableCollectionName: Items_Table
   m_TableCollectionNameGuidString: 3c06e27a372bfb141ae22558d1a0fd95
   m_Entries:
-  - m_Id: 7896227840
-    m_Key: Role_Instructor
+  - m_Id: -10001
+    m_Key: Capsule
     m_Metadata:
       m_Items: []
-  - m_Id: 1634984189952
-    m_Key: Role_Mechanic
+  - m_Id: -10002
+    m_Key: Capsule_Description
     m_Metadata:
       m_Items: []
-  - m_Id: 1903520309248
-    m_Key: Role_Operator
+  - m_Id: -10003
+    m_Key: Capsule long
     m_Metadata:
       m_Items: []
-  - m_Id: 2125084418048
-    m_Key: Role_Electrician
+  - m_Id: -10004
+    m_Key: Capsule long_Description
     m_Metadata:
       m_Items: []
-  - m_Id: 2216843206656
-    m_Key: Role_Destroyer
+  - m_Id: -10005
+    m_Key: Cube
     m_Metadata:
       m_Items: []
-  - m_Id: 258407213228032
-    m_Key: Item_Capsule
+  - m_Id: -10006
+    m_Key: Cube_Description
     m_Metadata:
       m_Items: []
-  - m_Id: 343640205877248
-    m_Key: Item_Cube
+  - m_Id: -10007
+    m_Key: Med kit
     m_Metadata:
       m_Items: []
-  - m_Id: 343684011188224
-    m_Key: Item_Sphere
+  - m_Id: -10008
+    m_Key: Med kit_Description
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10009
+    m_Key: Med kit big
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10010
+    m_Key: Med kit big_Description
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10011
+    m_Key: Sphere
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10012
+    m_Key: Sphere_Description
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10013
+    m_Key: Sniper`s Sphere
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10014
+    m_Key: Sniper`s Sphere_Description
     m_Metadata:
       m_Items: []
   m_Metadata:

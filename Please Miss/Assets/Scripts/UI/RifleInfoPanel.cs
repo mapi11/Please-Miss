@@ -1,6 +1,8 @@
 using System;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Localization;
+using UnityEngine.Localization.Settings;
 using UnityEngine.UI;
 
 /// <summary>
@@ -31,10 +33,14 @@ public class RifleInfoPanel : MonoBehaviour
         this.onEquip = onEquip;
 
         if (nameText != null)
-            nameText.text = info != null ? info.DisplayName : "";
+            nameText.text = info != null
+                ? ItemLocalization.GetName(info.RifleId, info.DisplayName)
+                : "";
 
         if (descriptionText != null)
-            descriptionText.text = info != null ? info.Description : "";
+            descriptionText.text = info != null
+                ? ItemLocalization.GetDescription(info.RifleId, info.Description)
+                : "";
 
         if (statsText != null)
             statsText.text = string.Join("\n", BuildStatsLines(info));
@@ -63,6 +69,12 @@ public class RifleInfoPanel : MonoBehaviour
         onEquip?.Invoke();
     }
 
+    private static string Loc(string key)
+    {
+        string value = LocalizationSettings.StringDatabase.GetLocalizedString("UI_Table", key);
+        return string.IsNullOrEmpty(value) ? key : value;
+    }
+
     private static string[] BuildStatsLines(RifleCatalog.RifleInfo info)
     {
         SniperRifleDefinition d = info != null ? info.Definition : null;
@@ -71,11 +83,11 @@ public class RifleInfoPanel : MonoBehaviour
 
         return new[]
         {
-            $"Magazine: {d.MagazineSize}",
-            $"Muzzle velocity: {d.MuzzleVelocity:0.##}",
-            $"Sway amplitude: {d.SwayAmplitude:0.##}",
-            $"Scope {d.MinimumMagnification:0.#}-{d.MaximumMagnification:0.#}",
-            $"Recoil pitch: {d.RecoilPitchAmount:0.##}"
+            $"{Loc("Magazine:")} {d.MagazineSize}",
+            $"{Loc("Velocity:")} {d.MuzzleVelocity:0.##}",
+            $"{Loc("Sway:")} {d.SwayAmplitude:0.##}",
+            $"{Loc("Scope:")} {d.MinimumMagnification:0.#}-{d.MaximumMagnification:0.#}",
+            $"{Loc("Recoil:")} {d.RecoilPitchAmount:0.##}"
         };
     }
 }

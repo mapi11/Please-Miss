@@ -1,6 +1,8 @@
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Localization;
+using UnityEngine.Localization.Settings;
 using UnityEngine.UI;
 
 public class BuyItemSlot : MonoBehaviour
@@ -46,6 +48,17 @@ public class BuyItemSlot : MonoBehaviour
             buyButton.onClick.AddListener(TryBuy);
         }
 
+        UnityEngine.Localization.Settings.LocalizationSettings.SelectedLocaleChanged += OnLocaleChanged;
+        Refresh();
+    }
+
+    private void OnDisable()
+    {
+        UnityEngine.Localization.Settings.LocalizationSettings.SelectedLocaleChanged -= OnLocaleChanged;
+    }
+
+    private void OnLocaleChanged(Locale _)
+    {
         Refresh();
     }
 
@@ -61,7 +74,7 @@ public class BuyItemSlot : MonoBehaviour
         }
 
         if (nameTxt != null)
-            nameTxt.text = item.ItemName;
+            nameTxt.text = ItemLocalization.GetName(item.ItemName);
 
         if (descriptionTxt != null)
         {
@@ -69,7 +82,7 @@ public class BuyItemSlot : MonoBehaviour
             descriptionTxt.gameObject.SetActive(hasDescription);
 
             if (hasDescription)
-                descriptionTxt.text = item.Description;
+                descriptionTxt.text = ItemLocalization.GetDescription(item.ItemName, item.Description);
         }
 
         UpdatePrice();
@@ -90,7 +103,7 @@ public class BuyItemSlot : MonoBehaviour
 
             if (hasDiscount)
             {
-                discountTxt.text = $"Sell {discountPercent}%";
+                discountTxt.text = string.Format(Loc("Sell discount"), discountPercent);
 
                 if (!discountActive)
                     PlayDiscountPulse();
@@ -120,6 +133,12 @@ public class BuyItemSlot : MonoBehaviour
     public void OnPlayerPointsChanged()
     {
         UpdatePrice();
+    }
+
+    private string Loc(string key)
+    {
+        string value = LocalizationSettings.StringDatabase.GetLocalizedString("UI_Table", key);
+        return string.IsNullOrEmpty(value) ? key : value;
     }
 
     /// <summary>
