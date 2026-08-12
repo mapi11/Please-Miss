@@ -210,7 +210,7 @@ public class InventoryMenuUI : MonoBehaviour
     private void RefreshPoints()
     {
         if (pointsText != null)
-            pointsText.text = $"Points: {LocalPlayerSettings.PlayerPoints}";
+            pointsText.text = $"<color=#2096F3>Points: </color><color=#FFFFFF>{LocalPlayerSettings.PlayerPoints}</color>";
     }
 
     private void EnsureWindow()
@@ -345,7 +345,7 @@ public class InventoryMenuUI : MonoBehaviour
             {
                 IconSprite = info.Icon,
                 SellPrice = 0,
-                Description = info.Definition != null ? info.Definition.Description : "",
+                Description = info != null ? info.Description : "",
                 Class = ItemClass.Sniper
             };
 
@@ -797,6 +797,7 @@ public class InventoryMenuUI : MonoBehaviour
                 {
                     RifleId = entry.riflePrefab.ItemName,
                     DisplayName = entry.riflePrefab.ItemName,
+                    Description = entry.riflePrefab.Description,
                     Icon = entry.riflePrefab.InventoryIcon
                 });
             }

@@ -7,6 +7,7 @@ public static class RifleCatalog
     {
         public string RifleId;
         public string DisplayName;
+        public string Description;
         public Sprite Icon;
         public SniperRifleDefinition Definition;
         public SniperRifleHeldVisual HeldPrefab;
@@ -15,7 +16,7 @@ public static class RifleCatalog
     private static readonly List<RifleInfo> rifles = new List<RifleInfo>();
     private static readonly Dictionary<string, RifleInfo> byId = new Dictionary<string, RifleInfo>();
 
-    public static void Register(SniperRifleHeldVisual heldPrefab, Sprite icon)
+    public static void Register(SniperRifleHeldVisual heldPrefab, Sprite icon, string description)
     {
         if (heldPrefab == null || heldPrefab.Definition == null)
             return;
@@ -28,6 +29,7 @@ public static class RifleCatalog
         {
             RifleId = id,
             DisplayName = heldPrefab.Definition.DisplayName,
+            Description = description ?? "",
             Icon = icon,
             Definition = heldPrefab.Definition,
             HeldPrefab = heldPrefab

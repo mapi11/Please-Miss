@@ -5461,6 +5461,9 @@ MonoBehaviour:
   - Name: Med kit
     WorldDropPrefab: {fileID: 6087747590279462126, guid: 43701498245fe4f4fbe97451746f4a1a, type: 3}
     HeldVisualPrefab: {fileID: 2069241555282401964, guid: c47053cc73acfbe40a2123adf1de98d9, type: 3}
+  - Name: Med kit big
+    WorldDropPrefab: {fileID: 6087747590279462126, guid: cbb7d59642139024da5da50c41f8c17d, type: 3}
+    HeldVisualPrefab: {fileID: 0}
   heldItemScale: 0.8
   logMissingItemMappings: 1
   leftEjectPoint: {fileID: 6744619397424973544}

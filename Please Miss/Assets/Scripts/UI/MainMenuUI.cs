@@ -523,7 +523,7 @@ public class MainMenuUI : MonoBehaviour
     private void RefreshPoints()
     {
         if (pointsText != null)
-            pointsText.text = $"Points: {LocalPlayerSettings.PlayerPoints}";
+            pointsText.text = $"<color=#2096F3>Points: </color><color=#FFFFFF>{LocalPlayerSettings.PlayerPoints}</color>";
     }
 
     private void OnStatusChanged(string newStatus)

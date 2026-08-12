@@ -51,7 +51,7 @@ public class GunInfoPanel : MonoBehaviour
 
     /// <summary>Показывает панель с информацией о винтовке. Awake не гасит панель:
     /// префаб должен стартовать неактивным, иначе панель будет скрываться при первом показе.</summary>
-    public void Show(SniperRifleHeldVisual held, Sprite icon, int price, bool hasDiscount, int discountPercent, Action onBuy)
+    public void Show(SniperRifleHeldVisual held, Sprite icon, string description, int price, bool hasDiscount, int discountPercent, Action onBuy)
     {
         heldVisual = held;
         this.onBuy = onBuy;
@@ -76,7 +76,7 @@ public class GunInfoPanel : MonoBehaviour
                 : (held != null ? held.name : "");
 
         if (descriptionText != null)
-            descriptionText.text = def != null ? def.Description : "";
+            descriptionText.text = description ?? "";
 
         if (magazineText != null)
             magazineText.text = def != null ? def.MagazineSize.ToString() : "";

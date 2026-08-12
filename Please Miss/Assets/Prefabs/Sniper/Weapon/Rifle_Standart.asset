@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Rifle_Standart
   m_EditorClassIdentifier: 
   rifleId: Rifle Standart
-  displayName: Sniper Rifle Standart
+displayName: Sniper Rifle Standart
   magazineSize: 4
   defaultBullet: {fileID: 11400000, guid: faa2f9a122382764aaa5934c795b59fb, type: 2}
   muzzleVelocity: 200
@@ -22,14 +22,14 @@ MonoBehaviour:
   minimumMagnification: 2
   maximumMagnification: 8
   zoomStep: 1
-  swayAmplitude: 0.8
-  swayFrequency: 0.5
-  swaySmoothTime: 0.3
+  swayAmplitude: 1
+  swayFrequency: 0.8
+  swaySmoothTime: 0.45
   maxBreath: 5
   breathDepletionRate: 1
   breathRecoveryRate: 0.5
   breathRecoveryDelay: 1
-  breathRecoveryThreshold: 0.3
+  breathRecoveryThreshold: 0.25
   breathPunishmentDelay: 1
   breathPunishmentMultiplier: 3
   breathStabilityMultiplier: 0.05

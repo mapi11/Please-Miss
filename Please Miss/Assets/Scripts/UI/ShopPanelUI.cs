@@ -18,7 +18,10 @@ public class ShopPanelUI : MonoBehaviour
     [System.Serializable]
     public sealed class GunEntry
     {
+        [Tooltip("Префаб винтовки в руках (SniperRifleHeldVisual)")]
         public SniperRifleHeldVisual heldPrefab;
+        [Tooltip("Префаб PickableItem этой винтовки. Его описание показывается в Panel информации")]
+        public PickableItem itemPrefab;
         [Tooltip("Иконка для карточки в магазине")]
         public Sprite icon;
         [Min(0)] public int buyPrice;
@@ -100,7 +103,8 @@ public class ShopPanelUI : MonoBehaviour
             if (entry == null || entry.heldPrefab == null)
                 continue;
 
-            RifleCatalog.Register(entry.heldPrefab, entry.icon);
+            string description = entry.itemPrefab != null ? entry.itemPrefab.Description : "";
+            RifleCatalog.Register(entry.heldPrefab, entry.icon, description);
         }
     }
 
@@ -240,6 +244,7 @@ public class ShopPanelUI : MonoBehaviour
         gunInfoPanel.Show(
             entry.heldPrefab,
             entry.icon,
+            entry.itemPrefab != null ? entry.itemPrefab.Description : "",
             GetGunPrice(entry),
             IsChainDiscounted(entry),
             chainDiscountPercent,
@@ -694,7 +699,7 @@ public class ShopPanelUI : MonoBehaviour
             pointsText = CreatePointsText();
 
         if (pointsText != null)
-            pointsText.text = $"Points: {LocalPlayerSettings.PlayerPoints}";
+            pointsText.text = $"<color=#2096F3>Points: </color><color=#FFFFFF>{LocalPlayerSettings.PlayerPoints}</color>";
     }
 
     private TMP_Text CreatePointsText()

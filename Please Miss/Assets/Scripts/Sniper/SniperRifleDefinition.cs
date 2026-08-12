@@ -8,8 +8,6 @@ public sealed class SniperRifleDefinition : ScriptableObject
     [SerializeField] private string rifleId = "rifle_default";
     [Tooltip("Название, отображаемое в UI")]
     [SerializeField] private string displayName = "Sniper Rifle";
-    [Tooltip("Описание винтовки, показывается в панели информации в меню инвентаря")]
-    [SerializeField] private string description;
 
     [Header("Magazine")]
     [Tooltip("Количество патронов в обойме")]
@@ -75,7 +73,6 @@ public sealed class SniperRifleDefinition : ScriptableObject
 
     public string RifleId => rifleId;
     public string DisplayName => displayName;
-    public string Description => description;
     public int MagazineSize => magazineSize;
     public BulletDefinition DefaultBullet => defaultBullet;
     public float MuzzleVelocity => muzzleVelocity;

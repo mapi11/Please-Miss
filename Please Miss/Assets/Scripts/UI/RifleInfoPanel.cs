@@ -34,12 +34,7 @@ public class RifleInfoPanel : MonoBehaviour
             nameText.text = info != null ? info.DisplayName : "";
 
         if (descriptionText != null)
-        {
-            string description = info != null && info.Definition != null
-                ? info.Definition.Description
-                : "";
-            descriptionText.text = description;
-        }
+            descriptionText.text = info != null ? info.Description : "";
 
         if (statsText != null)
             statsText.text = string.Join("\n", BuildStatsLines(info));
