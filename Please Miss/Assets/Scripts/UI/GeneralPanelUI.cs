@@ -28,6 +28,11 @@ public class GeneralPanelUI : MonoBehaviour
     [SerializeField] private Slider voiceChatVolumeSlider;
     [SerializeField] private TextMeshProUGUI voiceChatVolumeValueText;
 
+    [Header("Diktor")]
+    [SerializeField] private Toggle diktorToggle;
+    [SerializeField] private Slider diktorVolumeSlider;
+    [SerializeField] private TextMeshProUGUI diktorVolumeValueText;
+
     private List<Resolution> resolutions;
 
     private void Awake()
@@ -92,6 +97,7 @@ public class GeneralPanelUI : MonoBehaviour
         InitResolution();
         InitPreset();
         InitVolumes();
+        InitDiktor();
     }
 
     private void InitDisplayMode()
@@ -381,6 +387,46 @@ public class GeneralPanelUI : MonoBehaviour
     {
         if (voiceChatVolumeValueText != null)
             voiceChatVolumeValueText.text = Mathf.RoundToInt(value * 100) + "%";
+    }
+
+    private void InitDiktor()
+    {
+        if (diktorToggle != null)
+        {
+            diktorToggle.SetIsOnWithoutNotify(DiktorManager.IsDiktorEnabled());
+            diktorToggle.onValueChanged.AddListener(OnDiktorToggleChanged);
+        }
+
+        if (diktorVolumeSlider != null)
+        {
+            float current = DiktorManager.GetDiktorVolume();
+
+            diktorVolumeSlider.minValue = 0f;
+            diktorVolumeSlider.maxValue = 1f;
+            diktorVolumeSlider.value = current;
+            UpdateDiktorVolumeText(current);
+            diktorVolumeSlider.onValueChanged.AddListener(OnDiktorVolumeChanged);
+        }
+    }
+
+    private void OnDiktorToggleChanged(bool enabled)
+    {
+        if (DiktorManager.Instance != null)
+            DiktorManager.Instance.SetEnabled(enabled);
+    }
+
+    private void OnDiktorVolumeChanged(float value)
+    {
+        if (DiktorManager.Instance != null)
+            DiktorManager.Instance.SetVolume(value);
+
+        UpdateDiktorVolumeText(value);
+    }
+
+    private void UpdateDiktorVolumeText(float value)
+    {
+        if (diktorVolumeValueText != null)
+            diktorVolumeValueText.text = Mathf.RoundToInt(value * 100) + "%";
     }
 
     private static Camera GetTargetCamera()

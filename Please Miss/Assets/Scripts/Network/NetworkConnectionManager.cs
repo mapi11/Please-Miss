@@ -582,6 +582,9 @@ public class NetworkConnectionManager : MonoBehaviour
         var screen = FindObjectOfType<ConnectionScreenManager>();
         if (screen != null)
             screen.Dismiss();
+
+        if (DiktorManager.Instance != null)
+            DiktorManager.Instance.PlayBeginSound();
     }
 
     private void OnConnectionApproval(

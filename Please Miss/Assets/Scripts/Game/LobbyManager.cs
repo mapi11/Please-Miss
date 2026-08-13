@@ -44,11 +44,12 @@ public class LobbyManager : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         NetworkManager.Singleton.OnClientDisconnectCallback += OnLocalDisconnected;
-
-        if (IsServer)
+if (IsServer)
         {
             NetworkManager.Singleton.OnClientConnectedCallback += OnClientChanged;
             NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
+
+            PlayJoinSoundClientRpc(0);
 
             StartCoroutine(ResetAllPlayersForLobby());
         }
@@ -104,7 +105,24 @@ public class LobbyManager : NetworkBehaviour
         if (lobbyUI != null)
             lobbyUI.RebuildCards();
 
+        int joinedIndex = NetworkManager.Singleton.ConnectedClientsList.Count - 1;
+        if (joinedIndex >= 0)
+            PlayJoinSoundClientRpc(joinedIndex);
+
         NotifyPlayersChangedClientRpc();
+    }
+
+    [ClientRpc]
+    private void PlayJoinSoundClientRpc(int index)
+    {
+        if (DiktorManager.Instance != null)
+            DiktorManager.Instance.PlayJoinSound(index);
+    }
+
+    public void PlayReadySoundLocal()
+    {
+        if (DiktorManager.Instance != null)
+            DiktorManager.Instance.PlayReadySound();
     }
 
     private void OnClientDisconnected(ulong clientId)

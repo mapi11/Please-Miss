@@ -241,6 +241,9 @@ public class LobbyPlayerCard : MonoBehaviour
 
     private void OnReadyUpdated(bool oldReady, bool newReady)
     {
+        if (isLocalCard && newReady && !oldReady && LobbyManager.Instance != null)
+            LobbyManager.Instance.PlayReadySoundLocal();
+
         Refresh();
     }
 

@@ -16,6 +16,11 @@ public class AudioPanelUI : MonoBehaviour
     [Tooltip("Единственная опция System Default: Unity не предоставляет список устройств вывода")]
     [SerializeField] private TMP_Dropdown outputDeviceDropdown;
 
+    [Header("Diktor")]
+    [SerializeField] private Toggle diktorToggle;
+    [SerializeField] private Slider diktorVolumeSlider;
+    [SerializeField] private TextMeshProUGUI diktorVolumeValueText;
+
     [Header("Voice Chat")]
     [SerializeField] private Toggle voiceChatToggle;
     [SerializeField] private Slider voiceChatVolumeSlider;
@@ -35,6 +40,7 @@ public class AudioPanelUI : MonoBehaviour
     {
         InitVolume();
         InitMusicVolume();
+        InitDiktor();
         InitOutputDevice();
         InitVoiceChat();
         InitVoiceChatVolume();
@@ -131,6 +137,46 @@ public class AudioPanelUI : MonoBehaviour
     {
         if (musicVolumeValueText != null)
             musicVolumeValueText.text = Mathf.RoundToInt(value * 100) + "%";
+    }
+
+    private void InitDiktor()
+    {
+        if (diktorToggle != null)
+        {
+            diktorToggle.SetIsOnWithoutNotify(DiktorManager.IsDiktorEnabled());
+            diktorToggle.onValueChanged.AddListener(OnDiktorToggleChanged);
+        }
+
+        if (diktorVolumeSlider != null)
+        {
+            float current = DiktorManager.GetDiktorVolume();
+
+            diktorVolumeSlider.minValue = 0f;
+            diktorVolumeSlider.maxValue = 1f;
+            diktorVolumeSlider.value = current;
+            UpdateDiktorVolumeText(current);
+            diktorVolumeSlider.onValueChanged.AddListener(OnDiktorVolumeChanged);
+        }
+    }
+
+    private void OnDiktorToggleChanged(bool enabled)
+    {
+        if (DiktorManager.Instance != null)
+            DiktorManager.Instance.SetEnabled(enabled);
+    }
+
+    private void OnDiktorVolumeChanged(float value)
+    {
+        if (DiktorManager.Instance != null)
+            DiktorManager.Instance.SetVolume(value);
+
+        UpdateDiktorVolumeText(value);
+    }
+
+    private void UpdateDiktorVolumeText(float value)
+    {
+        if (diktorVolumeValueText != null)
+            diktorVolumeValueText.text = Mathf.RoundToInt(value * 100) + "%";
     }
 
     private void InitOutputDevice()
