@@ -2,6 +2,8 @@ using TMPro;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.Localization;
+using UnityEngine.Localization.Settings;
 using UnityEngine.UI;
 
 public class LobbyPlayerCard : MonoBehaviour
@@ -40,6 +42,38 @@ public class LobbyPlayerCard : MonoBehaviour
 
     public NetworkObject PlayerObject { get; private set; }
 
+    private void Awake()
+    {
+        LocalizationSettings.SelectedLocaleChanged += OnLocaleChanged;
+    }
+
+    private void OnLocaleChanged(Locale _)
+    {
+        RefreshRoleOptions();
+        Refresh();
+    }
+
+    private string Loc(string key)
+    {
+        string value = LocalizationSettings.StringDatabase.GetLocalizedString("UI_Table", key);
+        return string.IsNullOrEmpty(value) ? key : value;
+    }
+
+    private void RefreshRoleOptions()
+    {
+        if (roleDropdown == null) return;
+
+        int index = roleComponent != null ? RoleToDropdown(roleComponent.CurrentRole) : 0;
+
+        roleDropdown.ClearOptions();
+        roleDropdown.AddOptions(new System.Collections.Generic.List<string>
+        {
+            Loc("Runner"),
+            Loc("Sniper")
+        });
+        roleDropdown.SetValueWithoutNotify(index);
+    }
+
     private static int RoleToDropdown(PlayerRole role)
     {
         if (role == PlayerRole.None) return 0;
@@ -63,15 +97,10 @@ public class LobbyPlayerCard : MonoBehaviour
 
         if (roleDropdown != null)
         {
-            roleDropdown.ClearOptions();
-            roleDropdown.AddOptions(new System.Collections.Generic.List<string>
-            {
-                PlayerRole.Runner.ToString(),
-                PlayerRole.Sniper.ToString()
-            });
-
             roleDropdown.onValueChanged.RemoveAllListeners();
             roleDropdown.interactable = isLocalCard;
+
+            RefreshRoleOptions();
 
             PlayerRole currentRole = roleComponent != null ? roleComponent.CurrentRole : PlayerRole.None;
             roleDropdown.SetValueWithoutNotify(RoleToDropdown(currentRole));
@@ -143,6 +172,8 @@ public class LobbyPlayerCard : MonoBehaviour
 
     private void OnDestroy()
     {
+        LocalizationSettings.SelectedLocaleChanged -= OnLocaleChanged;
+
         if (roleComponent != null)
         {
             roleComponent.OnRoleChanged -= OnRoleUpdated;
@@ -169,7 +200,7 @@ public class LobbyPlayerCard : MonoBehaviour
 
         if (readyButtonText != null && roleComponent != null)
         {
-            readyButtonText.text = roleComponent.IsReady ? "Ready" : "Not Ready";
+            readyButtonText.text = roleComponent.IsReady ? Loc("Ready") : Loc("Not Ready");
         }
 
         if (outlineReady != null && roleComponent != null)

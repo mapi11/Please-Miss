@@ -523,6 +523,50 @@ MonoBehaviour:
     m_Key: Sell discount
     m_Metadata:
       m_Items: []
+  - m_Id: -10097
+    m_Key: Boost
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10098
+    m_Key: Heal
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10099
+    m_Key: Fake
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10100
+    m_Key: Ready
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10101
+    m_Key: Not Ready
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10102
+    m_Key: WarningNoSniper
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10103
+    m_Key: WarningMultiSniper
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10104
+    m_Key: WarningNotEnough
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10105
+    m_Key: Game starting
+    m_Metadata:
+      m_Items: []
+  - m_Id: 8225287097999360
+    m_Key: Lobby
+    m_Metadata:
+      m_Items: []
+  - m_Id: 8225792582934528
+    m_Key: Kick
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

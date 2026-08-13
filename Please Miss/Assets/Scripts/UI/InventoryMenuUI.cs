@@ -495,7 +495,7 @@ public class InventoryMenuUI : MonoBehaviour
         if (purpose != null)
         {
             purpose.gameObject.SetActive(true);
-            purpose.text = def.PurposeText;
+            purpose.text = ItemLocalization.GetPurpose(def.Purpose);
         }
 
         Button slotButton = GetSlotButton(go);
@@ -663,7 +663,7 @@ public class InventoryMenuUI : MonoBehaviour
         if (purpose != null)
         {
             purpose.gameObject.SetActive(true);
-            purpose.text = def.PurposeText;
+            purpose.text = ItemLocalization.GetPurpose(def.Purpose);
         }
 
         bool canEquip = !loadoutFull;

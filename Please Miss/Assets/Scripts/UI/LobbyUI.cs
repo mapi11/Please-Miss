@@ -43,9 +43,15 @@ public class LobbyUI : MonoBehaviour
     [SerializeField] private RectTransform shopContent;
     [SerializeField] private GameObject shopPanelPrefab;
 
+    [Header("Settings")]
+    [SerializeField] private Button settingsButton;
+    [SerializeField] private RectTransform settingsContent;
+    [SerializeField] private GameObject settingsPanelPrefab;
+
     private readonly Dictionary<ulong, LobbyPlayerCard> activeCards = new();
     private GameObject spawnedInventoryPanel;
     private GameObject spawnedShopPanel;
+    private GameObject spawnedSettingsPanel;
 
     private void Start()
     {
@@ -63,6 +69,9 @@ public class LobbyUI : MonoBehaviour
 
         if (shopButton != null)
             shopButton.onClick.AddListener(OnShopButtonClicked);
+
+        if (settingsButton != null)
+            settingsButton.onClick.AddListener(OnSettingsButtonClicked);
 
         EnsureShopCatalogRegistered();
         InventoryMenuUI.WarmUp(inventoryPanelPrefab);
@@ -182,6 +191,23 @@ public class LobbyUI : MonoBehaviour
             bool show = !spawnedShopPanel.activeSelf;
             spawnedShopPanel.SetActive(show);
         }
+    }
+
+    private void OnSettingsButtonClicked()
+    {
+        if (SettingsMenu.Instance != null)
+        {
+            SettingsMenu.Instance.Open();
+            return;
+        }
+
+        if (settingsPanelPrefab == null || settingsContent == null)
+            return;
+
+        if (spawnedSettingsPanel != null)
+            Destroy(spawnedSettingsPanel);
+
+        spawnedSettingsPanel = Instantiate(settingsPanelPrefab, settingsContent);
     }
 
     private void EnsureShopCatalogRegistered()

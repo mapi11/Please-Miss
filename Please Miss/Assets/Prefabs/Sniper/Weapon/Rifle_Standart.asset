@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: Sniper Rifle
   magazineSize: 4
   defaultBullet: {fileID: 11400000, guid: faa2f9a122382764aaa5934c795b59fb, type: 2}
-  muzzleVelocity: 10
+  muzzleVelocity: 200
   secondsBetweenShots: 1
   projectilePrefab: {fileID: 4956007563087058510, guid: f5e628aaa2c6569409a02aceb51cc9ab, type: 3}
   minimumMagnification: 2
@@ -34,13 +34,22 @@ MonoBehaviour:
   breathPunishmentMultiplier: 3
   breathStabilityMultiplier: 0.05
   deathTorque: 300
-  recoilPitchAmount: 0.15
+  recoilPitchAmount: 6
   recoilRecoverySpeed: 3
   soundPack:
-    shotClips: []
-    farShotClips: []
-    boltClips: []
-    scopeInClips: []
-    scopeOutClips: []
-    zoomClips: []
-    breathHoldClips: []
+    shotClips:
+    - {fileID: 8300000, guid: 2ecddd23d50e96f4faf564e57b3548aa, type: 3}
+    farShotClips:
+    - {fileID: 8300000, guid: b5a56f7459835f14e9f61df33fab41c4, type: 3}
+    boltClips:
+    - {fileID: 8300000, guid: 6d9abf8bf4ee3ed48a127d7614cb04e4, type: 3}
+    scopeInClips:
+    - {fileID: 8300000, guid: f5cfa016ad246404f9041acc9484bb55, type: 3}
+    scopeOutClips:
+    - {fileID: 8300000, guid: f5cfa016ad246404f9041acc9484bb55, type: 3}
+    zoomClips:
+    - {fileID: 8300000, guid: b319a2e4ff8f5d840b82d8635b645d22, type: 3}
+    - {fileID: 8300000, guid: d14b106713a74b448bcab90869f1706e, type: 3}
+    breathHoldClips:
+    - {fileID: 8300000, guid: 56cbcaaed25aaad4e95121b4d1c42a37, type: 3}
+    - {fileID: 8300000, guid: aeccda248bad6ab4fa592d124b305651, type: 3}

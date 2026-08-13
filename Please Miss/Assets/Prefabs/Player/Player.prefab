@@ -1466,7 +1466,7 @@ GameObject:
   - component: {fileID: 1385691621216066690}
   - component: {fileID: 7402976595691364506}
   m_Layer: 5
-  m_Name: SniperUI
+  m_Name: SniperScope
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2848,7 +2848,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &4582697304319251508
 RectTransform:
   m_ObjectHideFlags: 0
@@ -3323,8 +3323,8 @@ MonoBehaviour:
   staminaPanel: {fileID: 8518370040342841270}
   shoveCooldownText: {fileID: 9100000000000000204}
   normalColor: {r: 1, g: 1, b: 1, a: 1}
-  exhaustedColor: {r: 1, g: 0, b: 0, a: 1}
-  insufficientColor: {r: 1, g: 0.2750727, b: 0, a: 1}
+  exhaustedColor: {r: 1, g: 0.25, b: 0.25, a: 1}
+  insufficientColor: {r: 1, g: 0.42142653, b: 0.25098038, a: 1}
   insufficientDuration: 0.5
 --- !u!1 &6818440226341732365
 GameObject:
@@ -5463,7 +5463,7 @@ MonoBehaviour:
     HeldVisualPrefab: {fileID: 2069241555282401964, guid: c47053cc73acfbe40a2123adf1de98d9, type: 3}
   - Name: Med kit big
     WorldDropPrefab: {fileID: 6087747590279462126, guid: cbb7d59642139024da5da50c41f8c17d, type: 3}
-    HeldVisualPrefab: {fileID: 0}
+    HeldVisualPrefab: {fileID: 8869260222506063875, guid: d3b6d9a7c7c44e34aa176c47cb4ac481, type: 3}
   heldItemScale: 0.8
   logMissingItemMappings: 1
   leftEjectPoint: {fileID: 6744619397424973544}
@@ -6562,9 +6562,33 @@ PrefabInstance:
       propertyPath: m_Name
       value: ScopeSlider
       objectReference: {fileID: 0}
+    - target: {fileID: 7081840891582816374, guid: 52792aeddf78d144cab36bb0ae9a1943, type: 3}
+      propertyPath: m_Color.b
+      value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7081840891582816374, guid: 52792aeddf78d144cab36bb0ae9a1943, type: 3}
+      propertyPath: m_Color.g
+      value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7081840891582816374, guid: 52792aeddf78d144cab36bb0ae9a1943, type: 3}
+      propertyPath: m_Color.r
+      value: 0.1
+      objectReference: {fileID: 0}
     - target: {fileID: 7081840892515873890, guid: 52792aeddf78d144cab36bb0ae9a1943, type: 3}
       propertyPath: m_Interactable
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7081840892515873890, guid: 52792aeddf78d144cab36bb0ae9a1943, type: 3}
+      propertyPath: m_Colors.m_NormalColor.b
+      value: 0.18039216
+      objectReference: {fileID: 0}
+    - target: {fileID: 7081840892515873890, guid: 52792aeddf78d144cab36bb0ae9a1943, type: 3}
+      propertyPath: m_Colors.m_NormalColor.g
+      value: 0.18039216
+      objectReference: {fileID: 0}
+    - target: {fileID: 7081840892515873890, guid: 52792aeddf78d144cab36bb0ae9a1943, type: 3}
+      propertyPath: m_Colors.m_NormalColor.r
+      value: 0.18039216
       objectReference: {fileID: 0}
     - target: {fileID: 7081840892515873890, guid: 52792aeddf78d144cab36bb0ae9a1943, type: 3}
       propertyPath: m_Colors.m_PressedColor.b
@@ -6838,15 +6862,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7081840893004531709, guid: 52792aeddf78d144cab36bb0ae9a1943, type: 3}
       propertyPath: m_AnchorMax.x
-      value: 0.495
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7081840893004531709, guid: 52792aeddf78d144cab36bb0ae9a1943, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7081840893004531709, guid: 52792aeddf78d144cab36bb0ae9a1943, type: 3}
       propertyPath: m_AnchorMin.x
-      value: 0.495
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7081840893024566376, guid: 52792aeddf78d144cab36bb0ae9a1943, type: 3}
       propertyPath: m_text
@@ -6854,11 +6878,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7081840893373687796, guid: 52792aeddf78d144cab36bb0ae9a1943, type: 3}
       propertyPath: m_AnchorMax.x
-      value: 0.495
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7081840893373687796, guid: 52792aeddf78d144cab36bb0ae9a1943, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 5332182330805530165, guid: 52792aeddf78d144cab36bb0ae9a1943, type: 3}

@@ -191,27 +191,27 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: -10015
-    m_Localized: "Gehen:"
+    m_Localized: 'Gehen:'
     m_Metadata:
       m_Items: []
   - m_Id: -10016
-    m_Localized: "Schieben:"
+    m_Localized: 'Schieben:'
     m_Metadata:
       m_Items: []
   - m_Id: -10017
-    m_Localized: "Dash:"
+    m_Localized: 'Dash:'
     m_Metadata:
       m_Items: []
   - m_Id: -10018
-    m_Localized: "Rennen:"
+    m_Localized: 'Rennen:'
     m_Metadata:
       m_Items: []
   - m_Id: -10019
-    m_Localized: "Blick:"
+    m_Localized: 'Blick:'
     m_Metadata:
       m_Items: []
   - m_Id: -10020
-    m_Localized: "Hocken:"
+    m_Localized: 'Hocken:'
     m_Metadata:
       m_Items: []
   - m_Id: -10021
@@ -447,19 +447,19 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: -10079
-    m_Localized: "Magazin:"
+    m_Localized: 'Magazin:'
     m_Metadata:
       m_Items: []
   - m_Id: -10080
-    m_Localized: "Projektilgeschwindigkeit:"
+    m_Localized: 'Projektilgeschwindigkeit:'
     m_Metadata:
       m_Items: []
   - m_Id: -10081
-    m_Localized: "Waffenbewegung:"
+    m_Localized: 'Waffenbewegung:'
     m_Metadata:
       m_Items: []
   - m_Id: -10082
-    m_Localized: "Zielfernrohr:"
+    m_Localized: 'Zielfernrohr:'
     m_Metadata:
       m_Items: []
   - m_Id: -10083
@@ -491,7 +491,7 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: -10090
-    m_Localized: "Info zum Gegenstand:"
+    m_Localized: 'Info zum Gegenstand:'
     m_Metadata:
       m_Items: []
   - m_Id: -10091
@@ -515,7 +515,51 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: -10096
-    m_Localized: "Verkauf {0}%"
+    m_Localized: Verkauf {0}%
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10097
+    m_Localized: Boost
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10098
+    m_Localized: Heilung
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10099
+    m_Localized: "T\xE4uschung"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10100
+    m_Localized: Bereit
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10101
+    m_Localized: Nicht bereit
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10102
+    m_Localized: "W\xE4hle einen Scharfsch\xFCtzen!"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10103
+    m_Localized: "W\xE4hle nur einen Scharfsch\xFCtzen!"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10104
+    m_Localized: "Nicht genug Spieler!"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10105
+    m_Localized: Spielstart
+    m_Metadata:
+      m_Items: []
+  - m_Id: 8225287097999360
+    m_Localized: Lobby
+    m_Metadata:
+      m_Items: []
+  - m_Id: 8225792582934528
+    m_Localized: Rausschmiss
     m_Metadata:
       m_Items: []
   references:

@@ -191,31 +191,31 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: -10015
-    m_Localized: "Walk:"
+    m_Localized: 'Walk:'
     m_Metadata:
       m_Items: []
   - m_Id: -10016
-    m_Localized: "Push:"
+    m_Localized: 'Push:'
     m_Metadata:
       m_Items: []
   - m_Id: -10017
-    m_Localized: "Dash:"
+    m_Localized: 'Dash:'
     m_Metadata:
       m_Items: []
   - m_Id: -10018
-    m_Localized: "Run:"
+    m_Localized: 'Run:'
     m_Metadata:
       m_Items: []
   - m_Id: -10019
-    m_Localized: "View:"
+    m_Localized: 'View:'
     m_Metadata:
       m_Items: []
   - m_Id: -10020
-    m_Localized: "Crouch:"
+    m_Localized: 'Crouch:'
     m_Metadata:
       m_Items: []
   - m_Id: -10021
-    m_Localized: "Throw items:"
+    m_Localized: 'Throw items:'
     m_Metadata:
       m_Items: []
   - m_Id: -10022
@@ -447,23 +447,23 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: -10079
-    m_Localized: "Magazine:"
+    m_Localized: 'Magazine:'
     m_Metadata:
       m_Items: []
   - m_Id: -10080
-    m_Localized: "Velocity:"
+    m_Localized: 'Velocity:'
     m_Metadata:
       m_Items: []
   - m_Id: -10081
-    m_Localized: "Sway:"
+    m_Localized: 'Sway:'
     m_Metadata:
       m_Items: []
   - m_Id: -10082
-    m_Localized: "Scope:"
+    m_Localized: 'Scope:'
     m_Metadata:
       m_Items: []
   - m_Id: -10083
-    m_Localized: "Recoil:"
+    m_Localized: 'Recoil:'
     m_Metadata:
       m_Items: []
   - m_Id: -10084
@@ -491,7 +491,7 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: -10090
-    m_Localized: "Item info:"
+    m_Localized: 'Item info:'
     m_Metadata:
       m_Items: []
   - m_Id: -10091
@@ -515,7 +515,51 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: -10096
-    m_Localized: "Sell {0}%"
+    m_Localized: Sell {0}%
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10097
+    m_Localized: Boost
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10098
+    m_Localized: Heal
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10099
+    m_Localized: Fake
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10100
+    m_Localized: Ready
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10101
+    m_Localized: Not Ready
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10102
+    m_Localized: "Choose a sniper!"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10103
+    m_Localized: "Choose only 1 sniper!"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10104
+    m_Localized: "Not enough players!"
+    m_Metadata:
+      m_Items: []
+  - m_Id: -10105
+    m_Localized: Game starting
+    m_Metadata:
+      m_Items: []
+  - m_Id: 8225287097999360
+    m_Localized: Lobby
+    m_Metadata:
+      m_Items: []
+  - m_Id: 8225792582934528
+    m_Localized: Kick
     m_Metadata:
       m_Items: []
   references:

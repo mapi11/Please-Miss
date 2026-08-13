@@ -11,6 +11,25 @@ public static class ItemLocalization
 {
     public const string TableName = "Items_Table";
     public const string WeaponTableName = "Weapon_Table";
+    public const string UITableName = "UI_Table";
+
+    public static string GetPurpose(ItemPurpose purpose)
+    {
+        string key;
+        switch (purpose)
+        {
+            case ItemPurpose.Boost: key = "Boost"; break;
+            case ItemPurpose.Heal: key = "Heal"; break;
+            case ItemPurpose.Fake: key = "Fake"; break;
+            default: return "";
+        }
+
+        var table = LocalizationSettings.StringDatabase.GetTable(UITableName);
+        if (table == null || table.GetEntry(key) == null)
+            return key;
+
+        return LocalizationSettings.StringDatabase.GetLocalizedString(UITableName, key);
+    }
 
     public static string GetName(string itemKey)
     {
