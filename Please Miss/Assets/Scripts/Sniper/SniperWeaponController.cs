@@ -238,12 +238,7 @@ public sealed class SniperWeaponController : NetworkBehaviour
         }
 
         if (scopeUI != null)
-        {
-            if (localAiming)
-                scopeUI.SetBreath(breathAmount / Mathf.Max(defMaxBreath, 0.001f));
-            else
-                scopeUI.HideBreathBar();
-        }
+            scopeUI.SetBreath(breathAmount / Mathf.Max(defMaxBreath, 0.001f));
 
         if (currentRifleVisual == null)
             return;
@@ -326,7 +321,11 @@ public sealed class SniperWeaponController : NetworkBehaviour
 
         localAiming = true;
         normalCameraFov = aimCamera.fieldOfView;
-        currentMagnification = currentRifleDefinition.MinimumMagnification;
+        currentMagnification = Mathf.Clamp(
+            currentMagnification,
+            currentRifleDefinition.MinimumMagnification,
+            currentRifleDefinition.MaximumMagnification
+        );
         ApplyMagnification();
 
         if (aimCamera != null)
@@ -337,11 +336,11 @@ public sealed class SniperWeaponController : NetworkBehaviour
 
         swayOffset = Vector2.zero;
         currentRecoil = 0f;
-        breathAmount = defMaxBreath;
+
+        if (breathAmount <= 0f && !breathDepleted)
+            breathAmount = defMaxBreath;
+
         isHoldingBreath = false;
-        breathDepleted = false;
-        breathRecoveryTimer = 0f;
-        breathPunishmentTimer = 0f;
         swayNoiseTime = 0f;
         swayNoiseSeedX = Random.Range(0f, 1000f);
         swayNoiseSeedY = Random.Range(0f, 1000f);
@@ -375,10 +374,7 @@ public sealed class SniperWeaponController : NetworkBehaviour
         }
 
         if (scopeUI != null)
-        {
             scopeUI.Show(false);
-            scopeUI.HideBreathBar();
-        }
 
         if (currentRifleVisual != null)
             currentRifleVisual.SetLaser(false, currentRifleVisual.LaserOrigin.position);
@@ -393,16 +389,10 @@ public sealed class SniperWeaponController : NetworkBehaviour
 
     private void HandleBreath()
     {
-        if (!localAiming)
-        {
-            isHoldingBreath = false;
-            return;
-        }
-
         bool wasHoldingBreath = isHoldingBreath;
         bool altHeld = Keyboard.current != null && Keyboard.current.leftAltKey.isPressed;
 
-        if (altHeld && breathAmount > 0f && !breathDepleted)
+        if (localAiming && altHeld && breathAmount > 0f && !breathDepleted)
         {
             isHoldingBreath = true;
             breathAmount -= Time.deltaTime * defBreathDepletionRate;

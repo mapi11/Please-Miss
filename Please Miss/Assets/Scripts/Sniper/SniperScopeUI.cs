@@ -29,6 +29,9 @@ public sealed class SniperScopeUI : MonoBehaviour
     {
         GameObject target = root != null ? root : gameObject;
         target.SetActive(visible);
+
+        if (!visible && breathSlider != null)
+            breathSlider.gameObject.SetActive(true);
     }
 
     public void SetZoom(float current, float minimum, float maximum)
@@ -75,11 +78,5 @@ public sealed class SniperScopeUI : MonoBehaviour
 
         breathSlider.gameObject.SetActive(true);
         breathSlider.value = normalized;
-    }
-
-    public void HideBreathBar()
-    {
-        if (breathSlider != null)
-            breathSlider.gameObject.SetActive(false);
     }
 }
