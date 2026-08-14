@@ -40,6 +40,8 @@ public class Stamina : NetworkBehaviour
     public float JumpCost => jumpCost;
     public float DashCost => dashCost;
     public float ShoveCost => shoveCost;
+    public float DashThreshold => maxStamina > 0f ? dashCost / maxStamina : 0f;
+    public float RegenThreshold => regenThreshold;
 
     public bool CanConsume(float amount) => !isExhausted.Value && currentStamina >= amount;
 
@@ -53,6 +55,12 @@ public class Stamina : NetworkBehaviour
 
         if (staminaUI == null)
             staminaUI = GetComponentInChildren<StaminaUI>();
+
+        if (staminaUI != null)
+        {
+            staminaUI.SetDashThreshold(DashThreshold);
+            staminaUI.SetRegenThreshold(RegenThreshold);
+        }
 
         isExhausted.OnValueChanged += (_, newValue) =>
         {

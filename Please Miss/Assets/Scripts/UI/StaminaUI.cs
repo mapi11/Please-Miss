@@ -13,6 +13,10 @@ public class StaminaUI : MonoBehaviour
     [SerializeField] private Color normalColor = Color.white;
     [SerializeField] private Color exhaustedColor = Color.red;
 
+    [Header("Dash Threshold")]
+    [SerializeField] private RectTransform dashThresholdMarker;
+    [SerializeField] private RectTransform regenThresholdMarker;
+
     [Header("Insufficient Flash")]
     [SerializeField] private Color insufficientColor = Color.red;
     [SerializeField] private float insufficientDuration = 0.5f;
@@ -20,6 +24,8 @@ public class StaminaUI : MonoBehaviour
     private Image staminaFill;
     private bool exhausted;
     private Coroutine insufficientRoutine;
+    private float cachedDashThreshold = 0.25f;
+    private float cachedRegenThreshold = 0.1f;
 
     private void Awake()
     {
@@ -40,6 +46,12 @@ public class StaminaUI : MonoBehaviour
     {
         if (staminaPanel != null)
             staminaPanel.SetActive(true);
+
+        if (dashThresholdMarker != null)
+            StartCoroutine(PositionThresholdMarker(dashThresholdMarker, cachedDashThreshold));
+
+        if (regenThresholdMarker != null)
+            StartCoroutine(PositionThresholdMarker(regenThresholdMarker, cachedRegenThreshold));
     }
 
     public void Hide()
@@ -54,11 +66,52 @@ public class StaminaUI : MonoBehaviour
             staminaSlider.value = normalized;
     }
 
+    public void SetDashThreshold(float normalized)
+    {
+        cachedDashThreshold = Mathf.Clamp01(normalized);
+
+        if (dashThresholdMarker != null)
+            StartCoroutine(PositionThresholdMarker(dashThresholdMarker, cachedDashThreshold));
+    }
+
+    public void SetRegenThreshold(float normalized)
+    {
+        cachedRegenThreshold = Mathf.Clamp01(normalized);
+
+        if (regenThresholdMarker != null)
+            StartCoroutine(PositionThresholdMarker(regenThresholdMarker, cachedRegenThreshold));
+    }
+
+    private System.Collections.IEnumerator PositionThresholdMarker(RectTransform marker, float normalized)
+    {
+        yield return null;
+
+        Canvas.ForceUpdateCanvases();
+
+        var fillArea = staminaSlider != null && staminaSlider.fillRect != null
+            ? staminaSlider.fillRect.parent as RectTransform
+            : null;
+
+        if (fillArea == null || marker == null)
+            yield break;
+
+        float markerWidth = marker.rect.width;
+        float markerHeight = marker.rect.height;
+
+        marker.anchorMin = new Vector2(0f, 0.5f);
+        marker.anchorMax = new Vector2(0f, 0.5f);
+        marker.pivot = new Vector2(0.5f, 0.5f);
+        marker.sizeDelta = new Vector2(markerWidth, markerHeight);
+        marker.anchoredPosition = new Vector2(normalized * fillArea.rect.width, marker.anchoredPosition.y);
+    }
+
     public void SetExhausted(bool value)
     {
         exhausted = value;
         if (staminaFill != null)
             staminaFill.color = value ? exhaustedColor : normalColor;
+        if (regenThresholdMarker != null)
+            regenThresholdMarker.gameObject.SetActive(value);
     }
 
     public void FlashInsufficient()
