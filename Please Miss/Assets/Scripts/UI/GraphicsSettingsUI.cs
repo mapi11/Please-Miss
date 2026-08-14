@@ -17,6 +17,22 @@ public class GraphicsSettingsUI : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void ApplySavedSettingsEarly()
     {
+        if (PlayerPrefs.GetInt("QualityConfigCreated", 0) == 0)
+        {
+            PlayerPrefs.SetInt("QualityConfigCreated", 1);
+
+            PlayerPrefs.SetInt("QualityPreset", 2);
+            PlayerPrefs.SetInt("TextureQuality", 0);
+            PlayerPrefs.SetInt("ShadowQuality", 3);
+            PlayerPrefs.SetInt("ShadowResolution", 3);
+            PlayerPrefs.SetInt("VfxQuality", 3);
+            PlayerPrefs.SetInt("AntiAliasing", 3);
+            PlayerPrefs.SetFloat("DrawDistance", 1500f);
+            PlayerPrefs.SetInt("PostProcessing", 1);
+            PlayerPrefs.SetFloat("ShadowDistance", 120f);
+            PlayerPrefs.Save();
+        }
+
         int savedWidth = PlayerPrefs.GetInt("ScreenWidth", 0);
         int savedHeight = PlayerPrefs.GetInt("ScreenHeight", 0);
 
@@ -30,11 +46,8 @@ public class GraphicsSettingsUI : MonoBehaviour
         int texture = PlayerPrefs.GetInt("TextureQuality", 1);
         QualitySettings.globalTextureMipmapLimit = texture;
 
-        int shadows = PlayerPrefs.GetInt("ShadowQuality", 2);
-        QualitySettings.shadows = (UnityEngine.ShadowQuality)Mathf.Clamp(shadows, 0, 2);
-        QualitySettings.shadowDistance = PlayerPrefs.GetFloat("ShadowDistance", 100f);
-        QualitySettings.shadowResolution = (UnityEngine.ShadowResolution)Mathf.Clamp(PlayerPrefs.GetInt("ShadowResolution", shadows == 3 ? 3 : 2), 0, 3);
-        ApplyUrpShadowResolution(PlayerPrefs.GetInt("ShadowResolution", 2));
+        ApplyUrpShadowSettings(PlayerPrefs.GetInt("ShadowQuality", 2));
+        ApplyUrpShadowDistance(PlayerPrefs.GetFloat("ShadowDistance", 100f));
 
         int aa = PlayerPrefs.GetInt("AntiAliasing", 2);
         ApplyMsaa(new[] { 1, 2, 4, 8 }[Mathf.Clamp(aa, 0, 3)]);
@@ -43,7 +56,7 @@ public class GraphicsSettingsUI : MonoBehaviour
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-    private static void ApplySavedSettingsAfterSceneLoad()
+    public static void ApplySavedSettingsAfterSceneLoad()
     {
         Camera cam = GetTargetCamera();
 
@@ -70,15 +83,56 @@ public class GraphicsSettingsUI : MonoBehaviour
         SetVolumeEffectActive<ScreenSpaceLensFlare>(PlayerPrefs.GetInt("LensFlare", 0) == 1);
     }
 
-    private static void ApplyUrpShadowResolution(int index)
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    private static void EnsureSettingsApplierExists()
     {
-        int[] resolutions = { 256, 512, 1024, 2048 };
-        int res = resolutions[Mathf.Clamp(index, 0, resolutions.Length - 1)];
+        if (GraphicsSettingsApplier.Instance != null)
+            return;
+
+        var applier = new GameObject("GraphicsSettingsApplier");
+        applier.AddComponent<GraphicsSettingsApplier>();
+    }
+
+    public static void ApplyUrpShadowSettings(int index)
+    {
+        int clamped = Mathf.Clamp(index, 0, 3);
+        int[] resolutions = { 1024, 2048, 4096, 8192 };
+        int[] cascades = { 2, 2, 4, 4 };
+        int[] additionalResolutions = { 256, 512, 1024, 2048 };
+        float[] depthBias = { 0.2f, 0.2f, 0.2f, 0.2f };
+        float[] normalBias = { 0.5f, 0.5f, 0.4f, 0.4f };
+
+        QualitySettings.shadows = UnityEngine.ShadowQuality.All;
+        QualitySettings.shadowResolution = (UnityEngine.ShadowResolution)clamped;
+
+        var urp = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
+
+        if (urp == null)
+            return;
+
+        urp.mainLightShadowmapResolution = resolutions[clamped];
+        urp.shadowCascadeCount = cascades[clamped];
+        urp.additionalLightsShadowmapResolution = additionalResolutions[clamped];
+        urp.shadowDepthBias = depthBias[clamped];
+        urp.shadowNormalBias = normalBias[clamped];
+
+        var softShadowsField = typeof(UniversalRenderPipelineAsset).GetField(
+            "m_SoftShadowsSupported",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic
+        );
+
+        if (softShadowsField != null)
+            softShadowsField.SetValue(urp, true);
+    }
+
+    public static void ApplyUrpShadowDistance(float value)
+    {
+        QualitySettings.shadowDistance = value;
 
         var urp = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
 
         if (urp != null)
-            urp.mainLightShadowmapResolution = res;
+            urp.shadowDistance = value;
     }
 
     private static void ApplyMsaa(int sampleCount)
@@ -456,7 +510,7 @@ public class GraphicsSettingsUI : MonoBehaviour
     {
         if (shadowDistanceSlider == null) return;
 
-        shadowDistanceSlider.minValue = 0f;
+        shadowDistanceSlider.minValue = 50f;
         shadowDistanceSlider.maxValue = 200f;
         shadowDistanceSlider.onValueChanged.AddListener(OnShadowDistanceChanged);
         SetShadowDistance(PlayerPrefs.GetFloat("ShadowDistance", 100f));
@@ -469,7 +523,7 @@ public class GraphicsSettingsUI : MonoBehaviour
 
     private void SetShadowDistance(float value)
     {
-        QualitySettings.shadowDistance = value;
+        ApplyUrpShadowDistance(value);
         PlayerPrefs.SetFloat("ShadowDistance", value);
         PlayerPrefs.Save();
         UpdateShadowDistanceText(value);
@@ -548,30 +602,33 @@ public class GraphicsSettingsUI : MonoBehaviour
         switch (index)
         {
             case 0: // Low
-                SetTextureQuality(3);
-                SetShadowQuality(0);
-                SetEffectsQuality(0);
-                SetAntiAliasing(0);
-                SetViewDistance(0);
-                SetPostProcessing(false);
-                break;
-
-            case 1: // Medium
                 SetTextureQuality(2);
                 SetShadowQuality(1);
                 SetEffectsQuality(1);
                 SetAntiAliasing(1);
-                SetViewDistance(1);
+                SetViewDistance(0);
                 SetPostProcessing(true);
+                SetShadowDistance(50f);
                 break;
 
-            case 2: // High
+            case 1: // Medium
                 SetTextureQuality(1);
                 SetShadowQuality(2);
                 SetEffectsQuality(2);
                 SetAntiAliasing(2);
+                SetViewDistance(1);
+                SetPostProcessing(true);
+                SetShadowDistance(70f);
+                break;
+
+            case 2: // High
+                SetTextureQuality(0);
+                SetShadowQuality(3);
+                SetEffectsQuality(3);
+                SetAntiAliasing(3);
                 SetViewDistance(2);
                 SetPostProcessing(true);
+                SetShadowDistance(120f);
                 break;
 
             case 3: // Epic
@@ -581,6 +638,7 @@ public class GraphicsSettingsUI : MonoBehaviour
                 SetAntiAliasing(3);
                 SetViewDistance(3);
                 SetPostProcessing(true);
+                SetShadowDistance(150f);
                 break;
         }
 
@@ -643,16 +701,9 @@ public class GraphicsSettingsUI : MonoBehaviour
 
     private void SetShadowQuality(int index)
     {
-        QualitySettings.shadows = (UnityEngine.ShadowQuality)Mathf.Clamp(index, 0, 2);
-
-        if (index == 3)
-        {
-            QualitySettings.shadowResolution = UnityEngine.ShadowResolution.VeryHigh;
-            ApplyUrpShadowResolution(3);
-            PlayerPrefs.SetInt("ShadowResolution", 3);
-        }
-
+        ApplyUrpShadowSettings(index);
         PlayerPrefs.SetInt("ShadowQuality", index);
+        PlayerPrefs.SetInt("ShadowResolution", index);
         PlayerPrefs.Save();
 
         if (shadowQualityDropdown != null)
@@ -731,7 +782,7 @@ public class GraphicsSettingsUI : MonoBehaviour
 
     private void SetViewDistance(int index)
     {
-        float[] distances = { 200f, 500f, 1000f, 1500f };
+        float[] distances = { 500f, 1000f, 1500f, 2500f };
         float value = distances[Mathf.Clamp(index, 0, distances.Length - 1)];
 
         Camera cam = GetTargetCamera();
@@ -748,9 +799,9 @@ public class GraphicsSettingsUI : MonoBehaviour
 
     private static int ViewDistanceToIndex(float distance)
     {
-        if (distance <= 300f) return 0;
-        if (distance <= 750f) return 1;
-        if (distance <= 1250f) return 2;
+        if (distance <= 750f) return 0;
+        if (distance <= 1250f) return 1;
+        if (distance <= 2000f) return 2;
         return 3;
     }
 

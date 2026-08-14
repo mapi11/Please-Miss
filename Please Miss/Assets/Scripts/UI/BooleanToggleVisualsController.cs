@@ -27,6 +27,11 @@ using UnityEngine.UI;
             ToggleValueChanged(m_Toggle.isOn);
         }
 
+        void Start()
+        {
+            ToggleValueChanged(m_Toggle.isOn);
+        }
+
         void ToggleValueChanged(bool value)
         {
             if (value)

@@ -37,6 +37,15 @@ public class WindowAspectLocker : MonoBehaviour
 
         if (setStartupResolution && !Screen.fullScreen)
         {
+            int savedWidth = PlayerPrefs.GetInt("ScreenWidth", 0);
+            int savedHeight = PlayerPrefs.GetInt("ScreenHeight", 0);
+
+            if (savedWidth > 0 && savedHeight > 0)
+            {
+                Screen.SetResolution(savedWidth, savedHeight, FullScreenMode.Windowed);
+                return;
+            }
+
             Screen.SetResolution(startupWidth, startupHeight, FullScreenMode.Windowed);
             return;
         }

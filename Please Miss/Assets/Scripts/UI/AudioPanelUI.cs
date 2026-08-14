@@ -90,6 +90,7 @@ public class AudioPanelUI : MonoBehaviour
 
         volumeSlider.minValue = 0f;
         volumeSlider.maxValue = 1f;
+        AudioListener.volume = 0.8f;
         volumeSlider.value = AudioListener.volume;
         UpdateVolumeText(AudioListener.volume);
         volumeSlider.onValueChanged.AddListener(OnVolumeChanged);

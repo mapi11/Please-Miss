@@ -206,16 +206,6 @@ public class GeneralPanelUI : MonoBehaviour
         switch (index)
         {
             case 0: // Low
-                SetTextureQuality(3);
-                SetShadowQuality(0);
-                PlayerPrefs.SetInt("VfxQuality", 0);
-                ApplyMsaa(1);
-                PlayerPrefs.SetInt("AntiAliasing", 0);
-                ApplyDrawDistance(cam, 200f);
-                ApplyPostProcessing(cam, false);
-                break;
-
-            case 1: // Medium
                 SetTextureQuality(2);
                 SetShadowQuality(1);
                 PlayerPrefs.SetInt("VfxQuality", 1);
@@ -223,9 +213,10 @@ public class GeneralPanelUI : MonoBehaviour
                 PlayerPrefs.SetInt("AntiAliasing", 1);
                 ApplyDrawDistance(cam, 500f);
                 ApplyPostProcessing(cam, true);
+                GraphicsSettingsUI.ApplyUrpShadowDistance(50f);
                 break;
 
-            case 2: // High
+            case 1: // Medium
                 SetTextureQuality(1);
                 SetShadowQuality(2);
                 PlayerPrefs.SetInt("VfxQuality", 2);
@@ -233,6 +224,18 @@ public class GeneralPanelUI : MonoBehaviour
                 PlayerPrefs.SetInt("AntiAliasing", 2);
                 ApplyDrawDistance(cam, 1000f);
                 ApplyPostProcessing(cam, true);
+                GraphicsSettingsUI.ApplyUrpShadowDistance(70f);
+                break;
+
+            case 2: // High
+                SetTextureQuality(0);
+                SetShadowQuality(3);
+                PlayerPrefs.SetInt("VfxQuality", 3);
+                ApplyMsaa(8);
+                PlayerPrefs.SetInt("AntiAliasing", 3);
+                ApplyDrawDistance(cam, 1500f);
+                ApplyPostProcessing(cam, true);
+                GraphicsSettingsUI.ApplyUrpShadowDistance(120f);
                 break;
 
             case 3: // Epic
@@ -241,8 +244,9 @@ public class GeneralPanelUI : MonoBehaviour
                 PlayerPrefs.SetInt("VfxQuality", 3);
                 ApplyMsaa(8);
                 PlayerPrefs.SetInt("AntiAliasing", 3);
-                ApplyDrawDistance(cam, 1500f);
+                ApplyDrawDistance(cam, 2500f);
                 ApplyPostProcessing(cam, true);
+                GraphicsSettingsUI.ApplyUrpShadowDistance(150f);
                 break;
         }
 
@@ -258,15 +262,10 @@ public class GeneralPanelUI : MonoBehaviour
 
     private static void SetShadowQuality(int index)
     {
-        QualitySettings.shadows = (UnityEngine.ShadowQuality)Mathf.Clamp(index, 0, 2);
-
-        if (index == 3)
-        {
-            QualitySettings.shadowResolution = UnityEngine.ShadowResolution.VeryHigh;
-            PlayerPrefs.SetInt("ShadowResolution", 3);
-        }
-
+        GraphicsSettingsUI.ApplyUrpShadowSettings(index);
         PlayerPrefs.SetInt("ShadowQuality", index);
+        PlayerPrefs.SetInt("ShadowResolution", index);
+        PlayerPrefs.Save();
     }
 
     private static void ApplyMsaa(int sampleCount)
@@ -312,6 +311,7 @@ public class GeneralPanelUI : MonoBehaviour
 
         masterVolumeSlider.minValue = 0f;
         masterVolumeSlider.maxValue = 1f;
+        AudioListener.volume = 0.8f;
         masterVolumeSlider.value = AudioListener.volume;
         UpdateMasterVolumeText(AudioListener.volume);
         masterVolumeSlider.onValueChanged.AddListener(OnMasterVolumeChanged);
