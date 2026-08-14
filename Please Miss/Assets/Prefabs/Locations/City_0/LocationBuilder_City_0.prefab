@@ -11,9 +11,9 @@ GameObject:
   - component: {fileID: 5048524115840956367}
   - component: {fileID: 5860440554228479784}
   m_Layer: 0
-  m_Name: LocationBuilder
+  m_Name: LocationBuilder_City_0
   m_TagString: Untagged
-  m_Icon: {fileID: -964228994112308473, guid: 0000000000000000d000000000000000, type: 0}
+  m_Icon: {fileID: -1412012063857583412, guid: 0000000000000000d000000000000000, type: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
@@ -47,22 +47,19 @@ MonoBehaviour:
   types:
   - typeName: Spawn
     variants:
-    - {fileID: 1826809188627934075, guid: 5115ed10dc829bd439335c797cd90236, type: 3}
+    - {fileID: 5462067906454237531, guid: de2521e614b26e64fac41ddfbe2ddd6b, type: 3}
   - typeName: Middle
     variants:
-    - {fileID: 1826809188627934075, guid: 3dc58573b47b11145be400daedad34a7, type: 3}
-    - {fileID: 1826809188627934075, guid: 6439a0bc8125f1444a421e553218f794, type: 3}
-    - {fileID: 1826809188627934075, guid: a9970d9d73d22ca46be4fa3134e67dba, type: 3}
-    - {fileID: 1826809188627934075, guid: 66b1e48803cea7e4e86813887ee4fd3e, type: 3}
+    - {fileID: 6414027576122974694, guid: 6865c68fbe55c624d85bb7adc5531e69, type: 3}
   - typeName: Win zone
     variants:
-    - {fileID: 1826809188627934075, guid: fe4a86eb8a9cd004c96f8355e5323668, type: 3}
+    - {fileID: 7177692398345161602, guid: 6510ff99fe038cd489fb485cd91e2397, type: 3}
   - typeName: End
     variants:
-    - {fileID: 1826809188627934075, guid: 591430afa734e734b93ff10ac3991789, type: 3}
+    - {fileID: 6882300002369994635, guid: c60c825346558e84dbeb18166ceaaafe, type: 3}
   - typeName: Sniper tower
     variants:
-    - {fileID: 1826809188627934075, guid: c1b412a5831ac1643877c4e152eb02aa, type: 3}
+    - {fileID: 8301294629863866089, guid: 32713540e4ffabd4298a9197dbd5f54a, type: 3}
   sequence:
   - typeName: Spawn
   - typeName: Middle
