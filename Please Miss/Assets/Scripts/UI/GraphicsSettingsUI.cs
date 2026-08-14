@@ -209,6 +209,8 @@ public class GraphicsSettingsUI : MonoBehaviour
     [SerializeField] private Toggle chromaticAberrationToggle;
     [SerializeField] private Toggle depthOfFieldToggle;
     [SerializeField] private Toggle lensFlareToggle;
+    [SerializeField] private Toggle fpsToggle;
+    [SerializeField] private GameObject fpsCounterPrefab;
     [SerializeField] private Slider renderScaleSlider;
     [SerializeField] private TMP_Text renderScaleValueText;
 
@@ -257,6 +259,7 @@ public class GraphicsSettingsUI : MonoBehaviour
         InitChromaticAberration();
         InitDepthOfField();
         InitLensFlare();
+        InitFps();
         InitRenderScale();
         ignorePresetChange = false;
 
@@ -932,6 +935,20 @@ public class GraphicsSettingsUI : MonoBehaviour
 
         if (lensFlareToggle != null)
             lensFlareToggle.SetIsOnWithoutNotify(enabled);
+    }
+
+    private void InitFps()
+    {
+        if (fpsToggle == null) return;
+
+        fpsToggle.SetIsOnWithoutNotify(FpsCounterManager.IsEnabled());
+        fpsToggle.onValueChanged.AddListener(OnFpsToggleChanged);
+        FpsCounterManager.SetEnabled(FpsCounterManager.IsEnabled(), fpsCounterPrefab);
+    }
+
+    private void OnFpsToggleChanged(bool enabled)
+    {
+        FpsCounterManager.SetEnabled(enabled, fpsCounterPrefab);
     }
 
     private void InitRenderScale()

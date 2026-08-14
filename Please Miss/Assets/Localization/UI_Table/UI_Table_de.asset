@@ -562,6 +562,10 @@ MonoBehaviour:
     m_Localized: "Diktor-Lautst\xE4rke"
     m_Metadata:
       m_Items: []
+  - m_Id: -10108
+    m_Localized: "FPS anzeigen"
+    m_Metadata:
+      m_Items: []
   - m_Id: 8225287097999360
     m_Localized: Lobby
     m_Metadata:

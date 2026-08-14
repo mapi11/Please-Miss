@@ -33,6 +33,10 @@ public class GeneralPanelUI : MonoBehaviour
     [SerializeField] private Slider diktorVolumeSlider;
     [SerializeField] private TextMeshProUGUI diktorVolumeValueText;
 
+    [Header("FPS")]
+    [SerializeField] private Toggle fpsToggle;
+    [SerializeField] private GameObject fpsCounterPrefab;
+
     private List<Resolution> resolutions;
 
     private void Awake()
@@ -98,6 +102,7 @@ public class GeneralPanelUI : MonoBehaviour
         InitPreset();
         InitVolumes();
         InitDiktor();
+        InitFps();
     }
 
     private void InitDisplayMode()
@@ -427,6 +432,21 @@ public class GeneralPanelUI : MonoBehaviour
     {
         if (diktorVolumeValueText != null)
             diktorVolumeValueText.text = Mathf.RoundToInt(value * 100) + "%";
+    }
+
+    private void InitFps()
+    {
+        if (fpsToggle == null)
+            return;
+
+        fpsToggle.SetIsOnWithoutNotify(FpsCounterManager.IsEnabled());
+        fpsToggle.onValueChanged.AddListener(OnFpsToggleChanged);
+        FpsCounterManager.SetEnabled(FpsCounterManager.IsEnabled(), fpsCounterPrefab);
+    }
+
+    private void OnFpsToggleChanged(bool enabled)
+    {
+        FpsCounterManager.SetEnabled(enabled, fpsCounterPrefab);
     }
 
     private static Camera GetTargetCamera()

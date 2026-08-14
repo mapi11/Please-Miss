@@ -567,6 +567,10 @@ MonoBehaviour:
     m_Key: Diktor volume
     m_Metadata:
       m_Items: []
+  - m_Id: -10108
+    m_Key: Show FPS
+    m_Metadata:
+      m_Items: []
   - m_Id: 8225287097999360
     m_Key: Lobby
     m_Metadata:

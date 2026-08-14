@@ -562,6 +562,10 @@ MonoBehaviour:
     m_Localized: Diktor volume
     m_Metadata:
       m_Items: []
+  - m_Id: -10108
+    m_Localized: Show FPS
+    m_Metadata:
+      m_Items: []
   - m_Id: 8225287097999360
     m_Localized: Lobby
     m_Metadata:
