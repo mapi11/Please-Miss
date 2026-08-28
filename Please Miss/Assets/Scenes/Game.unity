@@ -6247,10 +6247,6 @@ PrefabInstance:
       propertyPath: GlobalObjectIdHash
       value: 551675711
       objectReference: {fileID: 0}
-    - target: {fileID: 1228118085715064076, guid: 00a80de74767565459b75d2c793b674e, type: 3}
-      propertyPath: InScenePlacedSourceGlobalObjectIdHash
-      value: 137927583
-      objectReference: {fileID: 0}
     - target: {fileID: 1234225296845085725, guid: 00a80de74767565459b75d2c793b674e, type: 3}
       propertyPath: m_InScenePlaced
       value: 1
@@ -6259,21 +6255,9 @@ PrefabInstance:
       propertyPath: GlobalObjectIdHash
       value: 2381380032
       objectReference: {fileID: 0}
-    - target: {fileID: 1234225296845085725, guid: 00a80de74767565459b75d2c793b674e, type: 3}
-      propertyPath: InScenePlacedSourceGlobalObjectIdHash
-      value: 137927583
-      objectReference: {fileID: 0}
     - target: {fileID: 3151791304119865734, guid: 00a80de74767565459b75d2c793b674e, type: 3}
       propertyPath: m_Name
       value: GameManager
-      objectReference: {fileID: 0}
-    - target: {fileID: 4600881841403429059, guid: 00a80de74767565459b75d2c793b674e, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6799975559156038694, guid: 00a80de74767565459b75d2c793b674e, type: 3}
-      propertyPath: m_SortingOrder
-      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
